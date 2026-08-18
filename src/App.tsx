@@ -1,5 +1,6 @@
 import { createSignal, createResource, createMemo, createEffect, Match, Switch, For, Show } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
+import { t, locale, setLocale, type Locale } from "./i18n";
 import "./App.css";
 
 type MenuOption = { key: string; label: string };
@@ -28,6 +29,8 @@ async function runAction(action: Action): Promise<TuiScreen | null> {
   return invoke<TuiScreen>(action.cmd, action.args);
 }
 
+const LOCALES: Locale[] = ["es", "en"];
+
 function App() {
   const [username, setUsername] = createSignal("");
   const [password, setPassword] = createSignal("");
@@ -49,18 +52,18 @@ function App() {
   }, null);
 
   // Opening a dialog is a genuine side effect (and independently
-  // dismissible via Cerrar), unlike `screen` above -- it belongs in an
-  // effect, not a memo.
+  // dismissible via the close button), unlike `screen` above -- it
+  // belongs in an effect, not a memo.
   createEffect(() => {
     if (response.loading) return;
     const err = response.error;
     if (err) {
-      setDialog({ title: "Error", message: String(err) });
+      setDialog({ title: t().errorTitle, message: String(err) });
       return;
     }
     const result = response();
     if (result?.kind === "Notice") {
-      setDialog({ title: "Aviso", message: result.message });
+      setDialog({ title: t().noticeTitle, message: result.message });
     }
   });
 
@@ -85,14 +88,32 @@ function App() {
     setAction({ cmd: "disconnect", args: {} });
   }
 
+  // The remote already closed the session server-side, so this just
+  // overrides the resource's resolved value locally instead of firing a
+  // command -- see `mutate`'s docs for why that's the right tool here.
+  function reconnect() {
+    mutate(null);
+  }
+
   return (
     <main class="container">
-      <h1>
-        RUMAD
-        <Show when={busy()}>
-          <span class="spinner" role="status" aria-label="Cargando" />
-        </Show>
-      </h1>
+      <div class="header">
+        <h1>
+          {t().title}
+          <Show when={busy()}>
+            <span class="spinner" role="status" aria-label={t().loading} />
+          </Show>
+        </h1>
+        <div class="locale-switch">
+          <For each={LOCALES}>
+            {(l) => (
+              <button classList={{ active: locale() === l }} onClick={() => setLocale(l)}>
+                {l.toUpperCase()}
+              </button>
+            )}
+          </For>
+        </div>
+      </div>
 
       <Show when={dialog()}>
         {(d) => (
@@ -100,7 +121,7 @@ function App() {
             <div class="dialog" role="alertdialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
               <h3>{d().title}</h3>
               <p>{d().message}</p>
-              <button onClick={() => setDialog(null)}>Cerrar</button>
+              <button onClick={() => setDialog(null)}>{t().close}</button>
             </div>
           </div>
         )}
@@ -116,24 +137,20 @@ function App() {
               connect();
             }}
           >
-            <p class="hint">
-              Leave blank to use the shared "estudiante" demo login (main
-              menu only). Enter your own RUMAD credentials to reach
-              account-specific screens.
-            </p>
+            <p class="hint">{t().loginHint}</p>
             <input
-              placeholder="Usuario / ID de estudiante"
+              placeholder={t().usernamePlaceholder}
               value={username()}
               onInput={(e) => setUsername(e.currentTarget.value)}
             />
             <input
               type="password"
-              placeholder="Clave de acceso"
+              placeholder={t().passwordPlaceholder}
               value={password()}
               onInput={(e) => setPassword(e.currentTarget.value)}
             />
             <button type="submit" disabled={busy()}>
-              {busy() ? "Conectando..." : "Conectar"}
+              {busy() ? t().connecting : t().connect}
             </button>
           </form>
         }
@@ -154,17 +171,15 @@ function App() {
             </Match>
 
             <Match when={screen()?.kind === "Disconnected"}>
-              <h2>Sesion finalizada</h2>
-              <p class="hint">
-                El sistema remoto termino la sesion (PROCESO CONCLUIDO).
-              </p>
-              <button disabled={busy()} onClick={() => mutate(null)}>
-                Reconectar
+              <h2>{t().disconnectedTitle}</h2>
+              <p class="hint">{t().disconnectedHint}</p>
+              <button disabled={busy()} onClick={reconnect}>
+                {t().reconnect}
               </button>
             </Match>
 
             <Match when={screen()?.kind === "Unknown"}>
-              <p class="hint">Pantalla sin reconocer todavia:</p>
+              <p class="hint">{t().unknownHint}</p>
               <pre class="raw">{(screen() as Extract<TuiScreen, { kind: "Unknown" }>).raw}</pre>
               <div class="options">
                 <For each={(screen() as Extract<TuiScreen, { kind: "Unknown" }>).options}>
@@ -177,12 +192,12 @@ function App() {
               </div>
               <form class="row" onSubmit={sendFreeText}>
                 <input
-                  placeholder="Enviar texto..."
+                  placeholder={t().sendPlaceholder}
                   value={freeText()}
                   onInput={(e) => setFreeText(e.currentTarget.value)}
                 />
                 <button type="submit" disabled={busy()}>
-                  Enviar
+                  {t().send}
                 </button>
               </form>
             </Match>
@@ -190,7 +205,7 @@ function App() {
 
           <Show when={screen()?.kind !== "Disconnected"}>
             <button class="disconnect" disabled={busy()} onClick={disconnect}>
-              Salir
+              {t().logout}
             </button>
           </Show>
         </div>
