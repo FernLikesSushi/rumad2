@@ -1,4 +1,4 @@
-import { createSignal, Match, Switch, For, Show } from "solid-js";
+import { createSignal, createResource, createMemo, createEffect, Match, Switch, For, Show } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 
@@ -12,63 +12,77 @@ type TuiScreen =
 
 type Dialog = { title: string; message: string };
 
+type Action =
+  | { cmd: "connect"; args: { username?: string; password?: string } }
+  | { cmd: "send_input"; args: { text: string } }
+  | { cmd: "disconnect"; args: {} };
+
+// The resource's fetcher: `null` means "session ended",
+// anything else is whatever the invoked command
+// resolved to.
+async function runAction(action: Action): Promise<TuiScreen | null> {
+  if (action.cmd === "disconnect") {
+    await invoke("disconnect");
+    return null;
+  }
+  return invoke<TuiScreen>(action.cmd, action.args);
+}
+
 function App() {
-  const [screen, setScreen] = createSignal<TuiScreen | null>(null);
   const [username, setUsername] = createSignal("");
   const [password, setPassword] = createSignal("");
   const [freeText, setFreeText] = createSignal("");
-  const [busy, setBusy] = createSignal(false);
   const [dialog, setDialog] = createSignal<Dialog | null>(null);
 
-  async function run<T>(action: () => Promise<T>) {
-    setBusy(true);
-    try {
-      return await action();
-    } catch (e) {
-      setDialog({ title: "Error", message: String(e) });
-      return undefined;
-    } finally {
-      setBusy(false);
-    }
-  }
+  const [action, setAction] = createSignal<Action>();
+  const [response, { mutate }] = createResource(action, runAction);
+  const busy = () => response.loading;
 
-  // `Notice` is a message alongside the current screen, not a screen of
-  // its own -- surface it as a dialog on top of whatever's showing rather
-  // than replacing it.
-  function applyScreen(result: TuiScreen | undefined) {
-    if (!result) return;
-    if (result.kind === "Notice") {
-      setDialog({ title: "Aviso", message: result.message });
+  // What to render is derived, not imperatively assigned: `Notice` is a
+  // message alongside the current screen rather than a screen change, so
+  // the memo keeps whatever was showing instead of switching to it.
+  const screen = createMemo<TuiScreen | null>((prev) => {
+    if (response.loading) return prev ?? null;
+    const result = response();
+    if (result === undefined || result?.kind === "Notice") return prev ?? null;
+    return result;
+  }, null);
+
+  // Opening a dialog is a genuine side effect (and independently
+  // dismissible via Cerrar), unlike `screen` above -- it belongs in an
+  // effect, not a memo.
+  createEffect(() => {
+    if (response.loading) return;
+    const err = response.error;
+    if (err) {
+      setDialog({ title: "Error", message: String(err) });
       return;
     }
-    setScreen(result);
+    const result = response();
+    if (result?.kind === "Notice") {
+      setDialog({ title: "Aviso", message: result.message });
+    }
+  });
+
+  function connect() {
+    setAction({
+      cmd: "connect",
+      args: { username: username() || undefined, password: password() || undefined },
+    });
   }
 
-  async function connect() {
-    const result = await run(() =>
-      invoke<TuiScreen>("connect", {
-        username: username() || undefined,
-        password: password() || undefined,
-      }),
-    );
-    applyScreen(result);
+  function chooseOption(key: string) {
+    setAction({ cmd: "send_input", args: { text: key } });
   }
 
-  async function chooseOption(key: string) {
-    const result = await run(() => invoke<TuiScreen>("send_input", { text: key }));
-    applyScreen(result);
-  }
-
-  async function sendFreeText(e: Event) {
+  function sendFreeText(e: Event) {
     e.preventDefault();
-    const result = await run(() => invoke<TuiScreen>("send_input", { text: freeText() }));
-    applyScreen(result);
+    setAction({ cmd: "send_input", args: { text: freeText() } });
     setFreeText("");
   }
 
-  async function disconnect() {
-    await run(() => invoke("disconnect"));
-    setScreen(null);
+  function disconnect() {
+    setAction({ cmd: "disconnect", args: {} });
   }
 
   return (
@@ -144,7 +158,7 @@ function App() {
               <p class="hint">
                 El sistema remoto termino la sesion (PROCESO CONCLUIDO).
               </p>
-              <button disabled={busy()} onClick={() => setScreen(null)}>
+              <button disabled={busy()} onClick={() => mutate(null)}>
                 Reconectar
               </button>
             </Match>
