@@ -73,7 +73,12 @@ function App() {
 
   return (
     <main class="container">
-      <h1>RUMAD</h1>
+      <h1>
+        RUMAD
+        <Show when={busy()}>
+          <span class="spinner" role="status" aria-label="Cargando" />
+        </Show>
+      </h1>
 
       <Show when={dialog()}>
         {(d) => (
