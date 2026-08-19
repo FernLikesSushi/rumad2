@@ -15,6 +15,7 @@ import { SearchScreen } from "./screens/SearchScreen";
 import { DisconnectedScreen } from "./screens/Disconnected";
 import { UnknownScreen } from "./screens/Unknown";
 import "./App.css";
+import { Spinner } from "./components/Spinner";
 
 // The orchestrator: owns the one `action` signal/`createResource` this app
 // is built around (there can only be one -- Solid resources aren't
@@ -151,7 +152,7 @@ function App() {
 
   return (
     <main class="container">
-      <Header busy={busy()} />
+      <Header />
       <NoticeDialog dialog={dialogBox()} onClose={() => setDialogBox(null)} />
 
       <Show when={screen()} fallback={<ConnectForm onConnect={connect} busy={busy()} />}>
@@ -225,6 +226,13 @@ function App() {
               </button>
             </Show>
           </div>
+
+        </div>
+      </Show>
+
+      <Show when={true || busy()}>
+        <div class="footer text-5xl">
+          <Spinner />
         </div>
       </Show>
     </main>

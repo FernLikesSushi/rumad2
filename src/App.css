@@ -69,6 +69,11 @@ h2 {
   text-align: center;
 }
 
+.footer {
+  margin-top: 1em;
+  text-align: center;
+}
+
 /* Used by App's own action row, FreeTextForm, Login, CourseResults. */
 .row {
   display: flex;
