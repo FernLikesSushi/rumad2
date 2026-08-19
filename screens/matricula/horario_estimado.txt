@@ -1,4 +1,3 @@
-  delete above artifact directories? ([y]es, [n]o, [a]ll, [q]uit): n
        18/ago/2026                    U.P.R. - R.U.M. - Horario Matr�ula - 1er Sem 2026-2027                      8:52 pm
 
                                 REDACTED-USER-ID     REDACTED-NAME        0509 3   (INSO)

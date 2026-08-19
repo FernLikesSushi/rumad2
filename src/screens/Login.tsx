@@ -2,6 +2,10 @@ import { For } from "solid-js";
 import { t } from "../i18n";
 import type { LoginField } from "../types";
 
+// Only the access code (PIN) and SSN digits are sensitive enough to mask
+// on screen -- the ID number and birth date aren't secret on their own.
+const MASKED_FIELDS = new Set(["access_code", "ssn_last4"]);
+
 export function LoginScreen(props: {
   fields: LoginField[];
   values: Record<string, string>;
@@ -16,7 +20,7 @@ export function LoginScreen(props: {
         <For each={props.fields}>
           {(field) => (
             <input
-              type="password"
+              type={MASKED_FIELDS.has(field.key) ? "password" : "text"}
               placeholder={`${field.label} (${field.hint})`}
               value={props.values[field.key] ?? ""}
               onInput={(e) => props.onChange(field.key, e.currentTarget.value)}

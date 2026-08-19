@@ -38,6 +38,12 @@ pub enum MatriculaPrompt {
     Cambio,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct MatriculaScreen {
+    pub courses: Vec<ScheduleCourse>,
+    pub prompt: MatriculaPrompt,
+}
+
 fn course_pattern() -> &'static Regex {
     static PATTERN: OnceLock<Regex> = OnceLock::new();
     // Matches filled schedule rows like " 1.  INSO 4101      080     3    S".
@@ -69,7 +75,7 @@ pub(super) fn scrape_courses(raw: &str) -> Vec<ScheduleCourse> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::screens::{classify, TuiScreen};
+    use crate::screens::{classify, MatriculaScreen, TuiScreen};
 
     const SELECT: &str = include_str!("../../../screens/matricula/select.txt");
     const BAJAS: &str = include_str!("../../../screens/matricula/bajas.txt");
@@ -79,7 +85,7 @@ mod tests {
 
     #[test]
     fn classifies_matricula_with_actions_prompt() {
-        let TuiScreen::Matricula { courses, prompt } = classify(SELECT) else {
+        let TuiScreen::Matricula(MatriculaScreen { courses, prompt }) = classify(SELECT) else {
             panic!("expected Matricula");
         };
         assert_eq!(
@@ -131,7 +137,7 @@ mod tests {
 
     #[test]
     fn classifies_matricula_with_bajas_prompt() {
-        let TuiScreen::Matricula { courses, prompt } = classify(BAJAS) else {
+        let TuiScreen::Matricula(MatriculaScreen { courses, prompt }) = classify(BAJAS) else {
             panic!("expected Matricula");
         };
         assert_eq!(courses.len(), 4);
@@ -140,7 +146,7 @@ mod tests {
 
     #[test]
     fn classifies_matricula_with_altas_prompt() {
-        let TuiScreen::Matricula { courses, prompt } = classify(ALTA) else {
+        let TuiScreen::Matricula(MatriculaScreen { courses, prompt }) = classify(ALTA) else {
             panic!("expected Matricula");
         };
         assert_eq!(courses.len(), 4);
@@ -149,7 +155,7 @@ mod tests {
 
     #[test]
     fn classifies_matricula_with_cambio_prompt() {
-        let TuiScreen::Matricula { courses, prompt } = classify(CAMBIOS) else {
+        let TuiScreen::Matricula(MatriculaScreen { courses, prompt }) = classify(CAMBIOS) else {
             panic!("expected Matricula");
         };
         assert_eq!(courses.len(), 4);
@@ -161,7 +167,7 @@ mod tests {
         // alta_seccion.txt overlays "SECCIONES DISPONIBLES CURSO: ..." text
         // after the status column on some rows -- course_pattern must not
         // require end-of-line right after the status field.
-        let TuiScreen::Matricula { courses, .. } = classify(ALTA_SECCION) else {
+        let TuiScreen::Matricula(MatriculaScreen { courses, .. }) = classify(ALTA_SECCION) else {
             panic!("expected Matricula");
         };
         assert_eq!(courses.len(), 4);

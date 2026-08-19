@@ -24,6 +24,10 @@ const es: Messages = {
   errorTitle: "Error",
   noticeTitle: "Aviso",
   authTitle: "Autenticacion",
+  developerMode: "Modo desarrollador",
+  continueLabel: "Continuar",
+  screenExit: "Salir de esta pantalla",
+  weeklyScheduleTitle: "Horario de Matricula",
 };
 
 export default es;

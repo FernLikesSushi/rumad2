@@ -20,6 +20,10 @@ const en: Messages = {
   errorTitle: "Error",
   noticeTitle: "Notice",
   authTitle: "Authentication",
+  developerMode: "Developer mode",
+  continueLabel: "Continue",
+  screenExit: "Leave this screen",
+  weeklyScheduleTitle: "Class Schedule",
 };
 
 export default en;

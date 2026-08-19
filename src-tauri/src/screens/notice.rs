@@ -36,7 +36,7 @@ pub(super) fn extract_bracketed_notice(raw: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::screens::{classify, TuiScreen};
+    use crate::screens::{classify, NoticeScreen, TuiScreen, UnknownScreen};
 
     const EVALUO_PAGO: &str = include_str!("../../../screens/matricula/evaluo_pago.txt");
     const HORARIOS_DE_SECCION: &str =
@@ -47,7 +47,7 @@ mod tests {
         // evaluo_pago.txt (the payment/invoice screen) isn't specifically
         // modeled, but its "<< ... >>" disclaimer should still be pulled
         // out as a Notice message rather than left buried in raw text.
-        let TuiScreen::Notice { message, .. } = classify(EVALUO_PAGO) else {
+        let TuiScreen::Notice(NoticeScreen { message, .. }) = classify(EVALUO_PAGO) else {
             panic!("expected Notice");
         };
         assert_eq!(
@@ -56,10 +56,10 @@ mod tests {
         );
         // Not a "no esta disponible" rejection, so it must not become a
         // command error.
-        assert!(TuiScreen::Notice {
+        assert!(TuiScreen::Notice(NoticeScreen {
             message,
             raw: String::new()
-        }
+        })
         .or_err()
         .is_ok());
     }
@@ -73,7 +73,7 @@ mod tests {
         // Notice with leftover bracket characters.
         assert!(matches!(
             classify(HORARIOS_DE_SECCION),
-            TuiScreen::Unknown { .. }
+            TuiScreen::Unknown(UnknownScreen { .. })
         ));
     }
 

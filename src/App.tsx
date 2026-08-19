@@ -9,6 +9,8 @@ import { MainMenuScreen } from "./screens/MainMenu";
 import { LoginScreen } from "./screens/Login";
 import { SelectPeriodScreen } from "./screens/SelectPeriod";
 import { MatriculaScreen } from "./screens/Matricula";
+import { CourseResultsScreen } from "./screens/CourseResults";
+import { WeeklyScheduleScreen } from "./screens/WeeklySchedule";
 import { DisconnectedScreen } from "./screens/Disconnected";
 import { UnknownScreen } from "./screens/Unknown";
 import "./App.css";
@@ -66,17 +68,27 @@ function App() {
   }
 
   // Numbered/lettered menu options read a single keystroke with no Enter
-  // -- send_text, not send_input, or a stray trailing Enter risks getting
+  // -- a "Select", not a "Line", or a stray trailing Enter risks getting
   // consumed as input by whatever screen renders next (live-verified: see
-  // commands.rs's send_text doc comment).
+  // RumadScreen's doc comment in the backend).
   function chooseOption(key: string) {
-    setAction({ cmd: "send_text", args: { text: key } });
+    setAction({ cmd: "send", args: { action: { kind: "Select", key } } });
   }
 
   function sendFreeText(e: Event) {
     e.preventDefault();
-    setAction({ cmd: "send_input", args: { text: freeText() } });
+    setAction({ cmd: "send", args: { action: { kind: "Line", text: freeText() } } });
     setFreeText("");
+  }
+
+  // Read-only screens (CourseResults, WeeklySchedule) have nothing to pick
+  // -- just "Enter to continue", which is a bare Line with no text.
+  function continueScreen() {
+    setAction({ cmd: "send", args: { action: { kind: "Line", text: "" } } });
+  }
+
+  function exitScreen() {
+    setAction({ cmd: "send", args: { action: { kind: "Exit" } } });
   }
 
   function disconnect() {
@@ -166,6 +178,26 @@ function App() {
                   onFreeTextSubmit={sendFreeText}
                 />
               )}
+            </Match>
+
+            <Match when={screen()?.kind === "CourseResults"}>
+              <CourseResultsScreen
+                courseCode={(screen() as Extract<TuiScreen, { kind: "CourseResults" }>).courseCode}
+                courseTitle={(screen() as Extract<TuiScreen, { kind: "CourseResults" }>).courseTitle}
+                sections={(screen() as Extract<TuiScreen, { kind: "CourseResults" }>).sections}
+                busy={busy()}
+                onContinue={continueScreen}
+                onExit={exitScreen}
+              />
+            </Match>
+
+            <Match when={screen()?.kind === "WeeklySchedule"}>
+              <WeeklyScheduleScreen
+                days={(screen() as Extract<TuiScreen, { kind: "WeeklySchedule" }>).days}
+                rows={(screen() as Extract<TuiScreen, { kind: "WeeklySchedule" }>).rows}
+                busy={busy()}
+                onContinue={continueScreen}
+              />
             </Match>
 
             <Match when={screen()?.kind === "Disconnected"}>

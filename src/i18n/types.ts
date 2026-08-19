@@ -19,4 +19,8 @@ export interface Messages {
   errorTitle: string;
   noticeTitle: string;
   authTitle: string;
+  developerMode: string;
+  continueLabel: string;
+  screenExit: string;
+  weeklyScheduleTitle: string;
 }
