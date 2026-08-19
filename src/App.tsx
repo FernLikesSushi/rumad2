@@ -1,61 +1,17 @@
-import { createSignal, createResource, createMemo, createEffect, Match, Switch, For, Show } from "solid-js";
-import { invoke } from "@tauri-apps/api/core";
-import { t, locale, setLocale, type Locale } from "./i18n";
+import { createSignal, createResource, createMemo, createEffect, Match, Switch, Show } from "solid-js";
+import { t } from "./i18n";
+import { runAction } from "./api";
+import type { TuiScreen, Dialog, Action } from "./types";
+import { Header } from "./components/Header";
+import { NoticeDialog } from "./components/NoticeDialog";
+import { ConnectForm } from "./screens/ConnectForm";
+import { MainMenuScreen } from "./screens/MainMenu";
+import { LoginScreen } from "./screens/Login";
+import { SelectPeriodScreen } from "./screens/SelectPeriod";
+import { MatriculaScreen } from "./screens/Matricula";
+import { DisconnectedScreen } from "./screens/Disconnected";
+import { UnknownScreen } from "./screens/Unknown";
 import "./App.css";
-
-type MenuOption = { key: string; label: string };
-type LoginField = { key: string; label: string; hint: string };
-type ScheduleCourse = { slot: string; course: string; section: string; credits: string; status: string };
-type MatriculaPrompt =
-  | { kind: "Actions"; options: MenuOption[] }
-  | { kind: "Bajas" }
-  | { kind: "Altas" }
-  | { kind: "Cambio" };
-
-// Bajas/Altas/Cambio all show the same "course abbreviation, or FIN" free-
-// text prompt -- only the [Bajas]/[Altas]/[Cambio] tag differs on-screen.
-const FREE_TEXT_PROMPTS = new Set(["Bajas", "Altas", "Cambio"]);
-
-type TuiScreen =
-  | { kind: "MainMenu"; options: MenuOption[] }
-  | { kind: "Login"; fields: LoginField[] }
-  | { kind: "SelectPeriod"; options: MenuOption[] }
-  | { kind: "Matricula"; courses: ScheduleCourse[]; prompt: MatriculaPrompt }
-  | { kind: "Notice"; message: string; raw: string }
-  | { kind: "Disconnected" }
-  | { kind: "Unknown"; raw: string; options: MenuOption[] };
-
-type Dialog = { title: string; message: string };
-
-type Action =
-  | { cmd: "connect"; args: { username?: string; password?: string } }
-  | { cmd: "send_input"; args: { text: string } }
-  | { cmd: "login"; args: { idNumber: string; accessCode: string; ssnLast4: string; birthDate: string } }
-  | { cmd: "disconnect"; args: {} };
-
-// The resource's fetcher: `null` means "session ended",
-// anything else is whatever the invoked command
-// resolved to.
-async function runAction(action: Action): Promise<TuiScreen | null> {
-  if (action.cmd === "disconnect") {
-    await invoke("disconnect");
-    return null;
-  }
-  if (action.cmd === "login") {
-    // Fixed-width auto-advancing fields, confirmed by the user: fill each
-    // one in order with no separator keystroke -- the remote warns
-    // against pressing Enter, so `send_text` (no trailing Enter) is used
-    // for every field, including the last.
-    const { idNumber, accessCode, ssnLast4, birthDate } = action.args;
-    await invoke<TuiScreen>("send_text", { text: idNumber });
-    await invoke<TuiScreen>("send_text", { text: accessCode });
-    await invoke<TuiScreen>("send_text", { text: ssnLast4 });
-    return invoke<TuiScreen>("send_text", { text: birthDate });
-  }
-  return invoke<TuiScreen>(action.cmd, action.args);
-}
-
-const LOCALES: Locale[] = ["es", "en"];
 
 function App() {
   const [username, setUsername] = createSignal("");
@@ -109,8 +65,12 @@ function App() {
     });
   }
 
+  // Numbered/lettered menu options read a single keystroke with no Enter
+  // -- send_text, not send_input, or a stray trailing Enter risks getting
+  // consumed as input by whatever screen renders next (live-verified: see
+  // commands.rs's send_text doc comment).
   function chooseOption(key: string) {
-    setAction({ cmd: "send_input", args: { text: key } });
+    setAction({ cmd: "send_text", args: { text: key } });
   }
 
   function sendFreeText(e: Event) {
@@ -147,200 +107,81 @@ function App() {
 
   return (
     <main class="container">
-      <div class="header">
-        <h1>
-          {t().title}
-          <Show when={busy()}>
-            <span class="spinner" role="status" aria-label={t().loading} />
-          </Show>
-        </h1>
-        <div class="locale-switch">
-          <For each={LOCALES}>
-            {(l) => (
-              <button classList={{ active: locale() === l }} onClick={() => setLocale(l)}>
-                {l.toUpperCase()}
-              </button>
-            )}
-          </For>
-        </div>
-      </div>
-
-      <Show when={dialog()}>
-        {(d) => (
-          <div class="dialog-overlay" onClick={() => setDialog(null)}>
-            <div class="dialog" role="alertdialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-              <h3>{d().title}</h3>
-              <p>{d().message}</p>
-              <button onClick={() => setDialog(null)}>{t().close}</button>
-            </div>
-          </div>
-        )}
-      </Show>
+      <Header busy={busy()} />
+      <NoticeDialog dialog={dialog()} onClose={() => setDialog(null)} />
 
       <Show
         when={screen()}
         fallback={
-          <form
-            class="login"
+          <ConnectForm
+            username={username()}
+            password={password()}
+            onUsernameInput={setUsername}
+            onPasswordInput={setPassword}
             onSubmit={(e) => {
               e.preventDefault();
               connect();
             }}
-          >
-            <p class="hint">{t().loginHint}</p>
-            <input
-              placeholder={t().usernamePlaceholder}
-              value={username()}
-              onInput={(e) => setUsername(e.currentTarget.value)}
-            />
-            <input
-              type="password"
-              placeholder={t().passwordPlaceholder}
-              value={password()}
-              onInput={(e) => setPassword(e.currentTarget.value)}
-            />
-            <button type="submit" disabled={busy()}>
-              {busy() ? t().connecting : t().connect}
-            </button>
-          </form>
+            busy={busy()}
+          />
         }
       >
         <div class="screen">
           <Switch>
             <Match when={screen()?.kind === "MainMenu"}>
-              <h2>MENU PRINCIPAL</h2>
-              <div class="options">
-                <For each={(screen() as Extract<TuiScreen, { kind: "MainMenu" }>).options}>
-                  {(option) => (
-                    <button disabled={busy()} onClick={() => chooseOption(option.key)}>
-                      {option.key}. {option.label}
-                    </button>
-                  )}
-                </For>
-              </div>
+              <MainMenuScreen
+                options={(screen() as Extract<TuiScreen, { kind: "MainMenu" }>).options}
+                busy={busy()}
+                onChoose={chooseOption}
+              />
             </Match>
 
             <Match when={screen()?.kind === "Login"}>
-              <h2>{t().authTitle}</h2>
-              <form class="login" onSubmit={submitLogin}>
-                <For each={(screen() as Extract<TuiScreen, { kind: "Login" }>).fields}>
-                  {(field) => (
-                    <input
-                      type="password"
-                      placeholder={`${field.label} (${field.hint})`}
-                      value={loginValues()[field.key] ?? ""}
-                      onInput={(e) =>
-                        setLoginValues({ ...loginValues(), [field.key]: e.currentTarget.value })
-                      }
-                    />
-                  )}
-                </For>
-                <button type="submit" disabled={busy()}>
-                  {t().send}
-                </button>
-              </form>
+              <LoginScreen
+                fields={(screen() as Extract<TuiScreen, { kind: "Login" }>).fields}
+                values={loginValues()}
+                onChange={(key, value) => setLoginValues({ ...loginValues(), [key]: value })}
+                onSubmit={submitLogin}
+                busy={busy()}
+              />
             </Match>
 
             <Match when={screen()?.kind === "SelectPeriod"}>
-              <h2>Indique Semestre</h2>
-              <div class="options">
-                <For each={(screen() as Extract<TuiScreen, { kind: "SelectPeriod" }>).options}>
-                  {(option) => (
-                    <button disabled={busy()} onClick={() => chooseOption(option.key)}>
-                      {option.key}={option.label}
-                    </button>
-                  )}
-                </For>
-              </div>
+              <SelectPeriodScreen
+                options={(screen() as Extract<TuiScreen, { kind: "SelectPeriod" }>).options}
+                busy={busy()}
+                onChoose={chooseOption}
+              />
             </Match>
 
             <Match when={matricula()}>
               {(m) => (
-                <>
-                  <h2>M A T R I C U L A</h2>
-                  <table class="courses">
-                    <thead>
-                      <tr>
-                        <th>Curso</th>
-                        <th>Seccion</th>
-                        <th>Cr.</th>
-                        <th>Grado</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <For each={m().courses}>
-                        {(c) => (
-                          <tr>
-                            <td>{c.course}</td>
-                            <td>{c.section}</td>
-                            <td>{c.credits}</td>
-                            <td>{c.status}</td>
-                          </tr>
-                        )}
-                      </For>
-                    </tbody>
-                  </table>
-
-                  <Show when={m().prompt.kind === "Actions"}>
-                    <div class="options">
-                      <For
-                        each={(m().prompt as Extract<MatriculaPrompt, { kind: "Actions" }>).options}
-                      >
-                        {(option) => (
-                          <button disabled={busy()} onClick={() => chooseOption(option.key)}>
-                            {option.key}={option.label}
-                          </button>
-                        )}
-                      </For>
-                    </div>
-                  </Show>
-
-                  <Show when={FREE_TEXT_PROMPTS.has(m().prompt.kind)}>
-                    <form class="row" onSubmit={sendFreeText}>
-                      <input
-                        placeholder={t().sendPlaceholder}
-                        value={freeText()}
-                        onInput={(e) => setFreeText(e.currentTarget.value)}
-                      />
-                      <button type="submit" disabled={busy()}>
-                        {t().send}
-                      </button>
-                    </form>
-                  </Show>
-                </>
+                <MatriculaScreen
+                  courses={m().courses}
+                  prompt={m().prompt}
+                  busy={busy()}
+                  onChoose={chooseOption}
+                  freeText={freeText()}
+                  onFreeTextInput={setFreeText}
+                  onFreeTextSubmit={sendFreeText}
+                />
               )}
             </Match>
 
             <Match when={screen()?.kind === "Disconnected"}>
-              <h2>{t().disconnectedTitle}</h2>
-              <p class="hint">{t().disconnectedHint}</p>
-              <button disabled={busy()} onClick={reconnect}>
-                {t().reconnect}
-              </button>
+              <DisconnectedScreen busy={busy()} onReconnect={reconnect} />
             </Match>
 
             <Match when={screen()?.kind === "Unknown"}>
-              <p class="hint">{t().unknownHint}</p>
-              <pre class="raw">{(screen() as Extract<TuiScreen, { kind: "Unknown" }>).raw}</pre>
-              <div class="options">
-                <For each={(screen() as Extract<TuiScreen, { kind: "Unknown" }>).options}>
-                  {(option) => (
-                    <button disabled={busy()} onClick={() => chooseOption(option.key)}>
-                      {option.key}. {option.label}
-                    </button>
-                  )}
-                </For>
-              </div>
-              <form class="row" onSubmit={sendFreeText}>
-                <input
-                  placeholder={t().sendPlaceholder}
-                  value={freeText()}
-                  onInput={(e) => setFreeText(e.currentTarget.value)}
-                />
-                <button type="submit" disabled={busy()}>
-                  {t().send}
-                </button>
-              </form>
+              <UnknownScreen
+                raw={(screen() as Extract<TuiScreen, { kind: "Unknown" }>).raw}
+                options={(screen() as Extract<TuiScreen, { kind: "Unknown" }>).options}
+                busy={busy()}
+                onChoose={chooseOption}
+                freeText={freeText()}
+                onFreeTextInput={setFreeText}
+                onFreeTextSubmit={sendFreeText}
+              />
             </Match>
           </Switch>
 
