@@ -1,9 +1,9 @@
 import { createSignal } from "solid-js";
-import { t } from "./i18n";
-import { runAction } from "./api";
-import { NoticeDialog } from "./components/NoticeDialog";
-import { ConnectForm } from "./screens/ConnectForm";
-import type { ClassifiedScreen, DialogBox } from "./types";
+import { t } from "../i18n";
+import { runAction } from "../api";
+import { NoticeDialog } from "../components/NoticeDialog";
+import { ConnectForm } from "../screens/ConnectForm";
+import type { ClassifiedScreen, DialogBox } from "../types";
 
 // The pre-connection page: owns the initial `connect` call and its own
 // local busy/error state -- there's no TUI session yet for anything else

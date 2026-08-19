@@ -1,9 +1,14 @@
-import { createSignal } from "solid-js";
+import { createEffect, createSignal } from "solid-js";
 import { t } from "../i18n";
+import { loadUsername, saveUsername } from "../username";
 
 export function ConnectForm(props: { onConnect: (username: string, password: string) => void; busy: boolean }) {
-  const [username, setUsername] = createSignal("");
+  const [username, setUsername] = createSignal(loadUsername());
   const [password, setPassword] = createSignal("");
+
+  createEffect(() => {
+    saveUsername(username());
+  });
 
   function submit(e: Event) {
     e.preventDefault();

@@ -1,18 +1,21 @@
 import { createSignal, createResource, createMemo, createEffect, onMount, onCleanup, Match, Switch, Show } from "solid-js";
 import { listen } from "@tauri-apps/api/event";
-import { t } from "./i18n";
-import { runAction } from "./api";
-import type { TuiScreen, ClassifiedScreen, DialogBox, Action, Send } from "./types";
-import { NoticeDialog } from "./components/NoticeDialog";
-import { Spinner } from "./components/Spinner";
-import { MenuScreen } from "./screens/MenuScreen";
-import { LoginScreen } from "./screens/Login";
-import { MatriculaScreen } from "./screens/Matricula";
-import { CourseResultsScreen } from "./screens/CourseResults";
-import { WeeklyScheduleScreen } from "./screens/WeeklySchedule";
-import { SearchScreen } from "./screens/SearchScreen";
-import { DisconnectedScreen } from "./screens/Disconnected";
-import { UnknownScreen } from "./screens/Unknown";
+import { t } from "../i18n";
+import { runAction } from "../api";
+import { devMode, setDevMode } from "../devMode";
+import type { TuiScreen, ClassifiedScreen, DialogBox, Action, Send } from "../types";
+import { NoticeDialog } from "../components/NoticeDialog";
+import { Spinner } from "../components/Spinner";
+import { Toggle } from "../components/Toggle";
+import { MenuScreen } from "../screens/MenuScreen";
+import { LoginScreen } from "../screens/Login";
+import { MatriculaScreen } from "../screens/Matricula";
+import { CourseResultsScreen } from "../screens/CourseResults";
+import { WeeklyScheduleScreen } from "../screens/WeeklySchedule";
+import { SearchScreen } from "../screens/SearchScreen";
+import { DisconnectedScreen } from "../screens/Disconnected";
+import { UnknownScreen } from "../screens/Unknown";
+import "../components/Header.css";
 
 // Everything TUI-state-related once a connection exists: `Connect` owns
 // just the initial `connect` call and hands the resulting `initial`
@@ -143,6 +146,13 @@ export function TuiRouter(props: { initial: ClassifiedScreen; onDisconnected: ()
 
   return (
     <>
+      <div class="header">
+        <h1>{t().title}</h1>
+        <div class="header-controls">
+          <Toggle label={t().developerMode} checked={devMode()} onChange={setDevMode} />
+        </div>
+      </div>
+
       <NoticeDialog dialog={dialogBox()} onClose={() => setDialogBox(null)} />
 
       <div class="screen">
