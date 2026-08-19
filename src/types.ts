@@ -20,23 +20,45 @@ export type CourseSection = {
 
 export type ScheduleRow = { period: string; days: string[] };
 
+// Mirrors Rust's `MenuKind`/`SearchKind` -- which of the four numbered/
+// lettered menus, or which of the two bare free-text searches, a given
+// `Menu`/`Search` screen is. Both Rust structs share one shape across
+// every kind (see `MenuScreen`/`SearchScreen`'s own doc comments); only
+// the frontend's title/hint text differs per kind, picked by the
+// component itself rather than threaded in from the backend (same
+// tradeoff as `Login`'s fields -- fixed, known text, not scraped data).
+export type MenuKind = "MainMenu" | "MenuDespliegue" | "SelectPeriod" | "HorarioSemester";
+export type SearchKind = "HorarioCurso" | "HorarioSeccion";
+
 export type TuiScreen =
-  | { kind: "MainMenu"; options: MenuOption[] }
+  | { kind: "Menu"; menu: MenuKind; options: MenuOption[] }
   | { kind: "Login"; fields: LoginField[] }
-  | { kind: "SelectPeriod"; options: MenuOption[] }
   | { kind: "Matricula"; courses: ScheduleCourse[]; mode: MatriculaMode }
   | { kind: "CourseResults"; courseCode: string; courseTitle: string; sections: CourseSection[] }
   | { kind: "WeeklySchedule"; days: string[]; rows: ScheduleRow[] }
-  | { kind: "MenuDespliegue"; options: MenuOption[] }
-  | { kind: "HorarioSemester"; options: MenuOption[] }
-  | { kind: "HorarioCurso" }
-  | { kind: "HorarioSeccion" }
-  | { kind: "Processing" }
-  | { kind: "Notice"; message: string; raw: string }
+  | { kind: "Search"; search: SearchKind }
   | { kind: "Disconnected" }
   | { kind: "Unknown"; raw: string; options: MenuOption[] };
 
-export type Dialog = { title: string; message: string };
+// Mirrors Rust's `Dialog` -- a message shown *alongside* whatever
+// `TuiScreen` is currently rendering, never a screen replacement itself.
+// See `ClassifiedScreen`.
+export type Dialog = { kind: "Notice"; message: string; raw: string } | { kind: "Processing" };
+
+// Mirrors Rust's `ClassifiedScreen`: every command/event resolves to one
+// of these, always a fresh `TuiScreen` plus an optional `Dialog` overlaid
+// on top of it -- App.tsx renders `screen` directly (no more "keep
+// showing the previous screen while a Notice is up" reducer trick the old
+// design needed) and derives the notice/processing UI from `dialog`
+// alongside it. `canExit` mirrors `RumadScreen::can_exit` -- whether the
+// one shared exit control should render, instead of each screen component
+// deciding that for itself.
+export type ClassifiedScreen = { screen: TuiScreen; dialog: Dialog | null; canExit: boolean };
+
+// UI state for the notice dialog component -- derived from a `Dialog`
+// (specifically `Notice`; `Processing` doesn't open this), not the same
+// thing as one.
+export type DialogBox = { title: string; message: string };
 
 // Mirrors Rust's `SendAction` (`commands/interact.rs`) -- the backend
 // re-classifies the current screen and dispatches through its own

@@ -47,23 +47,25 @@ export interface Messages {
   // the remote -- they're fixed, always-the-same structural labels for a
   // given screen kind, not per-user data, so hardcoding-and-localizing
   // them is the same tradeoff as `loginFields`, just per-screen instead
-  // of per-field.
-  mainMenuTitle: string;
-  menuDespliegueTitle: string;
+  // of per-field. Keyed by `MenuKind`/`SearchKind` (mirroring the Rust
+  // structs those merge into, `MenuScreen`/`SearchScreen`) rather than
+  // four/two separate named keys, so the catalog can't drift out of sync
+  // with the merged type the way four independent keys could.
+  menuTitles: { MainMenu: string; MenuDespliegue: string; SelectPeriod: string };
+  // `HorarioSemester` (one of the four `MenuKind`s) and both `SearchKind`s
+  // share this one title -- the real remote header ("* HORARIO DE
+  // MATRICULA *") is identical across all three, since they're three
+  // steps of the same "Horario de cursos disponibles en Matricula" flow.
   horarioMatriculaTitle: string;
-  // `HorarioCursoScreen` carries no data of its own (see its Rust doc
-  // comment) -- its "(Ej. QUIM3001L) Puede indicar solo MATERIA" hint is
-  // fixed boilerplate, not per-user scraped content, so it's hardcoded and
-  // localized here rather than threaded across the wire, same tradeoff as
+  // `SearchScreen` carries no data of its own (see its Rust doc comment)
+  // -- its "(Ej. QUIM3001L)"/"(Ej. 001#)" hints are fixed boilerplate, not
+  // per-user scraped content, so they're hardcoded and localized here
+  // rather than threaded across the wire, same tradeoff as
   // `loginFields`/the screen titles above.
-  horarioCursoHint: string;
-  // Same tradeoff as `horarioCursoHint`, for `HorarioSeccionScreen`'s
-  // "(Ej. 001#)" hint.
-  horarioSeccionHint: string;
-  // `TuiScreen::Processing` (the remote's "Programa en Proceso" marquee)
+  searchHints: { HorarioCurso: string; HorarioSeccion: string };
+  // `Dialog::Processing` (the remote's "Programa en Proceso" marquee)
   // carries no data either -- see that variant's Rust doc comment.
   processingTitle: string;
-  selectPeriodTitle: string;
   matriculaTitle: string;
   matriculaColumns: { course: string; section: string; credits: string; status: string };
   courseResultsColumns: {

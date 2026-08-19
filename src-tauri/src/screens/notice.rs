@@ -1,31 +1,30 @@
 //! The remote's generalized advisory patterns -- lines that are *entirely*
 //! wrapped in a marker on both sides, e.g. "<< message >>" or "*** message
-//! ***". Split into two priority tiers, both checked directly by
-//! `classify` (not bundled into one function) since they don't agree on
-//! how urgently they need to win:
+//! ***". `classify` runs `detect_dialog` (which calls these) and
+//! `classify_screen` independently against the same raw text and combines
+//! the results (see `ClassifiedScreen`), so unlike the old design, these
+//! don't need to worry about "swallowing" a specific screen type -- only
+//! about not misreading a screen's own boilerplate as an advisory.
 //!
 //! - `extract_starred_notice` ("*** message ***") is, in every
-//!   live-observed *rejection* instance, actually a rejection like the
-//!   "no esta disponible" one `classify` already special-cases ("Curso
+//!   live-observed instance but one, actually a rejection ("Curso
 //!   incorrecto", "NO tiene Matricula", "Curso NO Existe en Archivo
 //!   MTR-HORARIO") -- shown *on top of* the same prompt that triggered it
-//!   (`HorarioCurso`/`HorarioSeccion`'s own footer stays on screen
-//!   underneath). Checked at high priority for the same reason as that
-//!   one: matching the screen type first would silently swallow the
-//!   rejection instead of surfacing it. One screen also genuinely uses
-//!   this same marker as a plain title, not a rejection --
-//!   `CourseResultsScreen`'s own "*** Horarios de Matricula ***" header --
-//!   so `classify` checks this *after* `CourseResults`'s own detection
-//!   specifically, unlike the "no esta disponible" check (see `classify`'s
-//!   own comments for the exact ordering).
+//!   (`SearchScreen`'s own footer stays on screen underneath). The one
+//!   exception, `CourseResultsScreen`'s own "*** Horarios de Matricula
+//!   ***" header, is a plain title, not a rejection -- excluded by exact
+//!   text match rather than by ordering tricks, now that dialog detection
+//!   doesn't depend on which screen type also matched.
 //! - `extract_bracketed_or_boxed_notice` ("<< message >>", or a boxed
 //!   "****...****" variant) is genuinely just informational in every
-//!   observed instance (a disclaimer, a redirect) rather than a rejection,
-//!   so it stays low priority -- checked last, right before the `Unknown`
-//!   fallback, so it never overrides an already-modeled screen.
+//!   observed instance (a disclaimer, a redirect) rather than a rejection.
 
 use regex::Regex;
 use std::sync::OnceLock;
+
+/// `CourseResultsScreen`'s own header, not a rejection -- see this
+/// module's doc comment.
+const COURSE_RESULTS_TITLE: &str = "Horarios de Matricula";
 
 fn bracketed_notice_pattern() -> &'static Regex {
     static PATTERN: OnceLock<Regex> = OnceLock::new();
@@ -64,6 +63,7 @@ fn extract_matching_line(raw: &str, pattern: &Regex) -> Option<String> {
 /// See this module's doc comment -- checked at high priority.
 pub(super) fn extract_starred_notice(raw: &str) -> Option<String> {
     extract_matching_line(raw, starred_notice_pattern())
+        .filter(|message| message != COURSE_RESULTS_TITLE)
 }
 
 /// See this module's doc comment -- checked at low priority. Deliberately
@@ -110,7 +110,7 @@ fn extract_boxed_notice(raw: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::screens::{classify, NoticeScreen, TuiScreen, UnknownScreen};
+    use crate::screens::{classify, Dialog, TuiScreen, UnknownScreen};
 
     const EVALUO_PAGO: &str = include_str!("../../../screens/matricula/evaluo_pago.txt");
     const HORARIOS_DE_SECCION: &str =
@@ -122,9 +122,10 @@ mod tests {
     fn bracketed_notice_on_an_unmodeled_screen_is_extracted_cleanly() {
         // evaluo_pago.txt (the payment/invoice screen) isn't specifically
         // modeled, but its "<< ... >>" disclaimer should still be pulled
-        // out as a Notice message rather than left buried in raw text.
-        let TuiScreen::Notice(NoticeScreen { message, .. }) = classify(EVALUO_PAGO) else {
-            panic!("expected Notice");
+        // out as a Dialog::Notice rather than left buried in raw text.
+        let result = classify(EVALUO_PAGO);
+        let Some(Dialog::Notice { message, .. }) = &result.dialog else {
+            panic!("expected a Notice dialog");
         };
         assert_eq!(
             message,
@@ -132,12 +133,7 @@ mod tests {
         );
         // Not a "no esta disponible" rejection, so it must not become a
         // command error.
-        assert!(TuiScreen::Notice(NoticeScreen {
-            message,
-            raw: String::new()
-        })
-        .or_err()
-        .is_ok());
+        assert!(result.or_err().is_ok());
     }
 
     #[test]
@@ -147,10 +143,9 @@ mod tests {
         // message >>" advisory. It isn't a modeled screen either, so this
         // should land in Unknown with the raw text intact, not a mangled
         // Notice with leftover bracket characters.
-        assert!(matches!(
-            classify(HORARIOS_DE_SECCION),
-            TuiScreen::Unknown(UnknownScreen { .. })
-        ));
+        let result = classify(HORARIOS_DE_SECCION);
+        assert!(matches!(result.screen, TuiScreen::Unknown(UnknownScreen { .. })));
+        assert_eq!(result.dialog, None);
     }
 
     #[test]
@@ -171,12 +166,13 @@ mod tests {
         // Live-observed: browsing a period the student has no enrolled
         // schedule for shows this in place of the usual course table.
         let raw = "*** NO tiene Matricula ***";
-        let TuiScreen::Notice(NoticeScreen { message, .. }) = classify(raw) else {
-            panic!("expected Notice");
-        };
-        assert_eq!(message, "NO tiene Matricula");
+        let result = classify(raw);
+        assert_eq!(
+            result.dialog,
+            Some(Dialog::Notice { message: "NO tiene Matricula".to_string(), raw: raw.to_string() })
+        );
         // Informational, not a rejection -- must not become a command error.
-        assert!(classify(raw).or_err().is_ok());
+        assert!(result.or_err().is_ok());
     }
 
     #[test]
@@ -191,36 +187,47 @@ mod tests {
     }
 
     #[test]
+    fn starred_notice_excludes_course_results_own_title() {
+        // The one known non-rejection instance of the "*** ... ***"
+        // marker -- see this module's doc comment.
+        assert_eq!(extract_starred_notice("*** Horarios de Matricula ***"), None);
+    }
+
+    #[test]
     fn starred_rejection_wins_over_the_prompt_still_showing_underneath_it() {
         // Live-observed: searching a course/section that doesn't exist
         // redisplays the *same* HorarioSeccion prompt with the rejection
         // still on screen (grounded in a real capture), rather than
-        // replacing it entirely -- the rejection must still win, the same
-        // way "no esta disponible" already does for MainMenu.
+        // replacing it entirely -- both the (still-classified) screen and
+        // the rejection dialog must come through together.
         let raw = "\
 S e c c i o n  (Ej. 001#)                                          [PF4=(9)Fin]
 
                ***  Curso NO Existe en Archivo MTR-HORARIO  ***";
-        let TuiScreen::Notice(NoticeScreen { message, .. }) = classify(raw) else {
-            panic!("expected Notice");
+        let result = classify(raw);
+        assert!(matches!(result.screen, TuiScreen::Search(_)));
+        let Some(Dialog::Notice { message, .. }) = &result.dialog else {
+            panic!("expected a Notice dialog");
         };
         assert_eq!(message, "Curso NO Existe en Archivo MTR-HORARIO");
-        assert!(classify(raw).or_err().is_ok());
+        assert!(result.or_err().is_ok());
     }
 
     #[test]
     fn boxed_notice_is_extracted_and_joined_into_one_message() {
         // MENU DESPLIEGUE option 5 (Turno de seleccion...) -- a redirect
         // notice wrapped in a full "****...****"-bordered box, its text
-        // word-wrapped across several rows.
-        let TuiScreen::Notice(NoticeScreen { message, .. }) = classify(TURNO_SELECCION) else {
-            panic!("expected Notice");
-        };
+        // word-wrapped across several rows. Nothing else is on this
+        // screen, so it classifies as `Unknown` alongside the dialog.
+        let result = classify(TURNO_SELECCION);
         assert_eq!(
-            message,
-            "Su TURNO para seleccion de cursos y secciones o las fechas de los examenes finales los podran ver a traves de Mi Portal Colegial en home.uprm.edu"
+            result.dialog,
+            Some(Dialog::Notice {
+                message: "Su TURNO para seleccion de cursos y secciones o las fechas de los examenes finales los podran ver a traves de Mi Portal Colegial en home.uprm.edu".to_string(),
+                raw: TURNO_SELECCION.to_string(),
+            })
         );
         // Informational, not a rejection -- must not become a command error.
-        assert!(classify(TURNO_SELECCION).or_err().is_ok());
+        assert!(result.or_err().is_ok());
     }
 }

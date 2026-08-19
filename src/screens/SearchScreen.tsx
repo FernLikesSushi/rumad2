@@ -1,9 +1,9 @@
 import { createSignal } from "solid-js";
 import { t } from "../i18n";
 import { FreeTextForm } from "../components/FreeTextForm";
-import type { Send } from "../types";
+import type { SearchKind, Send } from "../types";
 
-export function HorarioSeccionScreen(props: { busy: boolean; send: Send }) {
+export function SearchScreen(props: { search: SearchKind; busy: boolean; send: Send }) {
   const [text, setText] = createSignal("");
 
   function submit(text: string) {
@@ -11,18 +11,11 @@ export function HorarioSeccionScreen(props: { busy: boolean; send: Send }) {
     setText("");
   }
 
-  function exitScreen() {
-    props.send({ kind: "Exit" });
-  }
-
   return (
     <>
       <h2>{t().horarioMatriculaTitle}</h2>
-      <p class="hint">{t().horarioSeccionHint}</p>
+      <p class="hint">{t().searchHints[props.search]}</p>
       <FreeTextForm value={text()} onInput={setText} onSubmit={submit} busy={props.busy} />
-      <button disabled={props.busy} onClick={exitScreen}>
-        {t().screenExit}
-      </button>
     </>
   );
 }

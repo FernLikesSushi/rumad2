@@ -37,13 +37,17 @@ const es: Messages = {
     ssnLast4: { label: "Seguro Social (últimos 4)", hint: "Ej. 1234" },
     birthDate: { label: "Fecha de Nacimiento", hint: "Ej. MMDDAAAA" },
   },
-  mainMenuTitle: "MENU PRINCIPAL",
-  menuDespliegueTitle: "MENU DESPLIEGUE",
+  menuTitles: {
+    MainMenu: "MENU PRINCIPAL",
+    MenuDespliegue: "MENU DESPLIEGUE",
+    SelectPeriod: "Indique Semestre",
+  },
   horarioMatriculaTitle: "HORARIO DE MATRICULA",
-  horarioCursoHint: "Curso (Ej. QUIM3001L) - Puede indicar solo MATERIA",
-  horarioSeccionHint: "Seccion (Ej. 001#)",
+  searchHints: {
+    HorarioCurso: "Curso (Ej. QUIM3001L) - Puede indicar solo MATERIA",
+    HorarioSeccion: "Seccion (Ej. 001#)",
+  },
   processingTitle: "Programa en Proceso",
-  selectPeriodTitle: "Indique Semestre",
   matriculaTitle: "M A T R I C U L A",
   matriculaColumns: { course: "Curso", section: "Seccion", credits: "Cr.", status: "Grado" },
   courseResultsColumns: {

@@ -1,0 +1,22 @@
+19/ago/2026           RECINTO UNIVERSITARIO DE MAYAGUEZ                 2:35 pm
+                        *** Horarios de Matricula ***
+                   ESTADO DE SECCIONES  1er Sem  2026-2027
+
+C u r s o:  BIOL 3011L       ---> LABORATORIO DE BIOLOGIA I
+
+Sec.  Salon    Periodos            Crd.  Profesor              Cap.  Uti.  Disp.
+----  -----    --------            ----  --------              ----  ----  -----
+015L* L 210  W        8:15- 9:05     0                          28    17    11
+016L* L 208A W        8:15- 9:05     0                          28    28    00
+035L* L 210  W        8:15-10:05     0                          29    29    00
+036L* L 208A W        8:15-10:05     0                          29    29    00
+055L* L 210  W       10:15- 1:05pm   0                          29    27    02
+056L* L 208A W       10:15- 1:05pm   0                          15    28    13-
+
+
+                     * Totales: BIOL 3011L     6 secciones     158   158    00
+
+
+
+
+                                               < Oprima Enter o [PF4(9)=Fin] >

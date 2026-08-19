@@ -1,5 +1,7 @@
 //! Turns the raw VT100 screen text from a `TuiSession` into a typed
-//! `TuiScreen` the frontend can render as native UI instead of a terminal.
+//! `ClassifiedScreen` the frontend can render as native UI instead of a
+//! terminal: always a `TuiScreen` (freshly re-derived from the current raw
+//! text every time), plus an optional `Dialog` overlaid on top of it.
 //!
 //! Every real student connects over SSH as the same shared `estudiante`
 //! account (that's transport-layer only -- SSH auth is *not* the real
@@ -7,96 +9,93 @@
 //! `MENU PRINCIPAL` and answers account-specific options (like "Seleccion
 //! de Secciones") with "Cuenta ESTUDIANTE NO esta disponible por el
 //! momento" -- a temporary service-window/maintenance rejection
-//! (`TuiScreen::or_err` promotes it to a command error) rather than ever
-//! reaching the real per-student flow. With a real account, selecting
+//! (`ClassifiedScreen::or_err` promotes it to a command error) rather than
+//! ever reaching the real per-student flow. With a real account, selecting
 //! "Seleccion de Secciones" instead leads to: `Login` (a 4-field
 //! ID/PIN/SSN-last-4/birth-date form -- the *actual* authentication,
-//! separate from SSH) -> `SelectPeriod` (which semester) -> `Matricula`
-//! (the student's course schedule, with an action menu and `Altas`/`Bajas`
-//! add/drop-course sub-modes). `MENU PRINCIPAL`'s option 5 ("Ver otra
-//! informacion") leads to a separate submenu, `MenuDespliegue`
-//! ("MENU DESPLIEGUE"), with its own read-only screens: option 5
-//! ("Turno de seleccion...") is a static redirect notice (`turno_seleccion.txt`,
-//! caught by `notice::extract_bracketed_or_boxed_notice`'s boxed case, not a
+//! separate from SSH) -> `Menu(SelectPeriod)` (which semester) ->
+//! `Matricula` (the student's course schedule, with an action menu and
+//! `Altas`/`Bajas` add/drop-course sub-modes). `MENU PRINCIPAL`'s option 5
+//! ("Ver otra informacion") leads to a separate submenu,
+//! `Menu(MenuDespliegue)` ("MENU DESPLIEGUE"), with its own read-only
+//! screens: option 5 ("Turno de seleccion...") is a static redirect
+//! notice (`turno_seleccion.txt`, caught by
+//! `notice::extract_bracketed_or_boxed_notice`'s boxed case, not a
 //! dedicated variant -- there's nothing else on that screen), and option 6
-//! ("Horario de cursos disponibles en Matricula") is `HorarioSemester` (pick
-//! a semester) -> `HorarioCurso` (search a course code) -> `HorarioSeccion`
-//! (narrow a multi-section course down to one) -> `CourseResults` (the
-//! results -- also reachable from `WeeklySchedule`'s sibling option 8,
-//! "Horario de matricula grafico", the student's own schedule as a day/time
-//! grid) -- all distinct from `Matricula`'s interactive course list.
-//! Grounded in real transcripts captured by the user with a real account:
-//! `screens/login.txt`, `screens/matricula/*.txt`, and
-//! `screens/menu_despliegue/*.txt` at the repo root (that directory can
-//! gain new files or be reorganized as the user captures more -- re-check
-//! paths rather than assuming). The remote also wraps advisory/event
-//! messages in a marker on both sides of a line by itself -- "*** message
-//! ***" (checked at high priority, since it's a rejection shown on top of
-//! whatever screen triggered it -- see `notice::extract_starred_notice`)
-//! or "<< message >>" (distinct from a bracketed key hint embedded
-//! mid-instruction, like "Oprima <<Enter>> para Continuar", which is not a
-//! notice; checked low-priority as a fallback for screens not otherwise
-//! modeled yet, via `notice::extract_bracketed_or_boxed_notice`).
-//! Anything still not recognized falls back to `Unknown`,
-//! which still carries the raw text and any numbered options
-//! `scrape::scrape_options` can find, so the app stays usable rather than
-//! blocking on it.
+//! ("Horario de cursos disponibles en Matricula") is `Menu(HorarioSemester)`
+//! (pick a semester) -> `Search(HorarioCurso)` (search a course code) ->
+//! `Search(HorarioSeccion)` (narrow a multi-section course down to one) ->
+//! `CourseResults` (the results -- also reachable from `WeeklySchedule`'s
+//! sibling option 8, "Horario de matricula grafico", the student's own
+//! schedule as a day/time grid) -- all distinct from `Matricula`'s
+//! interactive course list. Grounded in real transcripts captured by the
+//! user with a real account: `screens/login.txt`, `screens/matricula/*.txt`,
+//! and `screens/menu_despliegue/*.txt` at the repo root (that directory
+//! can gain new files or be reorganized as the user captures more --
+//! re-check paths rather than assuming).
 //!
-//! Each screen type that has dedicated data (`Login`, `SelectPeriod`,
-//! `Matricula`, `CourseResults`, `WeeklySchedule`, `MenuDespliegue`,
-//! `HorarioSemester`, `HorarioCurso`, `HorarioSeccion`) gets its own
-//! submodule for its types/scrapers/tests; the `classify` priority chain
-//! itself stays in this file rather than being scattered, since the
-//! *order* checks run in is a deliberate, tested invariant -- see the
-//! module-level comments below for why.
+//! **Dialogs overlay screens, they aren't screens themselves.** The
+//! remote sometimes shows a message *alongside* whatever's already
+//! rendering -- a rejection ("no esta disponible", "*** message ***"), an
+//! informational aside ("<< message >>", or a boxed "****...****"
+//! variant), or the "Programa en Proceso" marquee while it computes a
+//! result asynchronously -- without replacing that screen's own content,
+//! which stays fully intact and classifiable underneath. `classify` models
+//! this literally: `detect_dialog` and `classify_screen` each scan the
+//! *same* raw text independently and their results are combined into one
+//! `ClassifiedScreen { screen, dialog }`, rather than the old design where
+//! a detected notice would short-circuit and *replace* the screen
+//! (forcing the frontend to separately track "the last real screen" to
+//! paper over that). The one exception is `Disconnected`: the remote
+//! closes the channel shortly after showing it, so there's nothing
+//! underneath left to classify.
+//!
+//! **Identical screens share one struct.** Four real prompts are just a
+//! numbered/lettered list of options (`MenuScreen`, distinguished by
+//! `MenuKind`); two are an identical bare free-text search with no data of
+//! their own (`SearchScreen`, distinguished by `SearchKind`). Screens that
+//! only *look* similar but aren't -- `CourseResults`/`WeeklySchedule`
+//! being different table shapes, `Login`'s fixed-field form -- stay their
+//! own dedicated types instead of being forced into a shared shape.
+//!
+//! Each screen type that has dedicated data gets its own submodule for its
+//! types/scrapers/tests; `classify`/`classify_screen`/`detect_dialog`
+//! themselves stay in this file rather than being scattered, since they
+//! need every submodule's detection hint in one place to reason about.
 
 mod course_results;
-mod horario_matricula;
 mod interact;
 mod login;
 mod matricula;
-mod menu_despliegue;
+mod menu;
 mod notice;
 mod scrape;
-mod select_period;
+mod search;
 mod weekly_schedule;
 
 use serde::Serialize;
 
 pub(crate) use interact::RumadScreen;
 pub use course_results::{CourseResultsScreen, CourseSection};
-pub use horario_matricula::{HorarioCursoScreen, HorarioSeccionScreen, HorarioSemesterScreen};
 pub use login::{LoginField, LoginScreen};
 pub use matricula::{MatriculaMode, MatriculaScreen, ScheduleCourse};
-pub use menu_despliegue::MenuDespliegueScreen;
-pub use select_period::SelectPeriodScreen;
+pub use menu::{MenuKind, MenuScreen};
+pub use search::{SearchKind, SearchScreen};
 pub use weekly_schedule::{ScheduleRow, WeeklyScheduleScreen};
 
+/// One `key. label` (or `key=label`) entry scraped off a `MenuScreen`,
+/// e.g. `{key: "2", label: "Seleccion de Secciones  (Matricula)"}`.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct MenuOption {
     pub key: String,
     pub label: String,
 }
 
-/// The `MENU PRINCIPAL:` screen, e.g. "1. Seleccion de Secciones".
-#[derive(Debug, Clone, PartialEq, Serialize)]
-pub struct MainMenuScreen {
-    pub options: Vec<MenuOption>,
-}
-
-/// A one-line message shown alongside the current screen, e.g. a
-/// rejection or informational line. Not every `Notice` warrants treating
-/// the action as failed -- see `TuiScreen::or_err` for the one pattern
-/// known to mean that today.
-#[derive(Debug, Clone, PartialEq, Serialize)]
-pub struct NoticeScreen {
-    pub message: String,
-    pub raw: String,
-}
-
-/// Anything not yet recognized. `options` is a best-effort scrape of
-/// numbered lines ("N.  LABEL"), so unmodeled screens are still navigable
-/// from the frontend.
+/// Anything not yet recognized, e.g. `horario_confirmado.txt` or
+/// `reserva.txt` (real captured screens with no dedicated variant yet).
+/// `options` is a best-effort scrape of numbered lines ("N.  LABEL"), so
+/// unmodeled screens are still navigable from the frontend rather than
+/// dead ends.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct UnknownScreen {
     pub raw: String,
@@ -106,7 +105,11 @@ pub struct UnknownScreen {
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(tag = "kind")]
 pub enum TuiScreen {
-    MainMenu(MainMenuScreen),
+    /// A numbered/lettered menu, e.g. `MENU PRINCIPAL`'s "1.  Seleccion de
+    /// Secciones  (Matricula)" ... "0.  SALIR DEL SISTEMA" -- see
+    /// `MenuKind` for the four real prompts this covers and how they
+    /// differ.
+    Menu(MenuScreen),
     /// The real per-student authentication form (ID number, permanent
     /// access code, last 4 of SSN, birth date) shown after selecting
     /// "Seleccion de Secciones" -- separate from and unrelated to the SSH
@@ -114,41 +117,24 @@ pub enum TuiScreen {
     /// warns not to press Enter while filling it in; use `send_text`
     /// (no trailing Enter), not `send_input`.
     Login(LoginScreen),
-    /// "Indique Semestre:" -- which term to browse sections for, shown
-    /// after a successful `Login`.
-    SelectPeriod(SelectPeriodScreen),
     /// The student's course schedule (`M A T R I C U L A`) plus whichever
-    /// sub-mode is currently active.
+    /// sub-mode is currently active, e.g. a course table alongside an
+    /// `Actions` prompt ("A=Alta B=Baja C=Cambio ... S=Salir").
     Matricula(MatriculaScreen),
     /// Read-only search results for one course code (`MENU DESPLIEGUE` ->
-    /// "Horario de cursos disponibles en Matricula") -- every open
-    /// section, with room/schedule/professor/capacity. Not the student's
-    /// own schedule, just a lookup.
+    /// "Horario de cursos disponibles en Matricula"), e.g. "C u r s o:
+    /// HIST 3220" with a table of sections underneath (room/schedule/
+    /// professor/capacity). Not the student's own schedule, just a
+    /// lookup.
     CourseResults(CourseResultsScreen),
-    /// The student's own schedule as a weekly grid (`MENU DESPLIEGUE` ->
-    /// "Horario de matricula grafico") -- purely informational, unlike
-    /// `Matricula`'s interactive course list.
+    /// The student's own schedule as a weekly day/time grid (`MENU
+    /// DESPLIEGUE` -> "Horario de matricula grafico") -- purely
+    /// informational, unlike `Matricula`'s interactive course list.
     WeeklySchedule(WeeklyScheduleScreen),
-    /// `MENU PRINCIPAL`'s option 5 submenu ("Ver otra informacion").
-    MenuDespliegue(MenuDespliegueScreen),
-    /// `MenuDespliegue` option 6's first step: "Indique semestre" -- pick
-    /// which term to search course sections in, before `HorarioCurso`.
-    HorarioSemester(HorarioSemesterScreen),
-    /// `MenuDespliegue` option 6's second step: free-text course-code
-    /// search (`Ej. QUIM3001L`).
-    HorarioCurso(HorarioCursoScreen),
-    /// `MenuDespliegue` option 6's third step, shown when the searched
-    /// course has multiple sections: free-text section-number search
-    /// (`Ej. 001#`) to narrow down to one -- submitting lands on
-    /// `CourseResults`.
-    HorarioSeccion(HorarioSeccionScreen),
-    /// The remote's own "<<<  Programa  en  Proceso  >>>" marquee, shown
-    /// while it's still computing a result asynchronously and then
-    /// redraws again on its own -- not specific to any one screen. The
-    /// frontend polls `get_screen` (-> `TuiSession::refresh`) until this
-    /// clears into the real result.
-    Processing,
-    Notice(NoticeScreen),
+    /// A bare free-text search prompt, e.g. "C u r s o  (Ej. QUIM3001L)
+    /// Puede indicar solo MATERIA             [PF4=(9)Fin]" -- see
+    /// `SearchKind` for the two real prompts this covers.
+    Search(SearchScreen),
     /// The remote's own "<<< P R O C E S O  C O N C L U I D O >>>" banner --
     /// a graceful end of session (seen after logging out, and after the
     /// shared demo account's idle timeout fires). The remote closes the
@@ -161,12 +147,68 @@ pub enum TuiScreen {
 }
 
 impl TuiScreen {
+    /// This screen's `RumadScreen` impl, or `None` for `Disconnected` --
+    /// no live session left to send anything to.
+    pub(super) fn as_rumad_screen(&self) -> Option<&dyn RumadScreen> {
+        match self {
+            TuiScreen::Menu(s) => Some(s),
+            TuiScreen::Login(s) => Some(s),
+            TuiScreen::Matricula(s) => Some(s),
+            TuiScreen::CourseResults(s) => Some(s),
+            TuiScreen::WeeklySchedule(s) => Some(s),
+            TuiScreen::Search(s) => Some(s),
+            TuiScreen::Unknown(s) => Some(s),
+            TuiScreen::Disconnected => None,
+        }
+    }
+}
+
+/// A message shown *alongside* whatever `TuiScreen` is currently
+/// rendering, rather than replacing it -- see this module's doc comment.
+/// The frontend overlays these (a dialog, a banner) instead of switching
+/// what screen it's showing.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(tag = "kind")]
+pub enum Dialog {
+    /// A one-line rejection or informational message, e.g. "Cuenta
+    /// ESTUDIANTE NO esta disponible por el momento" or "*** Curso NO
+    /// Existe en Archivo MTR-HORARIO ***". Not every `Notice` warrants
+    /// treating the action as failed -- see `ClassifiedScreen::or_err` for
+    /// the one pattern known to mean that today.
+    Notice { message: String, raw: String },
+    /// The remote's own "<<<  Programa  en  Proceso  >>>" marquee, shown
+    /// while it's still computing a result asynchronously and then
+    /// redraws again on its own -- not specific to any one screen.
+    /// `commands::exec::spawn_screen_watcher` keeps polling in the
+    /// background and pushes the eventual real result to the frontend as
+    /// a `screen-changed` event, instead of the frontend needing to poll
+    /// for it.
+    Processing,
+}
+
+/// The result of classifying one raw screen: always a `TuiScreen`
+/// (freshly re-derived from the current raw text, not "whatever it was
+/// before"), plus an optional `Dialog` overlaid on top of it.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClassifiedScreen {
+    pub screen: TuiScreen,
+    pub dialog: Option<Dialog>,
+    /// Whether `screen` has a meaningful `RumadScreen::exit()` to reach --
+    /// see that method's own doc comment for exactly what counts. The
+    /// frontend uses this to decide whether to render its one shared exit
+    /// control, instead of each screen component hardcoding its own copy
+    /// of that decision.
+    pub can_exit: bool,
+}
+
+impl ClassifiedScreen {
     /// Turns a rejection meaning "the service you tried to reach is down
     /// right now" into an `Err`, so the command layer doesn't hand the
-    /// frontend a dead-end screen to render. Any other screen, including
+    /// frontend a dead-end screen to render. Any other `Dialog`, including
     /// other `Notice` messages, passes through unchanged.
-    pub fn or_err(self) -> Result<TuiScreen, String> {
-        if let TuiScreen::Notice(NoticeScreen { message, .. }) = &self {
+    pub fn or_err(self) -> Result<ClassifiedScreen, String> {
+        if let Some(Dialog::Notice { message, .. }) = &self.dialog {
             let lower = message.to_lowercase();
             if lower.contains("no esta disponible") || lower.contains("no está disponible") {
                 return Err(message.clone());
@@ -174,71 +216,39 @@ impl TuiScreen {
         }
         Ok(self)
     }
-
-    /// This screen's `RumadScreen` impl, or `None` for screen kinds that
-    /// aren't directly interactive (`Notice`/`Processing` overlay
-    /// whatever's already showing rather than being acted on themselves;
-    /// `Disconnected` has no live session left to send anything to).
-    pub(super) fn as_rumad_screen(&self) -> Option<&dyn RumadScreen> {
-        match self {
-            TuiScreen::MainMenu(s) => Some(s),
-            TuiScreen::Login(s) => Some(s),
-            TuiScreen::SelectPeriod(s) => Some(s),
-            TuiScreen::Matricula(s) => Some(s),
-            TuiScreen::CourseResults(s) => Some(s),
-            TuiScreen::WeeklySchedule(s) => Some(s),
-            TuiScreen::MenuDespliegue(s) => Some(s),
-            TuiScreen::HorarioSemester(s) => Some(s),
-            TuiScreen::HorarioCurso(s) => Some(s),
-            TuiScreen::HorarioSeccion(s) => Some(s),
-            TuiScreen::Unknown(s) => Some(s),
-            TuiScreen::Notice(_) | TuiScreen::Processing | TuiScreen::Disconnected => None,
-        }
-    }
 }
 
-pub fn classify(raw: &str) -> TuiScreen {
-    // Checked before `MENU PRINCIPAL` below: a rejected account-specific
-    // option redisplays the main menu *with the notice line still on
-    // screen* (grounded in a real transcript), so matching "MENU
-    // PRINCIPAL" first would silently swallow the notice.
-
-    // Both banners pad their letters with spaces for a marquee effect
-    // ("<<<   P R O C E S O    C O N C L U I D O   >>>", "<<<  Programa
-    // en  Proceso  >>>"), so compare against whitespace-collapsed text
-    // rather than matching either literally.
+pub fn classify(raw: &str) -> ClassifiedScreen {
+    // The banner pads every letter with spaces for a marquee effect
+    // ("<<<   P R O C E S O    C O N C L U I D O   >>>"), so compare
+    // against whitespace-collapsed text rather than matching it literally.
+    // Checked before anything else, and short-circuits with no `Dialog`
+    // (unlike every other case below): the remote closes the channel
+    // shortly after showing this, so there's no live screen underneath
+    // left to classify.
     let collapsed: String = raw.chars().filter(|c| !c.is_whitespace()).collect();
     if collapsed.contains("PROCESOCONCLUIDO") {
-        return TuiScreen::Disconnected;
+        return ClassifiedScreen { screen: TuiScreen::Disconnected, dialog: None, can_exit: false };
     }
 
-    // Not specific to any one screen -- checked here, before the specific
-    // screen types below, since it overlays whatever's still rendering
-    // underneath rather than replacing it (see `Processing`'s doc
-    // comment).
-    if collapsed.contains("ProgramaenProceso") {
-        return TuiScreen::Processing;
-    }
+    let screen = classify_screen(raw);
+    let can_exit = screen.as_rumad_screen().is_some_and(|s| s.can_exit());
+    ClassifiedScreen { screen, dialog: detect_dialog(raw, &collapsed), can_exit }
+}
 
-    let notice_line = raw.lines().find(|line| {
-        let lower = line.to_lowercase();
-        lower.contains("no esta disponible") || lower.contains("no está disponible")
-    });
-    if let Some(line) = notice_line {
-        return TuiScreen::Notice(NoticeScreen {
-            message: line.trim().to_string(),
-            raw: raw.to_string(),
-        });
-    }
-
+/// The screen underneath, regardless of whether a `Dialog` is also
+/// overlaid on it -- see this module's doc comment. None of the checks
+/// below share any detection text with each other (each screen's own
+/// submodule documents why its hint is unique), so unlike the old design,
+/// their relative order doesn't matter for correctness.
+fn classify_screen(raw: &str) -> TuiScreen {
     if raw.contains(login::DETECT_HINT) {
-        return TuiScreen::Login(LoginScreen {
-            fields: login::login_fields(),
-        });
+        return TuiScreen::Login(LoginScreen { fields: login::login_fields() });
     }
 
     if raw.contains("Indique Semestre") {
-        return TuiScreen::SelectPeriod(SelectPeriodScreen {
+        return TuiScreen::Menu(MenuScreen {
+            menu: MenuKind::SelectPeriod,
             options: scrape::scrape_equals_options(raw),
         });
     }
@@ -260,22 +270,19 @@ pub fn classify(raw: &str) -> TuiScreen {
     }
 
     if raw.contains("MENU PRINCIPAL") {
-        return TuiScreen::MainMenu(MainMenuScreen {
+        return TuiScreen::Menu(MenuScreen {
+            menu: MenuKind::MainMenu,
             options: scrape::scrape_options(raw),
         });
     }
 
     if raw.contains("MENU DESPLIEGUE") {
-        return TuiScreen::MenuDespliegue(MenuDespliegueScreen {
+        return TuiScreen::Menu(MenuScreen {
+            menu: MenuKind::MenuDespliegue,
             options: scrape::scrape_options(raw),
         });
     }
 
-    // Checked before `MainMenu`/`Unknown` but after everything above --
-    // these two don't share any detection text with another screen, so
-    // their exact position among the "specific, grounded" checks doesn't
-    // matter, only that they're above the generic bracketed-notice/Unknown
-    // fallback below.
     if let Some((course_code, course_title)) = course_results::detect_course(raw) {
         return TuiScreen::CourseResults(CourseResultsScreen {
             course_code,
@@ -288,55 +295,18 @@ pub fn classify(raw: &str) -> TuiScreen {
         return TuiScreen::WeeklySchedule(weekly_schedule::scrape(raw));
     }
 
-    // Every "*** message ***" rejection observed live so far (see
-    // `notice::extract_starred_notice`'s doc comment) is shown on top of
-    // the same prompt that triggered it -- same "checked before specific
-    // screen types so the rejection isn't swallowed" reasoning as the
-    // "no esta disponible" check above. Checked *after* `CourseResults`
-    // rather than alongside "no esta disponible", though: unlike every
-    // rejection, `CourseResultsScreen`'s own header genuinely is a "***
-    // Horarios de Matricula ***" title, not a rejection -- checking this
-    // any earlier would swallow real results the same way this check
-    // exists to stop rejections from being swallowed.
-    if let Some(message) = notice::extract_starred_notice(raw) {
-        return TuiScreen::Notice(NoticeScreen {
-            message,
-            raw: raw.to_string(),
-        });
+    if raw.contains(search::HORARIO_CURSO_DETECT_HINT) {
+        return TuiScreen::Search(SearchScreen { search: SearchKind::HorarioCurso });
     }
 
-    // `MenuDespliegue` option 6's own three-step flow -- checked here
-    // rather than above `CourseResults`/`WeeklySchedule` since none of
-    // these share any detection text with those, only with each other
-    // (all distinct: see each const's own doc comment).
-    if raw.contains(horario_matricula::CURSO_DETECT_HINT) {
-        return TuiScreen::HorarioCurso(HorarioCursoScreen);
+    if raw.contains(search::HORARIO_SECCION_DETECT_HINT) {
+        return TuiScreen::Search(SearchScreen { search: SearchKind::HorarioSeccion });
     }
 
-    if raw.contains(horario_matricula::SECCION_DETECT_HINT) {
-        return TuiScreen::HorarioSeccion(HorarioSeccionScreen);
-    }
-
-    if raw.contains(horario_matricula::SEMESTER_DETECT_HINT) {
-        return TuiScreen::HorarioSemester(HorarioSemesterScreen {
-            options: horario_matricula::scrape_semester_options(raw),
-        });
-    }
-
-    // Lower priority than the checks above: the remote wraps advisories
-    // and event/confirmation messages in "<< ... >>" (or a boxed
-    // "****...****" variant) on screens that aren't specifically modeled
-    // yet (e.g. the payment/invoice screen's "Esta factura NO ES
-    // OFICIAL..." disclaimer, or MENU DESPLIEGUE option 5's redirect box).
-    // Checked last, right before the `Unknown` fallback, so it never
-    // overrides an already-modeled screen -- unlike the "no esta
-    // disponible"/`extract_starred_notice` rejections above, these aren't
-    // action-failure signals, so they shouldn't win over genuinely useful
-    // structured content the way those two deliberately do.
-    if let Some(message) = notice::extract_bracketed_or_boxed_notice(raw) {
-        return TuiScreen::Notice(NoticeScreen {
-            message,
-            raw: raw.to_string(),
+    if raw.contains(menu::HORARIO_SEMESTER_DETECT_HINT) {
+        return TuiScreen::Menu(MenuScreen {
+            menu: MenuKind::HorarioSemester,
+            options: menu::scrape_horario_semester_options(raw),
         });
     }
 
@@ -344,6 +314,42 @@ pub fn classify(raw: &str) -> TuiScreen {
         raw: raw.to_string(),
         options: scrape::scrape_options(raw),
     })
+}
+
+/// The `Dialog` overlaid on top of whatever `classify_screen` finds, if
+/// any -- checked in priority order since more than one pattern could in
+/// principle match the same raw text (e.g. a rejection could theoretically
+/// also happen to read as a boxed advisory): a specific "no esta
+/// disponible" rejection first (needs to win because `or_err` keys off its
+/// exact wording), then the generalized "*** message ***" rejection
+/// pattern, then the "Programa en Proceso" marquee, then the lowest-
+/// priority informational advisories ("<< message >>" or a boxed
+/// "****...****" variant).
+fn detect_dialog(raw: &str, collapsed: &str) -> Option<Dialog> {
+    let notice_line = raw.lines().find(|line| {
+        let lower = line.to_lowercase();
+        lower.contains("no esta disponible") || lower.contains("no está disponible")
+    });
+    if let Some(line) = notice_line {
+        return Some(Dialog::Notice { message: line.trim().to_string(), raw: raw.to_string() });
+    }
+
+    if let Some(message) = notice::extract_starred_notice(raw) {
+        return Some(Dialog::Notice { message, raw: raw.to_string() });
+    }
+
+    // Pads every letter with spaces for a marquee effect too ("<<<
+    // Programa  en  Proceso  >>>"), same reasoning as the
+    // "PROCESOCONCLUIDO" check in `classify`.
+    if collapsed.contains("ProgramaenProceso") {
+        return Some(Dialog::Processing);
+    }
+
+    if let Some(message) = notice::extract_bracketed_or_boxed_notice(raw) {
+        return Some(Dialog::Notice { message, raw: raw.to_string() });
+    }
+
+    None
 }
 
 #[cfg(test)]
@@ -376,9 +382,10 @@ Opcion deseada:   ";
 
     #[test]
     fn classifies_real_main_menu_transcript() {
-        let TuiScreen::MainMenu(MainMenuScreen { options }) = classify(MAIN_MENU) else {
-            panic!("expected MainMenu");
+        let TuiScreen::Menu(MenuScreen { menu, options }) = classify(MAIN_MENU).screen else {
+            panic!("expected Menu");
         };
+        assert_eq!(menu, MenuKind::MainMenu);
         assert_eq!(options.len(), 7);
         assert_eq!(options[0].key, "1");
         assert_eq!(options[1].label, "Seleccion de Secciones  (Matricula)");
@@ -389,16 +396,16 @@ Opcion deseada:   ";
     #[test]
     fn classifies_account_unavailable_notice() {
         let raw = "              Cuenta ESTUDIANTE NO esta disponible por el momento";
-        let screen = classify(raw);
-        let TuiScreen::Notice(NoticeScreen { message, .. }) = &screen else {
-            panic!("expected Notice");
-        };
+        let result = classify(raw);
         assert_eq!(
-            message,
-            "Cuenta ESTUDIANTE NO esta disponible por el momento"
+            result.dialog,
+            Some(Dialog::Notice {
+                message: "Cuenta ESTUDIANTE NO esta disponible por el momento".to_string(),
+                raw: raw.to_string(),
+            })
         );
         assert_eq!(
-            screen.or_err(),
+            result.or_err(),
             Err("Cuenta ESTUDIANTE NO esta disponible por el momento".to_string())
         );
     }
@@ -409,17 +416,19 @@ Opcion deseada:   ";
     }
 
     #[test]
-    fn notice_wins_even_when_menu_principal_is_also_on_screen() {
+    fn notice_and_screen_come_through_together_when_menu_principal_is_also_on_screen() {
         // Grounded scenario: selecting an unavailable option redisplays
         // MENU PRINCIPAL with the rejection notice still on screen (its
         // own row, per vt100's one-line-per-terminal-row rendering)
-        // rather than replacing it entirely -- the notice must still win.
+        // rather than replacing it entirely -- both the dialog and the
+        // still-classifiable menu underneath must come through.
         let raw = format!(
             "              Cuenta ESTUDIANTE NO esta disponible por el momento\n{MAIN_MENU}"
         );
-        let screen = classify(&raw);
+        let result = classify(&raw);
+        assert!(matches!(result.screen, TuiScreen::Menu(MenuScreen { menu: MenuKind::MainMenu, .. })));
         assert_eq!(
-            screen.or_err(),
+            result.or_err(),
             Err("Cuenta ESTUDIANTE NO esta disponible por el momento".to_string())
         );
     }
@@ -441,17 +450,22 @@ UNIVERSIDAD DE PUERTO RICO
 
                 <<<   P R O C E S O    C O N C L U I D O   >>>
 ";
-        assert_eq!(classify(raw), TuiScreen::Disconnected);
+        assert_eq!(
+            classify(raw),
+            ClassifiedScreen { screen: TuiScreen::Disconnected, dialog: None, can_exit: false }
+        );
     }
 
     #[test]
-    fn processing_marker_wins_over_main_menu_underneath_it() {
+    fn processing_marker_overlays_main_menu_underneath_it() {
         // Not specific to the course/section-search flow that surfaced
         // it -- any screen doing real work server-side can show this, so
-        // it must win regardless of what's rendered underneath (same
-        // reasoning as `notice_wins_even_when_menu_principal_is_also_on_screen`).
+        // the underlying screen must still classify normally underneath
+        // it (same reasoning as the notice case above).
         let raw = format!("                       <<<  Programa  en  Proceso  >>>\n{MAIN_MENU}");
-        assert_eq!(classify(&raw), TuiScreen::Processing);
+        let result = classify(&raw);
+        assert!(matches!(result.screen, TuiScreen::Menu(MenuScreen { menu: MenuKind::MainMenu, .. })));
+        assert_eq!(result.dialog, Some(Dialog::Processing));
     }
 
     // `HORARIO_CONFIRMADO`/`RESERVA` are real (redacted) transcripts
@@ -475,7 +489,6 @@ UNIVERSIDAD DE PUERTO RICO
     const HORARIO_RESULTADOS_SIMPLE: &str =
         include_str!("../../../screens/menu_despliegue/horario_resultados_simple.txt");
     const TURNO_SELECCION: &str = include_str!("../../../screens/menu_despliegue/turno_seleccion.txt");
-    const HORARIO_ESTIMADO: &str = include_str!("../../../screens/matricula/horario_estimado.txt");
 
     #[test]
     fn unmodeled_matricula_screens_fall_back_to_unknown() {
@@ -484,7 +497,7 @@ UNIVERSIDAD DE PUERTO RICO
         // renders it unspaced ("* MATRICULA ... *"), so it must not
         // accidentally match.
         for raw in [HORARIO_CONFIRMADO, RESERVA] {
-            let TuiScreen::Unknown(UnknownScreen { raw: got, .. }) = classify(raw) else {
+            let TuiScreen::Unknown(UnknownScreen { raw: got, .. }) = classify(raw).screen else {
                 panic!("expected Unknown for:\n{raw}");
             };
             assert_eq!(got, raw);
@@ -507,20 +520,12 @@ UNIVERSIDAD DE PUERTO RICO
             TURNO_SELECCION,
         ] {
             assert!(
-                !matches!(classify(raw), TuiScreen::MainMenu(_)),
+                !matches!(
+                    classify(raw).screen,
+                    TuiScreen::Menu(MenuScreen { menu: MenuKind::MainMenu, .. })
+                ),
                 "expected not MainMenu for:\n{raw}"
             );
         }
-    }
-
-    // `Indique semestre` here is lowercase and shaped differently
-    // ("(1=1erVer   2=1erSem ...)" plus a `[PF4=(9)Fin]` hint) from the
-    // Matricula flow's own period prompt (`Indique Semestre:`, capital
-    // S) that `select_period.rs` models -- a different real screen that
-    // happens to share a similar phrase, not the same prompt. Confirms
-    // `classify` doesn't conflate the two on a loose substring match.
-    #[test]
-    fn horario_semestre_is_not_mistaken_for_select_period() {
-        assert!(!matches!(classify(HORARIO_SEMESTRE), TuiScreen::SelectPeriod(_)));
     }
 }

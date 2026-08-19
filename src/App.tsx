@@ -2,21 +2,16 @@ import { createSignal, createResource, createMemo, createEffect, onMount, onClea
 import { listen } from "@tauri-apps/api/event";
 import { t } from "./i18n";
 import { runAction } from "./api";
-import type { TuiScreen, Dialog, Action, Send } from "./types";
+import type { TuiScreen, ClassifiedScreen, DialogBox, Action, Send } from "./types";
 import { Header } from "./components/Header";
 import { NoticeDialog } from "./components/NoticeDialog";
 import { ConnectForm } from "./screens/ConnectForm";
-import { MainMenuScreen } from "./screens/MainMenu";
+import { MenuScreen } from "./screens/MenuScreen";
 import { LoginScreen } from "./screens/Login";
-import { SelectPeriodScreen } from "./screens/SelectPeriod";
 import { MatriculaScreen } from "./screens/Matricula";
 import { CourseResultsScreen } from "./screens/CourseResults";
 import { WeeklyScheduleScreen } from "./screens/WeeklySchedule";
-import { MenuDespliegueScreen } from "./screens/MenuDespliegue";
-import { HorarioSemesterScreen } from "./screens/HorarioSemester";
-import { HorarioCursoScreen } from "./screens/HorarioCurso";
-import { HorarioSeccionScreen } from "./screens/HorarioSeccion";
-import { ProcessingScreen } from "./screens/Processing";
+import { SearchScreen } from "./screens/SearchScreen";
 import { DisconnectedScreen } from "./screens/Disconnected";
 import { UnknownScreen } from "./screens/Unknown";
 import "./App.css";
@@ -32,22 +27,29 @@ import "./App.css";
 // `Select`/`Line`/`Exit` actually mean for a given screen is decided by
 // that screen's own `RumadScreen` impl, not by the command itself.
 function App() {
-  const [dialog, setDialog] = createSignal<Dialog | null>(null);
+  const [dialogBox, setDialogBox] = createSignal<DialogBox | null>(null);
 
   const [action, setAction] = createSignal<Action>();
   const [response, { mutate }] = createResource(action, runAction);
-  const busy = () => response.loading;
 
-  // What to render is derived, not imperatively assigned: `Notice` is a
-  // message alongside the current screen rather than a screen change, so
-  // the memo keeps whatever was showing instead of switching to it.
+  // A `Dialog::Processing` overlay counts as busy too -- the remote is
+  // still computing, so every screen's own controls stay disabled the
+  // same way they do while a command is genuinely in flight.
+  const busy = createMemo(() => response.loading || response()?.dialog?.kind === "Processing");
+
+  // What to render is derived, not imperatively assigned. Unlike the old
+  // design, `screen` here is always the backend's own freshly-classified
+  // `ClassifiedScreen.screen` -- a `Dialog` (Notice/Processing) is never
+  // itself a screen to switch to, so there's no need to special-case a
+  // "Notice" kind here anymore; that's handled entirely by `dialogBox`/
+  // `busy` below instead, driven off `.dialog`.
   //
   // `response.error` must be checked *before* reading `response()` --
   // Solid's resources throw the rejection reason when you read a resource
   // that errored (that's how `<ErrorBoundary>` integration works), and
   // this memo has no boundary around it. A command can genuinely reject
-  // (e.g. the backend's `TuiScreen::or_err()` promoting a rejection notice
-  // to an `Err`, live-confirmed: selecting a demo-account-restricted
+  // (e.g. the backend's `ClassifiedScreen::or_err()` promoting a rejection
+  // notice to an `Err`, live-confirmed: selecting a demo-account-restricted
   // MainMenu option returns "Opcion NO esta disponible por el momento" as
   // an error, not a screen) -- reading `response()` unconditionally in
   // that case throws inside the memo with nothing to catch it, which
@@ -56,9 +58,20 @@ function App() {
   const screen = createMemo<TuiScreen | null>((prev) => {
     if (response.loading || response.error) return prev ?? null;
     const result = response();
-    if (result === undefined || result?.kind === "Notice") return prev ?? null;
-    return result;
+    if (result === undefined) return prev ?? null;
+    return result === null ? null : result.screen;
   }, null);
+
+  // Whether the one shared exit control (below) should render -- mirrors
+  // `screen` itself: derived straight off the backend's own
+  // `ClassifiedScreen.canExit` rather than each screen component deciding
+  // for itself.
+  const canExit = createMemo<boolean>((prev) => {
+    if (response.loading || response.error) return prev ?? false;
+    const result = response();
+    if (result === undefined) return prev ?? false;
+    return result === null ? false : result.canExit;
+  }, false);
 
   // `Matricula`'s mode is nested one level deeper than the other screen
   // kinds, which makes repeated inline `as Extract<...>` casts unwieldy --
@@ -68,19 +81,22 @@ function App() {
     return s?.kind === "Matricula" ? s : undefined;
   });
 
-  // Opening a dialog is a genuine side effect (and independently
-  // dismissible via the close button), unlike `screen` above -- it
-  // belongs in an effect, not a memo.
+  // Opening the notice dialog is a genuine side effect (and independently
+  // dismissible via the close button), unlike `screen`/`canExit` above --
+  // it belongs in an effect, not a memo. `Dialog::Processing` doesn't open
+  // this -- it's reflected in `busy` instead, since it's transient and
+  // resolves on its own via the `screen-changed` listener below rather
+  // than needing an explicit dismissal.
   createEffect(() => {
     if (response.loading) return;
     const err = response.error;
     if (err) {
-      setDialog({ title: t().errorTitle, message: String(err) });
+      setDialogBox({ title: t().errorTitle, message: String(err) });
       return;
     }
     const result = response();
-    if (result?.kind === "Notice") {
-      setDialog({ title: t().noticeTitle, message: result.message });
+    if (result?.dialog?.kind === "Notice") {
+      setDialogBox({ title: t().noticeTitle, message: result.dialog.message });
     }
   });
 
@@ -89,6 +105,10 @@ function App() {
   }
 
   const send: Send = (sendAction) => setAction({ cmd: "send", args: { action: sendAction } });
+
+  function exitScreen() {
+    send({ kind: "Exit" });
+  }
 
   function login(idNumber: string, accessCode: string, ssnLast4: string, birthDate: string) {
     setAction({ cmd: "login", args: { idNumber, accessCode, ssnLast4, birthDate } });
@@ -107,41 +127,32 @@ function App() {
 
   // The backend's `spawn_screen_watcher` (`commands/exec.rs`) keeps
   // polling in the background for screens that redraw a second time on
-  // their own (`TuiScreen::Processing`) and pushes this event once that
+  // their own (`Dialog::Processing`) and pushes this event once that
   // happens, instead of the frontend needing to poll for it -- same
   // `mutate` override `reconnect` above uses, just driven by the backend
   // rather than a user action.
   onMount(() => {
-    const unlisten = listen<TuiScreen>("screen-changed", (event) => mutate(event.payload));
+    const unlisten = listen<ClassifiedScreen>("screen-changed", (event) => mutate(event.payload));
     onCleanup(() => void unlisten.then((f) => f()));
   });
 
   return (
     <main class="container">
       <Header busy={busy()} />
-      <NoticeDialog dialog={dialog()} onClose={() => setDialog(null)} />
+      <NoticeDialog dialog={dialogBox()} onClose={() => setDialogBox(null)} />
 
       <Show when={screen()} fallback={<ConnectForm onConnect={connect} busy={busy()} />}>
         <div class="screen">
           <Switch>
-            <Match when={screen()?.kind === "MainMenu"}>
-              <MainMenuScreen
-                options={(screen() as Extract<TuiScreen, { kind: "MainMenu" }>).options}
-                busy={busy()}
-                send={send}
-              />
+            <Match when={screen()?.kind === "Menu"}>
+              {(() => {
+                const s = () => screen() as Extract<TuiScreen, { kind: "Menu" }>;
+                return <MenuScreen menu={s().menu} options={s().options} busy={busy()} send={send} />;
+              })()}
             </Match>
 
             <Match when={screen()?.kind === "Login"}>
-              <LoginScreen login={login} send={send} busy={busy()} />
-            </Match>
-
-            <Match when={screen()?.kind === "SelectPeriod"}>
-              <SelectPeriodScreen
-                options={(screen() as Extract<TuiScreen, { kind: "SelectPeriod" }>).options}
-                busy={busy()}
-                send={send}
-              />
+              <LoginScreen login={login} busy={busy()} />
             </Match>
 
             <Match when={matricula()}>
@@ -167,32 +178,12 @@ function App() {
               />
             </Match>
 
-            <Match when={screen()?.kind === "MenuDespliegue"}>
-              <MenuDespliegueScreen
-                options={(screen() as Extract<TuiScreen, { kind: "MenuDespliegue" }>).options}
+            <Match when={screen()?.kind === "Search"}>
+              <SearchScreen
+                search={(screen() as Extract<TuiScreen, { kind: "Search" }>).search}
                 busy={busy()}
                 send={send}
               />
-            </Match>
-
-            <Match when={screen()?.kind === "HorarioSemester"}>
-              <HorarioSemesterScreen
-                options={(screen() as Extract<TuiScreen, { kind: "HorarioSemester" }>).options}
-                busy={busy()}
-                send={send}
-              />
-            </Match>
-
-            <Match when={screen()?.kind === "HorarioCurso"}>
-              <HorarioCursoScreen busy={busy()} send={send} />
-            </Match>
-
-            <Match when={screen()?.kind === "HorarioSeccion"}>
-              <HorarioSeccionScreen busy={busy()} send={send} />
-            </Match>
-
-            <Match when={screen()?.kind === "Processing"}>
-              <ProcessingScreen />
             </Match>
 
             <Match when={screen()?.kind === "Disconnected"}>
@@ -209,11 +200,18 @@ function App() {
             </Match>
           </Switch>
 
-          <Show when={screen()?.kind !== "Disconnected"}>
-            <button class="disconnect" disabled={busy()} onClick={disconnect}>
-              {t().logout}
-            </button>
-          </Show>
+          <div class="row">
+            <Show when={canExit()}>
+              <button disabled={busy()} onClick={exitScreen}>
+                {t().screenExit}
+              </button>
+            </Show>
+            <Show when={screen()?.kind !== "Disconnected"}>
+              <button class="disconnect" disabled={busy()} onClick={disconnect}>
+                {t().logout}
+              </button>
+            </Show>
+          </div>
         </div>
       </Show>
     </main>

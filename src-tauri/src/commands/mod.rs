@@ -13,7 +13,7 @@ pub mod login;
 use exec::{act, blocking, finish, log_invoked, log_screen, spawn_screen_watcher};
 
 use crate::config;
-use crate::screens::{self, TuiScreen};
+use crate::screens::{self, ClassifiedScreen};
 use crate::ssh::session::TuiSession;
 
 /// Holds the one live TUI session for this app instance, if connected.
@@ -29,7 +29,7 @@ pub async fn connect(
     app: AppHandle,
     username: Option<String>,
     password: Option<String>,
-) -> Result<TuiScreen, String> {
+) -> Result<ClassifiedScreen, String> {
     log_invoked(&format!(
         "connect(username={:?}, password={})",
         username,
@@ -50,20 +50,20 @@ pub async fn connect(
         .map_err(|e| e.to_string())?;
         let raw = session.screen_text();
         log_screen(&raw);
-        let screen = screens::classify(&raw);
+        let result = screens::classify(&raw);
 
         let state = app.state::<AppState>();
         let mut guard = state.0.lock().map_err(|_| "session lock poisoned")?;
         *guard = Some(session);
-        finish(&mut guard, screen)
+        finish(&mut guard, result)
     })
     .await;
 
     // Started here rather than inside the closure above: needs the
     // session already stored in `AppState` (so its own lock attempts find
     // it) and the resolved screen as its baseline to diff against.
-    if let Ok(screen) = &result {
-        spawn_screen_watcher(watcher_app, screen.clone());
+    if let Ok(result) = &result {
+        spawn_screen_watcher(watcher_app, result.clone());
     }
     result
 }
@@ -71,7 +71,7 @@ pub async fn connect(
 /// Re-read the current screen without sending any input, e.g. to poll for
 /// a redraw that's still settling.
 #[tauri::command]
-pub async fn get_screen(app: AppHandle) -> Result<TuiScreen, String> {
+pub async fn get_screen(app: AppHandle) -> Result<ClassifiedScreen, String> {
     log_invoked("get_screen()");
     act(app, |session| session.refresh()).await
 }
