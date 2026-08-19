@@ -1,7 +1,8 @@
-import { For, Show } from "solid-js";
+import { createSignal, For, Show } from "solid-js";
+import { t } from "../i18n";
 import { OptionButtons } from "../components/OptionButtons";
 import { FreeTextForm } from "../components/FreeTextForm";
-import type { ScheduleCourse, MatriculaPrompt } from "../types";
+import type { ScheduleCourse, MatriculaPrompt, Send } from "../types";
 
 // Bajas/Altas/Cambio all show the same "course abbreviation, or FIN" free-
 // text prompt -- only the [Bajas]/[Altas]/[Cambio] tag differs on-screen.
@@ -11,11 +12,27 @@ export function MatriculaScreen(props: {
   courses: ScheduleCourse[];
   prompt: MatriculaPrompt;
   busy: boolean;
-  onChoose: (key: string) => void;
-  freeText: string;
-  onFreeTextInput: (value: string) => void;
-  onFreeTextSubmit: (e: Event) => void;
+  send: Send;
 }) {
+  const [freeText, setFreeText] = createSignal("");
+
+  function choose(key: string) {
+    props.send({ kind: "Select", key });
+  }
+
+  function submit(text: string) {
+    props.send({ kind: "Line", text });
+    setFreeText("");
+  }
+
+  // Actions' labels are the remote's own raw text (e.g. "HorEst",
+  // "CodigoReservar") -- localize via the catalog's `actionLabels` lookup,
+  // falling back to the raw label for anything not listed there.
+  function localizedActions() {
+    const { options } = props.prompt as Extract<MatriculaPrompt, { kind: "Actions" }>;
+    return options.map((option) => ({ ...option, label: t().actionLabels[option.label] ?? option.label }));
+  }
+
   return (
     <>
       <h2>M A T R I C U L A</h2>
@@ -43,21 +60,11 @@ export function MatriculaScreen(props: {
       </table>
 
       <Show when={props.prompt.kind === "Actions"}>
-        <OptionButtons
-          options={(props.prompt as Extract<MatriculaPrompt, { kind: "Actions" }>).options}
-          separator="="
-          busy={props.busy}
-          onChoose={props.onChoose}
-        />
+        <OptionButtons options={localizedActions()} separator="=" busy={props.busy} onChoose={choose} hideKey />
       </Show>
 
       <Show when={FREE_TEXT_PROMPTS.has(props.prompt.kind)}>
-        <FreeTextForm
-          value={props.freeText}
-          onInput={props.onFreeTextInput}
-          onSubmit={props.onFreeTextSubmit}
-          busy={props.busy}
-        />
+        <FreeTextForm value={freeText()} onInput={setFreeText} onSubmit={submit} busy={props.busy} />
       </Show>
     </>
   );

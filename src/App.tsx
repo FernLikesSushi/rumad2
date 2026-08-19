@@ -1,7 +1,7 @@
 import { createSignal, createResource, createMemo, createEffect, Match, Switch, Show } from "solid-js";
 import { t } from "./i18n";
 import { runAction } from "./api";
-import type { TuiScreen, Dialog, Action } from "./types";
+import type { TuiScreen, Dialog, Action, Send } from "./types";
 import { Header } from "./components/Header";
 import { NoticeDialog } from "./components/NoticeDialog";
 import { ConnectForm } from "./screens/ConnectForm";
@@ -15,11 +15,17 @@ import { DisconnectedScreen } from "./screens/Disconnected";
 import { UnknownScreen } from "./screens/Unknown";
 import "./App.css";
 
+// The orchestrator: owns the one `action` signal/`createResource` this app
+// is built around (there can only be one -- Solid resources aren't
+// per-component) and derives what's currently showing from it. Everything
+// screen-specific -- what to call a given `SendAction`, what local form
+// state a screen needs -- lives in that screen's own component instead of
+// being decided here; this just hands each one the raw dispatch
+// primitives (`send`, `login`, `connect`) it needs. Mirrors the backend:
+// `commands/interact.rs::send` is one generic entry point, but what
+// `Select`/`Line`/`Exit` actually mean for a given screen is decided by
+// that screen's own `RumadScreen` impl, not by the command itself.
 function App() {
-  const [username, setUsername] = createSignal("");
-  const [password, setPassword] = createSignal("");
-  const [freeText, setFreeText] = createSignal("");
-  const [loginValues, setLoginValues] = createSignal<Record<string, string>>({});
   const [dialog, setDialog] = createSignal<Dialog | null>(null);
 
   const [action, setAction] = createSignal<Action>();
@@ -60,54 +66,18 @@ function App() {
     }
   });
 
-  function connect() {
-    setAction({
-      cmd: "connect",
-      args: { username: username() || undefined, password: password() || undefined },
-    });
+  function connect(username: string, password: string) {
+    setAction({ cmd: "connect", args: { username: username || undefined, password: password || undefined } });
   }
 
-  // Numbered/lettered menu options read a single keystroke with no Enter
-  // -- a "Select", not a "Line", or a stray trailing Enter risks getting
-  // consumed as input by whatever screen renders next (live-verified: see
-  // RumadScreen's doc comment in the backend).
-  function chooseOption(key: string) {
-    setAction({ cmd: "send", args: { action: { kind: "Select", key } } });
-  }
+  const send: Send = (sendAction) => setAction({ cmd: "send", args: { action: sendAction } });
 
-  function sendFreeText(e: Event) {
-    e.preventDefault();
-    setAction({ cmd: "send", args: { action: { kind: "Line", text: freeText() } } });
-    setFreeText("");
-  }
-
-  // Read-only screens (CourseResults, WeeklySchedule) have nothing to pick
-  // -- just "Enter to continue", which is a bare Line with no text.
-  function continueScreen() {
-    setAction({ cmd: "send", args: { action: { kind: "Line", text: "" } } });
-  }
-
-  function exitScreen() {
-    setAction({ cmd: "send", args: { action: { kind: "Exit" } } });
+  function login(idNumber: string, accessCode: string, ssnLast4: string, birthDate: string) {
+    setAction({ cmd: "login", args: { idNumber, accessCode, ssnLast4, birthDate } });
   }
 
   function disconnect() {
     setAction({ cmd: "disconnect", args: {} });
-  }
-
-  function submitLogin(e: Event) {
-    e.preventDefault();
-    const values = loginValues();
-    setAction({
-      cmd: "login",
-      args: {
-        idNumber: values.id_number ?? "",
-        accessCode: values.access_code ?? "",
-        ssnLast4: values.ssn_last4 ?? "",
-        birthDate: values.birth_date ?? "",
-      },
-    });
-    setLoginValues({});
   }
 
   // The remote already closed the session server-side, so this just
@@ -122,62 +92,31 @@ function App() {
       <Header busy={busy()} />
       <NoticeDialog dialog={dialog()} onClose={() => setDialog(null)} />
 
-      <Show
-        when={screen()}
-        fallback={
-          <ConnectForm
-            username={username()}
-            password={password()}
-            onUsernameInput={setUsername}
-            onPasswordInput={setPassword}
-            onSubmit={(e) => {
-              e.preventDefault();
-              connect();
-            }}
-            busy={busy()}
-          />
-        }
-      >
+      <Show when={screen()} fallback={<ConnectForm onConnect={connect} busy={busy()} />}>
         <div class="screen">
           <Switch>
             <Match when={screen()?.kind === "MainMenu"}>
               <MainMenuScreen
                 options={(screen() as Extract<TuiScreen, { kind: "MainMenu" }>).options}
                 busy={busy()}
-                onChoose={chooseOption}
+                send={send}
               />
             </Match>
 
             <Match when={screen()?.kind === "Login"}>
-              <LoginScreen
-                fields={(screen() as Extract<TuiScreen, { kind: "Login" }>).fields}
-                values={loginValues()}
-                onChange={(key, value) => setLoginValues({ ...loginValues(), [key]: value })}
-                onSubmit={submitLogin}
-                busy={busy()}
-              />
+              <LoginScreen login={login} busy={busy()} />
             </Match>
 
             <Match when={screen()?.kind === "SelectPeriod"}>
               <SelectPeriodScreen
                 options={(screen() as Extract<TuiScreen, { kind: "SelectPeriod" }>).options}
                 busy={busy()}
-                onChoose={chooseOption}
+                send={send}
               />
             </Match>
 
             <Match when={matricula()}>
-              {(m) => (
-                <MatriculaScreen
-                  courses={m().courses}
-                  prompt={m().prompt}
-                  busy={busy()}
-                  onChoose={chooseOption}
-                  freeText={freeText()}
-                  onFreeTextInput={setFreeText}
-                  onFreeTextSubmit={sendFreeText}
-                />
-              )}
+              {(m) => <MatriculaScreen courses={m().courses} prompt={m().prompt} busy={busy()} send={send} />}
             </Match>
 
             <Match when={screen()?.kind === "CourseResults"}>
@@ -186,8 +125,7 @@ function App() {
                 courseTitle={(screen() as Extract<TuiScreen, { kind: "CourseResults" }>).courseTitle}
                 sections={(screen() as Extract<TuiScreen, { kind: "CourseResults" }>).sections}
                 busy={busy()}
-                onContinue={continueScreen}
-                onExit={exitScreen}
+                send={send}
               />
             </Match>
 
@@ -196,7 +134,7 @@ function App() {
                 days={(screen() as Extract<TuiScreen, { kind: "WeeklySchedule" }>).days}
                 rows={(screen() as Extract<TuiScreen, { kind: "WeeklySchedule" }>).rows}
                 busy={busy()}
-                onContinue={continueScreen}
+                send={send}
               />
             </Match>
 
@@ -209,10 +147,7 @@ function App() {
                 raw={(screen() as Extract<TuiScreen, { kind: "Unknown" }>).raw}
                 options={(screen() as Extract<TuiScreen, { kind: "Unknown" }>).options}
                 busy={busy()}
-                onChoose={chooseOption}
-                freeText={freeText()}
-                onFreeTextInput={setFreeText}
-                onFreeTextSubmit={sendFreeText}
+                send={send}
               />
             </Match>
           </Switch>

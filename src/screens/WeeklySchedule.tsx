@@ -1,13 +1,15 @@
 import { For } from "solid-js";
 import { t } from "../i18n";
-import type { ScheduleRow } from "../types";
+import type { ScheduleRow, Send } from "../types";
 
-export function WeeklyScheduleScreen(props: {
-  days: string[];
-  rows: ScheduleRow[];
-  busy: boolean;
-  onContinue: () => void;
-}) {
+export function WeeklyScheduleScreen(props: { days: string[]; rows: ScheduleRow[]; busy: boolean; send: Send }) {
+  // Read-only grid: nothing to select, just "Enter to continue" -- no
+  // confirmed exit keystroke to offer a button for (see `RumadScreen for
+  // WeeklyScheduleScreen` in the backend).
+  function continueScreen() {
+    props.send({ kind: "Line", text: "" });
+  }
+
   return (
     <>
       <h2>{t().weeklyScheduleTitle}</h2>
@@ -32,7 +34,7 @@ export function WeeklyScheduleScreen(props: {
         </table>
       </div>
 
-      <button disabled={props.busy} onClick={props.onContinue}>
+      <button disabled={props.busy} onClick={continueScreen}>
         {t().continueLabel}
       </button>
     </>

@@ -28,6 +28,15 @@ const es: Messages = {
   continueLabel: "Continuar",
   screenExit: "Salir de esta pantalla",
   weeklyScheduleTitle: "Horario de Matricula",
+  // The remote's own labels are already Spanish, so there's nothing to
+  // translate here -- the fallback-to-raw-label behavior covers it.
+  actionLabels: {},
+  loginFields: {
+    idNumber: { label: "Número de Identificación", hint: "Ej. 802999999" },
+    accessCode: { label: "Código de Acceso Permanente", hint: "Ej. 1234" },
+    ssnLast4: { label: "Seguro Social (últimos 4)", hint: "Ej. 1234" },
+    birthDate: { label: "Fecha de Nacimiento", hint: "Ej. MMDDAAAA" },
+  },
 };
 
 export default es;

@@ -24,6 +24,29 @@ const en: Messages = {
   continueLabel: "Continue",
   screenExit: "Leave this screen",
   weeklyScheduleTitle: "Class Schedule",
+  // Grounded in screens/matricula/select.txt's own footer ("Indique:
+  // A=Alta B=Baja C=Cambio H=HorEst P=EvaluoPago M=MatEvaluo
+  // F=HorEstGrafico O=CodigoReservar S=Salir") plus the matching MENU
+  // DESPLIEGUE entries that HorEst/EvaluoPago/MatEvaluo/HorEstGrafico
+  // abbreviate. Anything the remote adds later falls back to its raw
+  // label rather than showing untranslated as blank.
+  actionLabels: {
+    Alta: "Add",
+    Baja: "Drop",
+    Cambio: "Change",
+    HorEst: "Course Schedule",
+    EvaluoPago: "Payment Estimate",
+    MatEvaluo: "Enrollment Summary",
+    HorEstGrafico: "Schedule Grid",
+    CodigoReservar: "Reservation Code",
+    Salir: "Exit",
+  },
+  loginFields: {
+    idNumber: { label: "ID Number", hint: "e.g. 802999999" },
+    accessCode: { label: "Permanent Access Code", hint: "e.g. 1234" },
+    ssnLast4: { label: "Social Security (last 4)", hint: "e.g. 1234" },
+    birthDate: { label: "Date of Birth", hint: "e.g. MMDDYYYY" },
+  },
 };
 
 export default en;

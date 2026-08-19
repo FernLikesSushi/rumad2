@@ -1,11 +1,15 @@
 import { OptionButtons } from "../components/OptionButtons";
-import type { MenuOption } from "../types";
+import type { MenuOption, Send } from "../types";
 
-export function MainMenuScreen(props: { options: MenuOption[]; busy: boolean; onChoose: (key: string) => void }) {
+export function MainMenuScreen(props: { options: MenuOption[]; busy: boolean; send: Send }) {
+  function choose(key: string) {
+    props.send({ kind: "Select", key });
+  }
+
   return (
     <>
       <h2>MENU PRINCIPAL</h2>
-      <OptionButtons options={props.options} separator=". " busy={props.busy} onChoose={props.onChoose} />
+      <OptionButtons options={props.options} separator=". " busy={props.busy} onChoose={choose} />
     </>
   );
 }
