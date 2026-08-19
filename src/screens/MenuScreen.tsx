@@ -2,6 +2,7 @@ import { createMemo } from "solid-js";
 import { t, localizeButton } from "../i18n";
 import { OptionButtons } from "../components/OptionButtons";
 import type { MenuKind, MenuOption, Send } from "../types";
+import { createKeyboardListener } from "../components/KeyboardListener";
 
 export function MenuScreen(props: { menu: MenuKind; options: MenuOption[]; busy: boolean; send: Send }) {
   function choose(key: string) {
@@ -24,6 +25,13 @@ export function MenuScreen(props: { menu: MenuKind; options: MenuOption[]; busy:
       .filter((option) => option.key !== "0")
       .map((option) => ({ ...option, label: localizeButton(option.label) })),
   );
+
+  // Keyboard listener for menu option selection
+  createKeyboardListener((key) => {
+    if (options().some((option) => option.key === key)) {
+      choose(key);
+    }
+  });
 
   return (
     <>

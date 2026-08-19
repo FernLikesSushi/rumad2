@@ -3,6 +3,7 @@ import { t } from "../i18n";
 import { devMode } from "../devMode";
 import { OptionButtons } from "../components/OptionButtons";
 import { FreeTextForm } from "../components/FreeTextForm";
+import { createKeyboardListener } from "../components/KeyboardListener";
 import type { MenuOption, Send } from "../types";
 import "./Unknown.css";
 
@@ -12,6 +13,12 @@ export function UnknownScreen(props: { raw: string; options: MenuOption[]; busy:
   function choose(key: string) {
     props.send({ kind: "Select", key });
   }
+
+  createKeyboardListener((key) => {
+    if (props.options.some((option) => option.key === key)) {
+      choose(key);
+    }
+  });
 
   function submit(text: string) {
     props.send({ kind: "Line", text });

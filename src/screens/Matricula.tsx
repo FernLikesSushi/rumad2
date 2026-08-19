@@ -1,8 +1,9 @@
-import { createSignal, For, Show } from "solid-js";
+import { createMemo, createSignal, For, Show } from "solid-js";
 import { t, localizeButton } from "../i18n";
 import { OptionButtons } from "../components/OptionButtons";
 import { FreeTextForm } from "../components/FreeTextForm";
 import type { ScheduleCourse, MatriculaMode, Send } from "../types";
+import { createKeyboardListener } from "../components/KeyboardListener";
 
 // Bajas/Altas/Cambio all show the same "course abbreviation, or FIN" free-
 // text prompt -- only the [Bajas]/[Altas]/[Cambio] tag differs on-screen.
@@ -15,6 +16,19 @@ export function MatriculaScreen(props: {
   send: Send;
 }) {
   const [freeText, setFreeText] = createSignal("");
+  
+  // Only the "Actions" mode actually carries `options` -- Bajas/Altas/
+  // Cambio don't, and the keyboard listener below reads this on every
+  // keypress regardless of the current mode, so this must stay a real
+  // array (not undefined) even outside "Actions".
+  const options = createMemo(() => (props.mode.kind === "Actions" ? props.mode.options : []));
+
+  // Keyboard listener for menu option selection
+  createKeyboardListener((key) => {
+    if (options().some((option) => option.key === key)) {
+      choose(key);
+    }
+  });
 
   function choose(key: string) {
     props.send({ kind: "Select", key });
@@ -29,8 +43,7 @@ export function MatriculaScreen(props: {
   // "CodigoReservar") -- localize via `localizeButton`, falling back to
   // the raw label for anything not listed there.
   function localizedActions() {
-    const { options } = props.mode as Extract<MatriculaMode, { kind: "Actions" }>;
-    return options.map((option) => ({ ...option, label: localizeButton(option.label) }));
+    return options().map((option) => ({ ...option, label: localizeButton(option.label) }));
   }
 
   return (
