@@ -50,7 +50,11 @@ impl TuiSession {
             .channel_session()
             .context("failed to open channel")?;
         channel
-            .request_pty("xterm-256color", None, Some((cols as u32, rows as u32, 0, 0)))
+            .request_pty(
+                "xterm-256color",
+                None,
+                Some((cols as u32, rows as u32, 0, 0)),
+            )
             .context("failed to request pty")?;
         channel.shell().context("failed to start shell")?;
 
@@ -97,6 +101,25 @@ impl TuiSession {
         self.settle(Duration::from_millis(500), Duration::from_secs(10))
     }
 
+    /// Drain any output that's arrived since the last read, without
+    /// sending anything -- lets a caller poll for a redraw that's still
+    /// settling asynchronously (e.g. `TuiScreen::Processing`).
+    pub fn refresh(&mut self) -> Result<()> {
+        self.settle(Duration::from_millis(500), Duration::from_secs(10))
+    }
+
+    /// Feed in whatever's already waiting on the channel, without blocking
+    /// to wait for more. Used by the long-lived background watcher
+    /// (`commands::exec::spawn_screen_watcher`) that ticks continuously
+    /// rather than waiting on one specific redraw the way `settle` does.
+    pub(crate) fn drain_available(&mut self) -> Result<bool> {
+        let mut changed = false;
+        while self.pump_once()? {
+            changed = true;
+        }
+        Ok(changed)
+    }
+
     /// Best-effort logout: the menu system is exited via its own "0"
     /// option rather than closing the socket out from under it. Errors are
     /// swallowed since the caller is tearing the session down regardless.
@@ -133,7 +156,7 @@ impl TuiSession {
     /// or `overall` elapses. Stands in for "wait until the next screen has
     /// finished rendering" without needing to know what that screen is --
     /// the app doesn't follow a fixed script, so it can't wait for a
-    /// specific expected pattern the way the original scripted runner did.
+    /// specific expected pattern
     fn settle(&mut self, quiet_for: Duration, overall: Duration) -> Result<()> {
         let deadline = Instant::now() + overall;
         let mut quiet_since: Option<Instant> = None;

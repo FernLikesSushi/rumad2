@@ -27,6 +27,11 @@ export type TuiScreen =
   | { kind: "Matricula"; courses: ScheduleCourse[]; mode: MatriculaMode }
   | { kind: "CourseResults"; courseCode: string; courseTitle: string; sections: CourseSection[] }
   | { kind: "WeeklySchedule"; days: string[]; rows: ScheduleRow[] }
+  | { kind: "MenuDespliegue"; options: MenuOption[] }
+  | { kind: "HorarioSemester"; options: MenuOption[] }
+  | { kind: "HorarioCurso" }
+  | { kind: "HorarioSeccion" }
+  | { kind: "Processing" }
   | { kind: "Notice"; message: string; raw: string }
   | { kind: "Disconnected" }
   | { kind: "Unknown"; raw: string; options: MenuOption[] };
@@ -63,4 +68,5 @@ export type Action =
   | { cmd: "connect"; args: { username?: string; password?: string } }
   | { cmd: "send"; args: { action: SendAction } }
   | { cmd: "login"; args: { idNumber: string; accessCode: string; ssnLast4: string; birthDate: string } }
+  | { cmd: "get_screen"; args: {} }
   | { cmd: "disconnect"; args: {} };

@@ -10,7 +10,7 @@ mod exec;
 pub mod interact;
 pub mod login;
 
-use exec::{act, blocking, finish, log_invoked, log_screen};
+use exec::{act, blocking, finish, log_invoked, log_screen, spawn_screen_watcher};
 
 use crate::config;
 use crate::screens::{self, TuiScreen};
@@ -35,7 +35,8 @@ pub async fn connect(
         username,
         if password.is_some() { "<redacted>" } else { "None" }
     ));
-    blocking(move || {
+    let watcher_app = app.clone();
+    let result = blocking(move || {
         let username = username.unwrap_or_else(|| config::DEFAULT_USERNAME.to_string());
         let password = password.unwrap_or_else(|| config::DEFAULT_PASSWORD.to_string());
 
@@ -56,7 +57,15 @@ pub async fn connect(
         *guard = Some(session);
         finish(&mut guard, screen)
     })
-    .await
+    .await;
+
+    // Started here rather than inside the closure above: needs the
+    // session already stored in `AppState` (so its own lock attempts find
+    // it) and the resolved screen as its baseline to diff against.
+    if let Ok(screen) = &result {
+        spawn_screen_watcher(watcher_app, screen.clone());
+    }
+    result
 }
 
 /// Re-read the current screen without sending any input, e.g. to poll for
@@ -64,7 +73,7 @@ pub async fn connect(
 #[tauri::command]
 pub async fn get_screen(app: AppHandle) -> Result<TuiScreen, String> {
     log_invoked("get_screen()");
-    act(app, |_session| Ok(())).await
+    act(app, |session| session.refresh()).await
 }
 
 /// Log out of the remote menu and drop the session.

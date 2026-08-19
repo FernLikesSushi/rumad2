@@ -1,55 +1,110 @@
 //! The remote's generalized advisory patterns -- lines that are *entirely*
 //! wrapped in a marker on both sides, e.g. "<< message >>" or "*** message
-//! ***" -- distinct from the specific "no esta disponible" rejection,
-//! which `classify` checks directly since it needs to win at high priority
-//! (see `TuiScreen::or_err`).
+//! ***". Split into two priority tiers, both checked directly by
+//! `classify` (not bundled into one function) since they don't agree on
+//! how urgently they need to win:
+//!
+//! - `extract_starred_notice` ("*** message ***") is, in every
+//!   live-observed *rejection* instance, actually a rejection like the
+//!   "no esta disponible" one `classify` already special-cases ("Curso
+//!   incorrecto", "NO tiene Matricula", "Curso NO Existe en Archivo
+//!   MTR-HORARIO") -- shown *on top of* the same prompt that triggered it
+//!   (`HorarioCurso`/`HorarioSeccion`'s own footer stays on screen
+//!   underneath). Checked at high priority for the same reason as that
+//!   one: matching the screen type first would silently swallow the
+//!   rejection instead of surfacing it. One screen also genuinely uses
+//!   this same marker as a plain title, not a rejection --
+//!   `CourseResultsScreen`'s own "*** Horarios de Matricula ***" header --
+//!   so `classify` checks this *after* `CourseResults`'s own detection
+//!   specifically, unlike the "no esta disponible" check (see `classify`'s
+//!   own comments for the exact ordering).
+//! - `extract_bracketed_or_boxed_notice` ("<< message >>", or a boxed
+//!   "****...****" variant) is genuinely just informational in every
+//!   observed instance (a disclaimer, a redirect) rather than a rejection,
+//!   so it stays low priority -- checked last, right before the `Unknown`
+//!   fallback, so it never overrides an already-modeled screen.
 
 use regex::Regex;
 use std::sync::OnceLock;
 
-fn advisory_patterns() -> &'static [Regex; 2] {
-    static PATTERNS: OnceLock<[Regex; 2]> = OnceLock::new();
-    PATTERNS.get_or_init(|| {
-        [
-            // A line that is *entirely* a "<< message >>" advisory, e.g.
-            // "<< NO oprimir tecla <Enter> al entrar los datos >>" (note
-            // the harmless nested single-bracket "<Enter>") or "<< Esta
-            // factura NO ES OFICIAL... >>". Anchored to the whole (trimmed)
-            // line so it doesn't match a bracketed key hint embedded
-            // mid-instruction, like "Oprima <<Enter>> para Continuar". The
-            // `[^<>]` boundaries on the captured content require the
-            // brackets to be *exactly* double -- distinct from the
-            // remote's other, unrelated "<<<  Oprima Return  >>>"
-            // triple-angle style (a plain "press enter" prompt, not an
-            // advisory), which would otherwise partially match and capture
-            // a mangled leftover bracket.
-            Regex::new(r"^<<([^<>].*?[^<>])>>$").unwrap(),
-            // A line that is *entirely* a "*** message ***" advisory, e.g.
-            // "*** NO tiene Matricula ***" (live-observed: shown browsing
-            // a period the student has no enrolled schedule for). The
-            // `[^*]` boundaries require exactly three stars on each side,
-            // same reasoning as the angle-bracket case -- MENU PRINCIPAL's
-            // own "***>>>  LEE tu Correo Electronico..." option line isn't
-            // anchored (it starts with "1.", not "***") and doesn't end in
-            // "***" either, so it can't collide with this pattern.
-            Regex::new(r"^\*\*\*([^*].*?[^*])\*\*\*$").unwrap(),
-        ]
+fn bracketed_notice_pattern() -> &'static Regex {
+    static PATTERN: OnceLock<Regex> = OnceLock::new();
+    // A line that is *entirely* a "<< message >>" advisory, e.g. "<< NO
+    // oprimir tecla <Enter> al entrar los datos >>" (note the harmless
+    // nested single-bracket "<Enter>") or "<< Esta factura NO ES
+    // OFICIAL... >>". Anchored to the whole (trimmed) line so it doesn't
+    // match a bracketed key hint embedded mid-instruction, like "Oprima
+    // <<Enter>> para Continuar". The `[^<>]` boundaries on the captured
+    // content require the brackets to be *exactly* double -- distinct from
+    // the remote's other, unrelated "<<<  Oprima Return  >>>" triple-angle
+    // style (a plain "press enter" prompt, not an advisory), which would
+    // otherwise partially match and capture a mangled leftover bracket.
+    PATTERN.get_or_init(|| Regex::new(r"^<<([^<>].*?[^<>])>>$").unwrap())
+}
+
+fn starred_notice_pattern() -> &'static Regex {
+    static PATTERN: OnceLock<Regex> = OnceLock::new();
+    // A line that is *entirely* a "*** message ***" rejection, e.g. "***
+    // Curso NO Existe en Archivo MTR-HORARIO ***". The `[^*]` boundaries
+    // require exactly three stars on each side -- MENU PRINCIPAL's own
+    // "***>>>  LEE tu Correo Electronico..." option line isn't anchored
+    // (it starts with "1.", not "***") and doesn't end in "***" either, so
+    // it can't collide with this pattern.
+    PATTERN.get_or_init(|| Regex::new(r"^\*\*\*([^*].*?[^*])\*\*\*$").unwrap())
+}
+
+fn extract_matching_line(raw: &str, pattern: &Regex) -> Option<String> {
+    raw.lines().find_map(|line| {
+        let captures = pattern.captures(line.trim())?;
+        let message = captures[1].trim();
+        message.contains(' ').then(|| message.to_string())
     })
 }
 
-/// Extracts an advisory line ("<< message >>" or "*** message ***"), if
-/// the screen has one. Deliberately excludes bare key-name hints like a
-/// lone "<<Enter>>" line (real advisories are full phrases, not a single
-/// word) -- see `advisory_patterns`.
-pub(super) fn extract_advisory_notice(raw: &str) -> Option<String> {
-    raw.lines().find_map(|line| {
-        let trimmed = line.trim();
-        advisory_patterns().iter().find_map(|pattern| {
-            let captures = pattern.captures(trimmed)?;
-            let message = captures[1].trim();
-            message.contains(' ').then(|| message.to_string())
+/// See this module's doc comment -- checked at high priority.
+pub(super) fn extract_starred_notice(raw: &str) -> Option<String> {
+    extract_matching_line(raw, starred_notice_pattern())
+}
+
+/// See this module's doc comment -- checked at low priority. Deliberately
+/// excludes bare key-name hints like a lone "<<Enter>>" line (real
+/// advisories are full phrases, not a single word).
+pub(super) fn extract_bracketed_or_boxed_notice(raw: &str) -> Option<String> {
+    extract_matching_line(raw, bracketed_notice_pattern()).or_else(|| extract_boxed_notice(raw))
+}
+
+/// Extracts a boxed advisory -- a "****...****" border line, then one or
+/// more "*  text  *" content lines, then a matching border again, e.g.
+/// `screens/menu_despliegue/turno_seleccion.txt`'s "Su TURNO para
+/// seleccion de cursos y secciones..." redirect box. Content lines are
+/// joined into one message (each line's own internal run of spaces
+/// collapsed to one, same as the box's visual word-wrapping) rather than
+/// kept as separate lines, since this is one continuous advisory that just
+/// happens to be wrapped across several rows to fit the box.
+fn extract_boxed_notice(raw: &str) -> Option<String> {
+    let has_border = raw
+        .lines()
+        .any(|line| !line.trim().is_empty() && line.trim().chars().all(|c| c == '*'));
+    if !has_border {
+        return None;
+    }
+
+    let parts: Vec<String> = raw
+        .lines()
+        .filter_map(|line| {
+            let trimmed = line.trim();
+            if trimmed.is_empty() || trimmed.chars().all(|c| c == '*') {
+                return None; // blank row, or the border itself
+            }
+            let inner = trimmed.strip_prefix('*')?.strip_suffix('*')?.trim();
+            if inner.is_empty() || inner.chars().all(|c| c == '-') {
+                return None; // blank interior row, or a decorative underline
+            }
+            Some(inner.split_whitespace().collect::<Vec<_>>().join(" "))
         })
-    })
+        .collect();
+
+    (!parts.is_empty()).then(|| parts.join(" "))
 }
 
 #[cfg(test)]
@@ -60,6 +115,8 @@ mod tests {
     const EVALUO_PAGO: &str = include_str!("../../../screens/matricula/evaluo_pago.txt");
     const HORARIOS_DE_SECCION: &str =
         include_str!("../../../screens/matricula/horarios_de_seccion.txt");
+    const TURNO_SELECCION: &str =
+        include_str!("../../../screens/menu_despliegue/turno_seleccion.txt");
 
     #[test]
     fn bracketed_notice_on_an_unmodeled_screen_is_extracted_cleanly() {
@@ -97,13 +154,16 @@ mod tests {
     }
 
     #[test]
-    fn extract_advisory_notice_rejects_bare_key_hints() {
-        assert_eq!(extract_advisory_notice("<<Enter>>"), None);
+    fn extract_bracketed_notice_rejects_bare_key_hints() {
+        assert_eq!(extract_bracketed_or_boxed_notice("<<Enter>>"), None);
         assert_eq!(
-            extract_advisory_notice("Oprima <<Enter>> para Continuar"),
+            extract_bracketed_or_boxed_notice("Oprima <<Enter>> para Continuar"),
             None
         );
-        assert_eq!(extract_advisory_notice("<<<  Oprima Return  >>>"), None);
+        assert_eq!(
+            extract_bracketed_or_boxed_notice("<<<  Oprima Return  >>>"),
+            None
+        );
     }
 
     #[test]
@@ -125,8 +185,42 @@ mod tests {
         // isn't a "*** message ***" advisory (no closing "***", and it
         // isn't the whole trimmed line) -- must not be mistaken for one.
         assert_eq!(
-            extract_advisory_notice("1.  ***>>>  LEE tu Correo Electronico en ->  outlook.com"),
+            extract_starred_notice("1.  ***>>>  LEE tu Correo Electronico en ->  outlook.com"),
             None
         );
+    }
+
+    #[test]
+    fn starred_rejection_wins_over_the_prompt_still_showing_underneath_it() {
+        // Live-observed: searching a course/section that doesn't exist
+        // redisplays the *same* HorarioSeccion prompt with the rejection
+        // still on screen (grounded in a real capture), rather than
+        // replacing it entirely -- the rejection must still win, the same
+        // way "no esta disponible" already does for MainMenu.
+        let raw = "\
+S e c c i o n  (Ej. 001#)                                          [PF4=(9)Fin]
+
+               ***  Curso NO Existe en Archivo MTR-HORARIO  ***";
+        let TuiScreen::Notice(NoticeScreen { message, .. }) = classify(raw) else {
+            panic!("expected Notice");
+        };
+        assert_eq!(message, "Curso NO Existe en Archivo MTR-HORARIO");
+        assert!(classify(raw).or_err().is_ok());
+    }
+
+    #[test]
+    fn boxed_notice_is_extracted_and_joined_into_one_message() {
+        // MENU DESPLIEGUE option 5 (Turno de seleccion...) -- a redirect
+        // notice wrapped in a full "****...****"-bordered box, its text
+        // word-wrapped across several rows.
+        let TuiScreen::Notice(NoticeScreen { message, .. }) = classify(TURNO_SELECCION) else {
+            panic!("expected Notice");
+        };
+        assert_eq!(
+            message,
+            "Su TURNO para seleccion de cursos y secciones o las fechas de los examenes finales los podran ver a traves de Mi Portal Colegial en home.uprm.edu"
+        );
+        // Informational, not a rejection -- must not become a command error.
+        assert!(classify(TURNO_SELECCION).or_err().is_ok());
     }
 }
