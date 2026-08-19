@@ -1,29 +1,51 @@
-import { For } from "solid-js";
+import { createSignal, For } from "solid-js";
 import { t } from "../i18n";
-import type { LoginField } from "../types";
 
-// Only the access code (PIN) and SSN digits are sensitive enough to mask
-// on screen -- the ID number and birth date aren't secret on their own.
-const MASKED_FIELDS = new Set(["access_code", "ssn_last4"]);
+// Hardcoded rather than read from the backend's `fields` -- the remote's
+// own labels for this specific form arrive mangled over the wire (see
+// `LoginField`'s doc comment on the Rust side, which hardcodes the same
+// text for the same reason), and the field set/order is fixed regardless.
+// Unlike other remote-mirroring text, this is safe to localize since it's
+// a fixed, known set rather than open-ended scraped content -- see
+// `Messages.loginFields`'s doc comment.
+function fields() {
+  const messages = t().loginFields;
+  return [
+    { key: "id_number", ...messages.idNumber, masked: false },
+    { key: "access_code", ...messages.accessCode, masked: true },
+    { key: "ssn_last4", ...messages.ssnLast4, masked: true },
+    { key: "birth_date", ...messages.birthDate, masked: false },
+  ];
+}
 
 export function LoginScreen(props: {
-  fields: LoginField[];
-  values: Record<string, string>;
-  onChange: (key: string, value: string) => void;
-  onSubmit: (e: Event) => void;
+  login: (idNumber: string, accessCode: string, ssnLast4: string, birthDate: string) => void;
   busy: boolean;
 }) {
+  const [values, setValues] = createSignal<Record<string, string>>({});
+
+  function change(key: string, value: string) {
+    setValues({ ...values(), [key]: value });
+  }
+
+  function submit(e: Event) {
+    e.preventDefault();
+    const v = values();
+    props.login(v.id_number ?? "", v.access_code ?? "", v.ssn_last4 ?? "", v.birth_date ?? "");
+    setValues({});
+  }
+
   return (
     <>
       <h2>{t().authTitle}</h2>
-      <form class="login" onSubmit={props.onSubmit}>
-        <For each={props.fields}>
+      <form class="login" onSubmit={submit}>
+        <For each={fields()}>
           {(field) => (
             <input
-              type={MASKED_FIELDS.has(field.key) ? "password" : "text"}
+              type={field.masked ? "password" : "text"}
               placeholder={`${field.label} (${field.hint})`}
-              value={props.values[field.key] ?? ""}
-              onInput={(e) => props.onChange(field.key, e.currentTarget.value)}
+              value={values()[field.key] ?? ""}
+              onInput={(e) => change(field.key, e.currentTarget.value)}
             />
           )}
         </For>

@@ -49,6 +49,16 @@ export type SendAction =
   // listed options (e.g. Login's PF4).
   | { kind: "Exit" };
 
+// Mirrors `commands::interact::send` (the backend's single generic entry
+// point for `SendAction`) one-for-one: App.tsx owns the actual dispatch
+// (there's only one `createResource`/`action` signal to drive), but each
+// screen component gets just this raw primitive and builds its own
+// specific functions from it -- e.g. a `choose(key)` calling
+// `send({kind:"Select",key})` -- exactly like each Rust screen struct's
+// own `RumadScreen` impl decides what its `select`/`line`/`exit` methods
+// actually do, rather than `commands/interact.rs` deciding that for them.
+export type Send = (action: SendAction) => void;
+
 export type Action =
   | { cmd: "connect"; args: { username?: string; password?: string } }
   | { cmd: "send"; args: { action: SendAction } }

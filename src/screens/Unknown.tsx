@@ -1,32 +1,30 @@
-import { Show } from "solid-js";
+import { createSignal, Show } from "solid-js";
 import { t } from "../i18n";
 import { devMode } from "../devMode";
 import { OptionButtons } from "../components/OptionButtons";
 import { FreeTextForm } from "../components/FreeTextForm";
-import type { MenuOption } from "../types";
+import type { MenuOption, Send } from "../types";
 
-export function UnknownScreen(props: {
-  raw: string;
-  options: MenuOption[];
-  busy: boolean;
-  onChoose: (key: string) => void;
-  freeText: string;
-  onFreeTextInput: (value: string) => void;
-  onFreeTextSubmit: (e: Event) => void;
-}) {
+export function UnknownScreen(props: { raw: string; options: MenuOption[]; busy: boolean; send: Send }) {
+  const [freeText, setFreeText] = createSignal("");
+
+  function choose(key: string) {
+    props.send({ kind: "Select", key });
+  }
+
+  function submit(text: string) {
+    props.send({ kind: "Line", text });
+    setFreeText("");
+  }
+
   return (
     <>
       <p class="hint">{t().unknownHint}</p>
       <Show when={devMode()}>
         <pre class="raw">{props.raw}</pre>
       </Show>
-      <OptionButtons options={props.options} separator=". " busy={props.busy} onChoose={props.onChoose} />
-      <FreeTextForm
-        value={props.freeText}
-        onInput={props.onFreeTextInput}
-        onSubmit={props.onFreeTextSubmit}
-        busy={props.busy}
-      />
+      <OptionButtons options={props.options} separator=". " busy={props.busy} onChoose={choose} />
+      <FreeTextForm value={freeText()} onInput={setFreeText} onSubmit={submit} busy={props.busy} />
     </>
   );
 }
