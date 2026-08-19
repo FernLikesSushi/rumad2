@@ -10,7 +10,8 @@
 //! directly.
 
 use super::{
-    CourseResultsScreen, LoginScreen, MainMenuScreen, MatriculaScreen, SelectPeriodScreen,
+    CourseResultsScreen, HorarioCursoScreen, HorarioSeccionScreen, HorarioSemesterScreen,
+    LoginScreen, MainMenuScreen, MatriculaScreen, MenuDespliegueScreen, SelectPeriodScreen,
     UnknownScreen, WeeklyScheduleScreen,
 };
 use crate::ssh::key::Key;
@@ -47,6 +48,10 @@ pub(crate) trait RumadScreen {
 impl RumadScreen for MainMenuScreen {}
 impl RumadScreen for SelectPeriodScreen {}
 impl RumadScreen for UnknownScreen {}
+/// Structurally identical to `MainMenu` -- confirmed live, its own "0.
+/// Finalizar" is the same consistent exit key the default `exit()` sends
+/// (see that method's doc comment).
+impl RumadScreen for MenuDespliegueScreen {}
 
 impl RumadScreen for LoginScreen {
     fn select(&self, _session: &mut TuiSession, _key: &str) -> anyhow::Result<()> {
@@ -106,5 +111,44 @@ impl RumadScreen for WeeklyScheduleScreen {
     /// screen in this app accepts it to continue/redraw.
     fn exit(&self, _session: &mut TuiSession) -> anyhow::Result<()> {
         anyhow::bail!("WeeklySchedule's exit keystroke isn't confirmed live; try line(\"\") instead")
+    }
+}
+
+impl RumadScreen for HorarioSemesterScreen {
+    /// No free-text prompt here, just the four numbered/lettered options.
+    fn line(&self, _session: &mut TuiSession, _text: &str) -> anyhow::Result<()> {
+        anyhow::bail!("HorarioSemester has no free-text prompt; use select()")
+    }
+
+    /// PF4 exits this prompt specifically -- its own footer's
+    /// "[PF4=(9)Fin]" hint, same reasoning as `Login`/`CourseResults`.
+    fn exit(&self, session: &mut TuiSession) -> anyhow::Result<()> {
+        session.send_key(Key::F4)
+    }
+}
+
+impl RumadScreen for HorarioCursoScreen {
+    /// No numbered options, just the free-text course-code search.
+    fn select(&self, _session: &mut TuiSession, _key: &str) -> anyhow::Result<()> {
+        anyhow::bail!("HorarioCurso has no selectable options; use line()")
+    }
+
+    /// PF4 exits this prompt specifically -- its own footer's
+    /// "[PF4=(9)Fin]" hint, same reasoning as `HorarioSemester`.
+    fn exit(&self, session: &mut TuiSession) -> anyhow::Result<()> {
+        session.send_key(Key::F4)
+    }
+}
+
+impl RumadScreen for HorarioSeccionScreen {
+    /// No numbered options, just the free-text section-number search.
+    fn select(&self, _session: &mut TuiSession, _key: &str) -> anyhow::Result<()> {
+        anyhow::bail!("HorarioSeccion has no selectable options; use line()")
+    }
+
+    /// PF4 exits this prompt specifically -- its own footer's
+    /// "[PF4=(9)Fin]" hint, same reasoning as `HorarioCurso`.
+    fn exit(&self, session: &mut TuiSession) -> anyhow::Result<()> {
+        session.send_key(Key::F4)
     }
 }

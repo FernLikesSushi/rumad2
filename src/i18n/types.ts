@@ -49,6 +49,20 @@ export interface Messages {
   // them is the same tradeoff as `loginFields`, just per-screen instead
   // of per-field.
   mainMenuTitle: string;
+  menuDespliegueTitle: string;
+  horarioMatriculaTitle: string;
+  // `HorarioCursoScreen` carries no data of its own (see its Rust doc
+  // comment) -- its "(Ej. QUIM3001L) Puede indicar solo MATERIA" hint is
+  // fixed boilerplate, not per-user scraped content, so it's hardcoded and
+  // localized here rather than threaded across the wire, same tradeoff as
+  // `loginFields`/the screen titles above.
+  horarioCursoHint: string;
+  // Same tradeoff as `horarioCursoHint`, for `HorarioSeccionScreen`'s
+  // "(Ej. 001#)" hint.
+  horarioSeccionHint: string;
+  // `TuiScreen::Processing` (the remote's "Programa en Proceso" marquee)
+  // carries no data either -- see that variant's Rust doc comment.
+  processingTitle: string;
   selectPeriodTitle: string;
   matriculaTitle: string;
   matriculaColumns: { course: string; section: string; credits: string; status: string };

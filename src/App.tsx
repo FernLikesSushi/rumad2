@@ -1,4 +1,5 @@
-import { createSignal, createResource, createMemo, createEffect, Match, Switch, Show } from "solid-js";
+import { createSignal, createResource, createMemo, createEffect, onMount, onCleanup, Match, Switch, Show } from "solid-js";
+import { listen } from "@tauri-apps/api/event";
 import { t } from "./i18n";
 import { runAction } from "./api";
 import type { TuiScreen, Dialog, Action, Send } from "./types";
@@ -11,6 +12,11 @@ import { SelectPeriodScreen } from "./screens/SelectPeriod";
 import { MatriculaScreen } from "./screens/Matricula";
 import { CourseResultsScreen } from "./screens/CourseResults";
 import { WeeklyScheduleScreen } from "./screens/WeeklySchedule";
+import { MenuDespliegueScreen } from "./screens/MenuDespliegue";
+import { HorarioSemesterScreen } from "./screens/HorarioSemester";
+import { HorarioCursoScreen } from "./screens/HorarioCurso";
+import { HorarioSeccionScreen } from "./screens/HorarioSeccion";
+import { ProcessingScreen } from "./screens/Processing";
 import { DisconnectedScreen } from "./screens/Disconnected";
 import { UnknownScreen } from "./screens/Unknown";
 import "./App.css";
@@ -99,6 +105,17 @@ function App() {
     mutate(null);
   }
 
+  // The backend's `spawn_screen_watcher` (`commands/exec.rs`) keeps
+  // polling in the background for screens that redraw a second time on
+  // their own (`TuiScreen::Processing`) and pushes this event once that
+  // happens, instead of the frontend needing to poll for it -- same
+  // `mutate` override `reconnect` above uses, just driven by the backend
+  // rather than a user action.
+  onMount(() => {
+    const unlisten = listen<TuiScreen>("screen-changed", (event) => mutate(event.payload));
+    onCleanup(() => void unlisten.then((f) => f()));
+  });
+
   return (
     <main class="container">
       <Header busy={busy()} />
@@ -148,6 +165,34 @@ function App() {
                 busy={busy()}
                 send={send}
               />
+            </Match>
+
+            <Match when={screen()?.kind === "MenuDespliegue"}>
+              <MenuDespliegueScreen
+                options={(screen() as Extract<TuiScreen, { kind: "MenuDespliegue" }>).options}
+                busy={busy()}
+                send={send}
+              />
+            </Match>
+
+            <Match when={screen()?.kind === "HorarioSemester"}>
+              <HorarioSemesterScreen
+                options={(screen() as Extract<TuiScreen, { kind: "HorarioSemester" }>).options}
+                busy={busy()}
+                send={send}
+              />
+            </Match>
+
+            <Match when={screen()?.kind === "HorarioCurso"}>
+              <HorarioCursoScreen busy={busy()} send={send} />
+            </Match>
+
+            <Match when={screen()?.kind === "HorarioSeccion"}>
+              <HorarioSeccionScreen busy={busy()} send={send} />
+            </Match>
+
+            <Match when={screen()?.kind === "Processing"}>
+              <ProcessingScreen />
             </Match>
 
             <Match when={screen()?.kind === "Disconnected"}>

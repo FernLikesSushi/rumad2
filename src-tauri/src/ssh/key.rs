@@ -14,7 +14,15 @@ impl Key {
     pub(crate) fn as_bytes(self) -> &'static [u8] {
         match self {
             Key::Enter => b"\r",
-            Key::F4 => b"\x1b[20~",
+            // The PTY is requested as `xterm-256color` (see
+            // `TuiSession::connect`), under which F1-F4 specifically reuse
+            // the old DEC VT220 SS3 sequences (ESC O P/Q/R/S) rather than
+            // the CSI "n~" form later function keys use -- this is the
+            // real PF4 byte sequence, distinct from `\x1b[20~` (which is
+            // F9 under the same convention, not PF4 at all; a previous,
+            // never-actually-exercised guess here sent that instead and
+            // silently did nothing on the remote).
+            Key::F4 => b"\x1bOS",
         }
     }
 }
