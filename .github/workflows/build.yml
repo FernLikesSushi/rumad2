@@ -99,8 +99,16 @@ jobs:
       # by someone who explicitly trusts rumad-2-ci.cer first (also
       # uploaded below) -- swap in a real cert (import it and drop the
       # New-SelfSignedCertificate step) once one exists.
+      #
+      # `continue-on-error`: this is a bonus artifact, not the primary
+      # deliverable (tauri-action's .msi/.exe/etc. already built and
+      # uploaded above, in an earlier, separate step) -- a runner-image
+      # quirk in here (e.g. an SDK version folder present but missing the
+      # actual tool, live-observed on windows-latest) shouldn't fail the
+      # whole job over it.
       - name: Package MSIX
         if: matrix.platform == 'windows-latest'
+        continue-on-error: true
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
@@ -131,10 +139,23 @@ jobs:
             -replace '__PUBLISHER__', $publisher `
             | Set-Content "$payload\AppxManifest.xml"
 
-          $sdkBin = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\*\x64" -Directory |
-            Sort-Object Name -Descending | Select-Object -First 1
-          $makeappx = Join-Path $sdkBin.FullName "makeappx.exe"
-          $signtool = Join-Path $sdkBin.FullName "signtool.exe"
+          # Search for the actual executables rather than assuming every
+          # version folder under bin\ has a populated x64\ subfolder --
+          # live-observed on windows-latest: an old SDK version folder
+          # (10.0.14393.0) exists there but doesn't contain makeappx.exe,
+          # so picking "the newest-looking folder name" isn't reliable.
+          # Sorting matched full paths descending still favors the newest
+          # SDK version among the ones that actually have the tool, since
+          # the version number sits at the same position in every path.
+          $makeappx = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Filter makeappx.exe -Recurse -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -like "*\x64\*" } |
+            Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
+          $signtool = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Filter signtool.exe -Recurse -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -like "*\x64\*" } |
+            Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
+          if (-not $makeappx -or -not $signtool) {
+            throw "makeappx.exe/signtool.exe not found under Windows Kits -- skipping MSIX"
+          }
 
           $bundleDir = "src-tauri\target\release\bundle\msix"
           New-Item -ItemType Directory -Path $bundleDir -Force | Out-Null
@@ -166,6 +187,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          if ! compgen -G "src-tauri/target/release/bundle/msix/*.msix" > /dev/null; then
+            echo "No MSIX bundle produced (Package MSIX step failed/skipped) -- skipping upload."
+            exit 0
+          fi
           gh release upload "${{ github.event.release.tag_name }}" \
             src-tauri/target/release/bundle/msix/*.msix \
             src-tauri/target/release/bundle/msix/*.cer \
