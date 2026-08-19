@@ -36,6 +36,14 @@ export interface Messages {
   // `menu.rs`'s `scrape_horario_semester_options`). Callers fall back to
   // the raw label the same way.
   periodLabels: Record<string, string>;
+  // Same tradeoff again, keyed by `MainMenu`/`MenuDespliegue`/
+  // `SelectPeriod`'s own raw option text (e.g. "Seleccion de Secciones
+  // (Matricula)", "Curriculo", "1er Sem", "salir" -- see the real
+  // transcripts in `screens/mod.rs`'s and `screens/menu.rs`'s tests).
+  // Unlike `periodLabels`/`actionLabels`, this text is already
+  // full/readable Spanish, not an abbreviation, so `es.ts` leaves it
+  // empty and relies on the raw-label fallback.
+  menuLabels: Record<string, string>;
   // `Login`'s 4 fields are hardcoded on both ends (see `Login.tsx`'s doc
   // comment -- the remote's own labels for this specific form arrive
   // mangled over the wire) rather than read off the backend's `fields`,

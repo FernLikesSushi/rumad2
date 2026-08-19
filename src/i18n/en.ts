@@ -47,6 +47,34 @@ const en: Messages = {
     "2doSem": "2nd Semester",
     "2doVer": "2nd Summer",
   },
+  // Grounded in the real transcripts `screens/mod.rs`'s
+  // `classifies_real_main_menu_transcript` and `screens/menu.rs`'s
+  // `classifies_menu_despliegue`/`classifies_select_period` tests check
+  // against.
+  menuLabels: {
+    "***>>>  LEE tu Correo Electronico en ->  outlook.com": "***>>>  CHECK your Email at ->  outlook.com",
+    "Seleccion de Secciones  (Matricula)": "Section Selection (Registration)",
+    "Modificar Codigo de Acceso Permanente": "Change Permanent Access Code",
+    "Informacion Correo Electronico": "Email Information",
+    "Ver otra informacion": "View Other Information",
+    "Seleccion de Modalidad P/D/F": "Select P/D/F Grading Mode",
+    "SALIR DEL SISTEMA": "EXIT SYSTEM",
+    "Evaluacion certificacion de Ayuda Economica": "Financial Aid Certification Evaluation",
+    Curriculo: "Curriculum",
+    "Evaluo de facturacion de matricula": "Tuition Billing Estimate",
+    Matricula: "Registration",
+    "Turno de seleccion de cursos/secciones o Examenes finales": "Course/Section Selection Time Slot or Final Exams",
+    "Horario de cursos disponibles en Matricula": "Available Course Schedule in Registration",
+    "Titulo de cursos disponibles en Horario": "Course Title List in Schedule",
+    "Horario de matricula grafico": "Graphical Registration Schedule",
+    "Evaluo de matricula e indicadores": "Registration Estimate and Indicators",
+    Finalizar: "Finish",
+    "1er Sem": "1st Semester",
+    "2do Sem": "2nd Semester",
+    "1er Verano o Verano Extendido": "1st Summer or Extended Summer",
+    "2do Verano o Admision Temprana": "2nd Summer or Early Admission",
+    salir: "exit",
+  },
   loginFields: {
     idNumber: { label: "ID Number", hint: "e.g. 802999999" },
     accessCode: { label: "Permanent Access Code", hint: "e.g. 1234" },

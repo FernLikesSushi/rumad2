@@ -48,6 +48,10 @@ const es: Messages = {
     "2doSem": "2do Semestre",
     "2doVer": "2do Verano",
   },
+  // MainMenu/MenuDespliegue/SelectPeriod's own option text is already
+  // full, readable Spanish, so there's nothing to translate here -- the
+  // fallback-to-raw-label behavior covers it.
+  menuLabels: {},
   loginFields: {
     idNumber: { label: "Número de Identificación", hint: "Ej. 802999999" },
     accessCode: { label: "Código de Acceso Permanente", hint: "Ej. 1234" },

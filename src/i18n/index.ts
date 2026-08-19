@@ -17,12 +17,12 @@ export const [locale, setLocale] = createSignal<Locale>(detectLocale());
 /** Reactive accessor for the current locale's message catalog: `t().send`. */
 export const t = createMemo(() => catalogs[locale()]);
 
-// Menu-driven screens (Matricula's Actions, MenuScreen's HorarioSemester)
+// Menu-driven screens (Matricula's Actions, MenuScreen's every MenuKind)
 // render buttons labeled with the remote's own raw text -- localize by
 // string-matching against whichever catalog covers that label
-// (`actionLabels`/`periodLabels`; their key sets don't overlap), falling
-// back to the raw label for anything neither one lists.
+// (`actionLabels`/`periodLabels`/`menuLabels`; their key sets don't
+// overlap), falling back to the raw label for anything none of them list.
 export function localizeButton(label: string): string {
   const messages = t();
-  return messages.actionLabels[label] ?? messages.periodLabels[label] ?? label;
+  return messages.actionLabels[label] ?? messages.periodLabels[label] ?? messages.menuLabels[label] ?? label;
 }
