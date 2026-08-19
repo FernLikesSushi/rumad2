@@ -230,7 +230,7 @@ function App() {
         </div>
       </Show>
 
-      <Show when={true || busy()}>
+      <Show when={busy()}>
         <div class="footer text-5xl">
           <Spinner />
         </div>
