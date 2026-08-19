@@ -18,4 +18,5 @@ export interface Messages {
   logout: string;
   errorTitle: string;
   noticeTitle: string;
+  authTitle: string;
 }

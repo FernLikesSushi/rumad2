@@ -1,0 +1,22 @@
+ 18/ago/2026       U.P.R. - Recinto Universitario de Mayagez            8:48 pm
+[CONFIRMADA]            * MATRICULA  1er Sem  2026-2027 *
+
+      REDACTED-USER-ID      REDACTED-NAME          [0509 3]
+
+   Curso    Sec.  Crs.  Sal�     D�s - Horas         Profesor
+   -----    ----  ----  -----     ------------         --------
+ BIOL 3045    1    S 104A W       12:30- 2:20pm
+ EDFI 3645  041    2    CM210  LW      10:00-10:50   FIGUEROA ROBLES, IRIS A.
+ FILO 4045  020    3    CH119  LWV      8:30- 9:20   THE LORAX
+ INGE 3045  086    3    S 305  MJ       2:00- 3:15pm CAVE JOHNSON
+
+
+
+
+
+
+
+* Cursos :  6       Cr�itos :  9 *
+--Leyenda:  @ =  No cumple con los prerrequisitos o correquisitos
+            & = Curso aprobado o matriculado actualmente
+          Sec.=  Secci� cerrada                Oprima <<Enter>> para Finalizar

@@ -23,6 +23,7 @@ const es: Messages = {
   logout: "Salir",
   errorTitle: "Error",
   noticeTitle: "Aviso",
+  authTitle: "Autenticacion",
 };
 
 export default es;

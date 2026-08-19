@@ -122,6 +122,25 @@ pub async fn send_input(app: AppHandle, text: String) -> Result<TuiScreen, Strin
     .await
 }
 
+/// Send raw text with no trailing Enter -- required for fixed-field forms
+/// like `Login`, which explicitly warns against pressing Enter while
+/// filling it in. Use `send_input` instead for anything Enter-submitted.
+#[tauri::command]
+pub async fn send_text(app: AppHandle, text: String) -> Result<TuiScreen, String> {
+    log_invoked(&format!("send_text(text={text:?})"));
+    blocking(move || {
+        let state = app.state::<AppState>();
+        let mut guard = state.0.lock().map_err(|_| "session lock poisoned")?;
+        let session = guard.as_mut().ok_or("not connected")?;
+        session.send_text(&text).map_err(|e| e.to_string())?;
+        let raw = session.screen_text();
+        log_screen(&raw);
+        let screen = screens::classify(&raw);
+        finish(&mut guard, screen)
+    })
+    .await
+}
+
 /// Send a single non-printable key (arrows, Escape, Ctrl-C, ...) by name --
 /// see `Key::parse` for the accepted names.
 #[tauri::command]

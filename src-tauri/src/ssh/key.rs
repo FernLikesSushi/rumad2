@@ -15,6 +15,10 @@ pub enum Key {
     CtrlC,
     CtrlD,
     CtrlZ,
+    /// Sent by the real remote's `Login` screen's footer as "PF1=(6)".
+    F1,
+    /// Sent by the real remote's `Login` screen's footer as "PF4=(9)".
+    F4,
 }
 
 impl Key {
@@ -33,6 +37,8 @@ impl Key {
             Key::CtrlC => b"\x03",
             Key::CtrlD => b"\x04",
             Key::CtrlZ => b"\x1a",
+            Key::F1 => b"\x1b[17~",
+            Key::F4 => b"\x1b[20~",
         }
     }
 
@@ -51,6 +57,8 @@ impl Key {
             "CtrlC" => Key::CtrlC,
             "CtrlD" => Key::CtrlD,
             "CtrlZ" => Key::CtrlZ,
+            "F6" => Key::F1,
+            "F9" => Key::F4,
             _ => return None,
         })
     }

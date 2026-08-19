@@ -19,6 +19,7 @@ const en: Messages = {
   logout: "Log out",
   errorTitle: "Error",
   noticeTitle: "Notice",
+  authTitle: "Authentication",
 };
 
 export default en;

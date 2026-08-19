@@ -4,9 +4,23 @@ import { t, locale, setLocale, type Locale } from "./i18n";
 import "./App.css";
 
 type MenuOption = { key: string; label: string };
+type LoginField = { key: string; label: string; hint: string };
+type ScheduleCourse = { slot: string; course: string; section: string; credits: string; status: string };
+type MatriculaPrompt =
+  | { kind: "Actions"; options: MenuOption[] }
+  | { kind: "Bajas" }
+  | { kind: "Altas" }
+  | { kind: "Cambio" };
+
+// Bajas/Altas/Cambio all show the same "course abbreviation, or FIN" free-
+// text prompt -- only the [Bajas]/[Altas]/[Cambio] tag differs on-screen.
+const FREE_TEXT_PROMPTS = new Set(["Bajas", "Altas", "Cambio"]);
 
 type TuiScreen =
   | { kind: "MainMenu"; options: MenuOption[] }
+  | { kind: "Login"; fields: LoginField[] }
+  | { kind: "SelectPeriod"; options: MenuOption[] }
+  | { kind: "Matricula"; courses: ScheduleCourse[]; prompt: MatriculaPrompt }
   | { kind: "Notice"; message: string; raw: string }
   | { kind: "Disconnected" }
   | { kind: "Unknown"; raw: string; options: MenuOption[] };
@@ -16,6 +30,7 @@ type Dialog = { title: string; message: string };
 type Action =
   | { cmd: "connect"; args: { username?: string; password?: string } }
   | { cmd: "send_input"; args: { text: string } }
+  | { cmd: "login"; args: { idNumber: string; accessCode: string; ssnLast4: string; birthDate: string } }
   | { cmd: "disconnect"; args: {} };
 
 // The resource's fetcher: `null` means "session ended",
@@ -26,6 +41,17 @@ async function runAction(action: Action): Promise<TuiScreen | null> {
     await invoke("disconnect");
     return null;
   }
+  if (action.cmd === "login") {
+    // Fixed-width auto-advancing fields, confirmed by the user: fill each
+    // one in order with no separator keystroke -- the remote warns
+    // against pressing Enter, so `send_text` (no trailing Enter) is used
+    // for every field, including the last.
+    const { idNumber, accessCode, ssnLast4, birthDate } = action.args;
+    await invoke<TuiScreen>("send_text", { text: idNumber });
+    await invoke<TuiScreen>("send_text", { text: accessCode });
+    await invoke<TuiScreen>("send_text", { text: ssnLast4 });
+    return invoke<TuiScreen>("send_text", { text: birthDate });
+  }
   return invoke<TuiScreen>(action.cmd, action.args);
 }
 
@@ -35,6 +61,7 @@ function App() {
   const [username, setUsername] = createSignal("");
   const [password, setPassword] = createSignal("");
   const [freeText, setFreeText] = createSignal("");
+  const [loginValues, setLoginValues] = createSignal<Record<string, string>>({});
   const [dialog, setDialog] = createSignal<Dialog | null>(null);
 
   const [action, setAction] = createSignal<Action>();
@@ -50,6 +77,14 @@ function App() {
     if (result === undefined || result?.kind === "Notice") return prev ?? null;
     return result;
   }, null);
+
+  // `Matricula`'s prompt is nested one level deeper than the other screen
+  // kinds, which makes repeated inline `as Extract<...>` casts unwieldy --
+  // narrow it once here instead.
+  const matricula = createMemo(() => {
+    const s = screen();
+    return s?.kind === "Matricula" ? s : undefined;
+  });
 
   // Opening a dialog is a genuine side effect (and independently
   // dismissible via the close button), unlike `screen` above -- it
@@ -86,6 +121,21 @@ function App() {
 
   function disconnect() {
     setAction({ cmd: "disconnect", args: {} });
+  }
+
+  function submitLogin(e: Event) {
+    e.preventDefault();
+    const values = loginValues();
+    setAction({
+      cmd: "login",
+      args: {
+        idNumber: values.id_number ?? "",
+        accessCode: values.access_code ?? "",
+        ssnLast4: values.ssn_last4 ?? "",
+        birthDate: values.birth_date ?? "",
+      },
+    });
+    setLoginValues({});
   }
 
   // The remote already closed the session server-side, so this just
@@ -168,6 +218,97 @@ function App() {
                   )}
                 </For>
               </div>
+            </Match>
+
+            <Match when={screen()?.kind === "Login"}>
+              <h2>{t().authTitle}</h2>
+              <form class="login" onSubmit={submitLogin}>
+                <For each={(screen() as Extract<TuiScreen, { kind: "Login" }>).fields}>
+                  {(field) => (
+                    <input
+                      type="password"
+                      placeholder={`${field.label} (${field.hint})`}
+                      value={loginValues()[field.key] ?? ""}
+                      onInput={(e) =>
+                        setLoginValues({ ...loginValues(), [field.key]: e.currentTarget.value })
+                      }
+                    />
+                  )}
+                </For>
+                <button type="submit" disabled={busy()}>
+                  {t().send}
+                </button>
+              </form>
+            </Match>
+
+            <Match when={screen()?.kind === "SelectPeriod"}>
+              <h2>Indique Semestre</h2>
+              <div class="options">
+                <For each={(screen() as Extract<TuiScreen, { kind: "SelectPeriod" }>).options}>
+                  {(option) => (
+                    <button disabled={busy()} onClick={() => chooseOption(option.key)}>
+                      {option.key}={option.label}
+                    </button>
+                  )}
+                </For>
+              </div>
+            </Match>
+
+            <Match when={matricula()}>
+              {(m) => (
+                <>
+                  <h2>M A T R I C U L A</h2>
+                  <table class="courses">
+                    <thead>
+                      <tr>
+                        <th>Curso</th>
+                        <th>Seccion</th>
+                        <th>Cr.</th>
+                        <th>Grado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <For each={m().courses}>
+                        {(c) => (
+                          <tr>
+                            <td>{c.course}</td>
+                            <td>{c.section}</td>
+                            <td>{c.credits}</td>
+                            <td>{c.status}</td>
+                          </tr>
+                        )}
+                      </For>
+                    </tbody>
+                  </table>
+
+                  <Show when={m().prompt.kind === "Actions"}>
+                    <div class="options">
+                      <For
+                        each={(m().prompt as Extract<MatriculaPrompt, { kind: "Actions" }>).options}
+                      >
+                        {(option) => (
+                          <button disabled={busy()} onClick={() => chooseOption(option.key)}>
+                            {option.key}={option.label}
+                          </button>
+                        )}
+                      </For>
+                    </div>
+                  </Show>
+
+                  <Show when={FREE_TEXT_PROMPTS.has(m().prompt.kind)}>
+                    <form class="row" onSubmit={sendFreeText}>
+                      <input
+                        placeholder={t().sendPlaceholder}
+                        value={freeText()}
+                        onInput={(e) => setFreeText(e.currentTarget.value)}
+                      />
+                      <button type="submit" disabled={busy()}>
+                        {t().send}
+                      </button>
+                    </form>
+                  </Show>
+                </>
+              )}
             </Match>
 
             <Match when={screen()?.kind === "Disconnected"}>
