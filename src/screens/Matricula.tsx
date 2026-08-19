@@ -1,5 +1,5 @@
 import { createSignal, For, Show } from "solid-js";
-import { t } from "../i18n";
+import { t, localizeButton } from "../i18n";
 import { OptionButtons } from "../components/OptionButtons";
 import { FreeTextForm } from "../components/FreeTextForm";
 import type { ScheduleCourse, MatriculaMode, Send } from "../types";
@@ -26,11 +26,11 @@ export function MatriculaScreen(props: {
   }
 
   // Actions' labels are the remote's own raw text (e.g. "HorEst",
-  // "CodigoReservar") -- localize via the catalog's `actionLabels` lookup,
-  // falling back to the raw label for anything not listed there.
+  // "CodigoReservar") -- localize via `localizeButton`, falling back to
+  // the raw label for anything not listed there.
   function localizedActions() {
     const { options } = props.mode as Extract<MatriculaMode, { kind: "Actions" }>;
-    return options.map((option) => ({ ...option, label: t().actionLabels[option.label] ?? option.label }));
+    return options.map((option) => ({ ...option, label: localizeButton(option.label) }));
   }
 
   return (
