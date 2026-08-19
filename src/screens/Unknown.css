@@ -1,0 +1,8 @@
+.raw {
+  background: rgba(127, 127, 127, 0.12);
+  padding: 0.8em;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 0.85em;
+  white-space: pre;
+}
