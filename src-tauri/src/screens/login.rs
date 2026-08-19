@@ -5,6 +5,8 @@
 
 use serde::Serialize;
 
+use crate::ssh::session::TuiSession;
+
 /// One field of the `Login` form, in on-screen order. `label`/`hint` are
 /// hardcoded to the correctly-accented Spanish text rather than parsed
 /// from the remote
@@ -19,6 +21,44 @@ pub struct LoginField {
     pub key: String,
     pub label: String,
     pub hint: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct LoginScreen {
+    pub fields: Vec<LoginField>,
+}
+
+impl LoginScreen {
+    /// Fills in the four fixed-width, auto-advancing fields, in on-screen
+    /// order (id number, access code, SSN last 4, birth date).
+    ///
+    /// Whitespace is stripped from each before sending: these fields have
+    /// no way to correct a mistake afterward (the remote explicitly warns
+    /// against pressing Enter here), so a stray space would be written as
+    /// a real character, consume a slot meant for a digit, and shift
+    /// every field typed after it -- confirmed live, a
+    /// whitespace-containing field produced a garbled value on screen.
+    /// This is specific to `Login`'s fields, not `send_text` in general
+    /// (also used for single-keystroke menu selections, where stripping
+    /// isn't needed).
+    pub fn login(
+        &self,
+        session: &mut TuiSession,
+        id_number: &str,
+        access_code: &str,
+        ssn_last4: &str,
+        birth_date: &str,
+    ) -> anyhow::Result<()> {
+        for field in Self::sanitize(id_number, access_code, ssn_last4, birth_date) {
+            session.send_text(&field)?;
+        }
+        Ok(())
+    }
+
+    fn sanitize(id_number: &str, access_code: &str, ssn_last4: &str, birth_date: &str) -> [String; 4] {
+        [id_number, access_code, ssn_last4, birth_date]
+            .map(|field| field.chars().filter(|c| !c.is_whitespace()).collect())
+    }
 }
 
 /// "Ej. 802999999" is unique to the ID-number field's hint and doesn't
@@ -55,18 +95,32 @@ pub(super) fn login_fields() -> Vec<LoginField> {
 
 #[cfg(test)]
 mod tests {
+    use super::LoginScreen;
     use crate::screens::{classify, TuiScreen};
 
     const LOGIN: &str = include_str!("../../../screens/login.txt");
 
     #[test]
     fn classifies_login_form() {
-        let TuiScreen::Login { fields } = classify(LOGIN) else {
+        let TuiScreen::Login(LoginScreen { fields }) = classify(LOGIN) else {
             panic!("expected Login");
         };
         assert_eq!(
             fields.iter().map(|f| f.key.as_str()).collect::<Vec<_>>(),
             ["id_number", "access_code", "ssn_last4", "birth_date"]
+        );
+    }
+
+    #[test]
+    fn login_strips_whitespace_from_every_field() {
+        assert_eq!(
+            LoginScreen::sanitize("802 11 1111", "12 34", " 1234", "0101 2000"),
+            [
+                "802111111".to_string(),
+                "1234".to_string(),
+                "1234".to_string(),
+                "01012000".to_string(),
+            ]
         );
     }
 }

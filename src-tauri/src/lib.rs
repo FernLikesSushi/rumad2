@@ -13,9 +13,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::connect,
             commands::get_screen,
-            commands::send_input,
-            commands::send_text,
-            commands::send_key,
+            commands::interact::send,
+            commands::login::login,
             commands::disconnect,
         ])
         .run(tauri::generate_context!())

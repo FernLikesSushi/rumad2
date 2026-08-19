@@ -69,6 +69,12 @@ h1 {
   margin: 0 auto;
 }
 
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75em;
+}
+
 .locale-switch {
   display: flex;
   gap: 0.25em;
@@ -83,6 +89,15 @@ h1 {
 .locale-switch button.active {
   opacity: 1;
   border-color: #396cd8;
+}
+
+.dev-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  font-size: 0.75em;
+  opacity: 0.6;
+  cursor: pointer;
 }
 
 input,
@@ -180,6 +195,11 @@ button {
 
 .disconnect {
   align-self: flex-start;
+}
+
+.table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
 }
 
 .courses {

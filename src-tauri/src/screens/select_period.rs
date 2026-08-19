@@ -1,16 +1,25 @@
 //! "Indique Semestre:" -- which term to browse sections for, shown after a
-//! successful `Login`. No dedicated types of its own: it reuses
+//! successful `Login`. No dedicated scraping logic of its own: it reuses
 //! `MenuOption` and `scrape::scrape_equals_options`.
+
+use serde::Serialize;
+
+use super::MenuOption;
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct SelectPeriodScreen {
+    pub options: Vec<MenuOption>,
+}
 
 #[cfg(test)]
 mod tests {
-    use crate::screens::{classify, MenuOption, TuiScreen};
+    use crate::screens::{classify, MenuOption, SelectPeriodScreen, TuiScreen};
 
     const SELECT_PERIOD: &str = include_str!("../../../screens/matricula/select_period.txt");
 
     #[test]
     fn classifies_select_period() {
-        let TuiScreen::SelectPeriod { options } = classify(SELECT_PERIOD) else {
+        let TuiScreen::SelectPeriod(SelectPeriodScreen { options }) = classify(SELECT_PERIOD) else {
             panic!("expected SelectPeriod");
         };
         assert_eq!(
