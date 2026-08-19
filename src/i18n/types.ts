@@ -42,4 +42,25 @@ export interface Messages {
     ssnLast4: { label: string; hint: string };
     birthDate: { label: string; hint: string };
   };
+  // Screen titles and table column headers are hardcoded directly in
+  // each screen component (like `Login`'s fields) rather than parsed off
+  // the remote -- they're fixed, always-the-same structural labels for a
+  // given screen kind, not per-user data, so hardcoding-and-localizing
+  // them is the same tradeoff as `loginFields`, just per-screen instead
+  // of per-field.
+  mainMenuTitle: string;
+  selectPeriodTitle: string;
+  matriculaTitle: string;
+  matriculaColumns: { course: string; section: string; credits: string; status: string };
+  courseResultsColumns: {
+    section: string;
+    room: string;
+    schedule: string;
+    credits: string;
+    professor: string;
+    capacity: string;
+    used: string;
+    available: string;
+  };
+  weeklyScheduleColumns: { period: string };
 }

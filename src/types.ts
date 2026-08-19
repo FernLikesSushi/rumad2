@@ -1,7 +1,7 @@
 export type MenuOption = { key: string; label: string };
 export type LoginField = { key: string; label: string; hint: string };
 export type ScheduleCourse = { slot: string; course: string; section: string; credits: string; status: string };
-export type MatriculaPrompt =
+export type MatriculaMode =
   | { kind: "Actions"; options: MenuOption[] }
   | { kind: "Bajas" }
   | { kind: "Altas" }
@@ -24,7 +24,7 @@ export type TuiScreen =
   | { kind: "MainMenu"; options: MenuOption[] }
   | { kind: "Login"; fields: LoginField[] }
   | { kind: "SelectPeriod"; options: MenuOption[] }
-  | { kind: "Matricula"; courses: ScheduleCourse[]; prompt: MatriculaPrompt }
+  | { kind: "Matricula"; courses: ScheduleCourse[]; mode: MatriculaMode }
   | { kind: "CourseResults"; courseCode: string; courseTitle: string; sections: CourseSection[] }
   | { kind: "WeeklySchedule"; days: string[]; rows: ScheduleRow[] }
   | { kind: "Notice"; message: string; raw: string }

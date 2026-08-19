@@ -28,14 +28,14 @@ export function CourseResultsScreen(props: {
         <table class="courses">
           <thead>
             <tr>
-              <th>Sec.</th>
-              <th>Salon</th>
-              <th>Periodos</th>
-              <th>Crd.</th>
-              <th>Profesor</th>
-              <th>Cap.</th>
-              <th>Uti.</th>
-              <th>Disp.</th>
+              <th>{t().courseResultsColumns.section}</th>
+              <th>{t().courseResultsColumns.room}</th>
+              <th>{t().courseResultsColumns.schedule}</th>
+              <th>{t().courseResultsColumns.credits}</th>
+              <th>{t().courseResultsColumns.professor}</th>
+              <th>{t().courseResultsColumns.capacity}</th>
+              <th>{t().courseResultsColumns.used}</th>
+              <th>{t().courseResultsColumns.available}</th>
             </tr>
           </thead>
           <tbody>

@@ -1,5 +1,5 @@
 //! The student's course schedule (`M A T R I C U L A`) plus whichever
-//! sub-prompt is currently active.
+//! sub-mode is currently active.
 
 use regex::Regex;
 use serde::Serialize;
@@ -19,12 +19,13 @@ pub struct ScheduleCourse {
     pub status: String,
 }
 
-/// Which sub-prompt `Matricula` is currently showing. The header and
+/// Which sub-mode `Matricula` is currently showing. The header and
 /// course list stay identical across these -- only the bottom prompt (and
 /// what input it expects) changes.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(tag = "kind")]
-pub enum MatriculaPrompt {
+pub enum MatriculaMode {
+    /// When the student first enters `Matricula`, we have actions to invoke.
     /// "Indique: A=Alta B=Baja C=Cambio ..." -- pick a top-level action.
     Actions { options: Vec<MenuOption> },
     /// "Abreviatura y numero de curso  o  FIN" (tagged `[Bajas]`) -- a drop
@@ -41,7 +42,7 @@ pub enum MatriculaPrompt {
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct MatriculaScreen {
     pub courses: Vec<ScheduleCourse>,
-    pub prompt: MatriculaPrompt,
+    pub mode: MatriculaMode,
 }
 
 fn course_pattern() -> &'static Regex {
@@ -84,8 +85,8 @@ mod tests {
     const ALTA_SECCION: &str = include_str!("../../../screens/matricula/alta_seccion.txt");
 
     #[test]
-    fn classifies_matricula_with_actions_prompt() {
-        let TuiScreen::Matricula(MatriculaScreen { courses, prompt }) = classify(SELECT) else {
+    fn classifies_matricula_with_actions_mode() {
+        let TuiScreen::Matricula(MatriculaScreen { courses, mode }) = classify(SELECT) else {
             panic!("expected Matricula");
         };
         assert_eq!(
@@ -121,8 +122,8 @@ mod tests {
                 },
             ]
         );
-        let MatriculaPrompt::Actions { options } = prompt else {
-            panic!("expected Actions prompt");
+        let MatriculaMode::Actions { options } = mode else {
+            panic!("expected Actions mode");
         };
         assert_eq!(
             options.iter().map(|o| o.key.as_str()).collect::<Vec<_>>(),
@@ -136,30 +137,30 @@ mod tests {
     }
 
     #[test]
-    fn classifies_matricula_with_bajas_prompt() {
-        let TuiScreen::Matricula(MatriculaScreen { courses, prompt }) = classify(BAJAS) else {
+    fn classifies_matricula_with_bajas_mode() {
+        let TuiScreen::Matricula(MatriculaScreen { courses, mode }) = classify(BAJAS) else {
             panic!("expected Matricula");
         };
         assert_eq!(courses.len(), 4);
-        assert_eq!(prompt, MatriculaPrompt::Bajas);
+        assert_eq!(mode, MatriculaMode::Bajas);
     }
 
     #[test]
-    fn classifies_matricula_with_altas_prompt() {
-        let TuiScreen::Matricula(MatriculaScreen { courses, prompt }) = classify(ALTA) else {
+    fn classifies_matricula_with_altas_mode() {
+        let TuiScreen::Matricula(MatriculaScreen { courses, mode }) = classify(ALTA) else {
             panic!("expected Matricula");
         };
         assert_eq!(courses.len(), 4);
-        assert_eq!(prompt, MatriculaPrompt::Altas);
+        assert_eq!(mode, MatriculaMode::Altas);
     }
 
     #[test]
-    fn classifies_matricula_with_cambio_prompt() {
-        let TuiScreen::Matricula(MatriculaScreen { courses, prompt }) = classify(CAMBIOS) else {
+    fn classifies_matricula_with_cambio_mode() {
+        let TuiScreen::Matricula(MatriculaScreen { courses, mode }) = classify(CAMBIOS) else {
             panic!("expected Matricula");
         };
         assert_eq!(courses.len(), 4);
-        assert_eq!(prompt, MatriculaPrompt::Cambio);
+        assert_eq!(mode, MatriculaMode::Cambio);
     }
 
     #[test]

@@ -23,11 +23,12 @@
 //! `screens/menu_despliegue/*.txt` at the repo root (that directory can
 //! gain new files or be reorganized as the user captures more -- re-check
 //! paths rather than assuming). The remote also wraps advisory/event
-//! messages in "<< message >>" on a line by itself (distinct from a
-//! bracketed key hint embedded mid-instruction, like "Oprima <<Enter>>
-//! para Continuar", which is not a notice); `notice::extract_bracketed_notice`
-//! catches these as a low-priority fallback for screens not otherwise
-//! modeled yet. Anything still not recognized falls back to `Unknown`,
+//! messages in a marker on both sides of a line by itself -- "<< message
+//! >>" or "*** message ***" (distinct from a bracketed key hint embedded
+//! mid-instruction, like "Oprima <<Enter>> para Continuar", which is not a
+//! notice); `notice::extract_advisory_notice` catches these as a
+//! low-priority fallback for screens not otherwise modeled yet. Anything
+//! still not recognized falls back to `Unknown`,
 //! which still carries the raw text and any numbered options
 //! `scrape::scrape_options` can find, so the app stays usable rather than
 //! blocking on it.
@@ -53,7 +54,7 @@ use serde::Serialize;
 pub(crate) use interact::RumadScreen;
 pub use course_results::{CourseResultsScreen, CourseSection};
 pub use login::{LoginField, LoginScreen};
-pub use matricula::{MatriculaPrompt, MatriculaScreen, ScheduleCourse};
+pub use matricula::{MatriculaMode, MatriculaScreen, ScheduleCourse};
 pub use select_period::SelectPeriodScreen;
 pub use weekly_schedule::{ScheduleRow, WeeklyScheduleScreen};
 
@@ -103,7 +104,7 @@ pub enum TuiScreen {
     /// after a successful `Login`.
     SelectPeriod(SelectPeriodScreen),
     /// The student's course schedule (`M A T R I C U L A`) plus whichever
-    /// sub-prompt is currently active.
+    /// sub-mode is currently active.
     Matricula(MatriculaScreen),
     /// Read-only search results for one course code (`MENU DESPLIEGUE` ->
     /// "Horario de cursos disponibles en Matricula") -- every open
@@ -198,18 +199,18 @@ pub fn classify(raw: &str) -> TuiScreen {
 
     if raw.contains("M A T R I C U L A") {
         let courses = matricula::scrape_courses(raw);
-        let prompt = if raw.contains("[Bajas]") {
-            MatriculaPrompt::Bajas
+        let mode = if raw.contains("[Bajas]") {
+            MatriculaMode::Bajas
         } else if raw.contains("[Altas]") {
-            MatriculaPrompt::Altas
+            MatriculaMode::Altas
         } else if raw.contains("[Cambio]") {
-            MatriculaPrompt::Cambio
+            MatriculaMode::Cambio
         } else {
-            MatriculaPrompt::Actions {
+            MatriculaMode::Actions {
                 options: scrape::scrape_equals_options(raw),
             }
         };
-        return TuiScreen::Matricula(MatriculaScreen { courses, prompt });
+        return TuiScreen::Matricula(MatriculaScreen { courses, mode });
     }
 
     if raw.contains("MENU PRINCIPAL") {
@@ -236,15 +237,16 @@ pub fn classify(raw: &str) -> TuiScreen {
     }
 
     // Lower priority than the checks above: the remote wraps advisories
-    // and event/confirmation messages in "<< ... >>" on screens that
-    // aren't specifically modeled yet (e.g. the payment/invoice screen's
-    // "Esta factura NO ES OFICIAL..." disclaimer). Checked last, right
-    // before the `Unknown` fallback, so it never overrides an
-    // already-modeled screen -- unlike the "no esta disponible" notice
-    // above, this isn't an action-failure signal, so it shouldn't win over
-    // genuinely useful structured content the way that one deliberately
-    // does.
-    if let Some(message) = notice::extract_bracketed_notice(raw) {
+    // and event/confirmation messages in "<< ... >>" or "*** ... ***" on
+    // screens that aren't specifically modeled yet (e.g. the
+    // payment/invoice screen's "Esta factura NO ES OFICIAL..." disclaimer,
+    // or "*** NO tiene Matricula ***" when browsing a period with no
+    // enrolled schedule). Checked last, right before the `Unknown`
+    // fallback, so it never overrides an already-modeled screen -- unlike
+    // the "no esta disponible" notice above, this isn't an action-failure
+    // signal, so it shouldn't win over genuinely useful structured content
+    // the way that one deliberately does.
+    if let Some(message) = notice::extract_advisory_notice(raw) {
         return TuiScreen::Notice(NoticeScreen {
             message,
             raw: raw.to_string(),
