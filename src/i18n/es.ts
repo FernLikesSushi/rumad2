@@ -37,6 +37,21 @@ const es: Messages = {
     ssnLast4: { label: "Seguro Social (últimos 4)", hint: "Ej. 1234" },
     birthDate: { label: "Fecha de Nacimiento", hint: "Ej. MMDDAAAA" },
   },
+  mainMenuTitle: "MENU PRINCIPAL",
+  selectPeriodTitle: "Indique Semestre",
+  matriculaTitle: "M A T R I C U L A",
+  matriculaColumns: { course: "Curso", section: "Seccion", credits: "Cr.", status: "Grado" },
+  courseResultsColumns: {
+    section: "Sec.",
+    room: "Salon",
+    schedule: "Periodos",
+    credits: "Crd.",
+    professor: "Profesor",
+    capacity: "Cap.",
+    used: "Uti.",
+    available: "Disp.",
+  },
+  weeklyScheduleColumns: { period: "Periodos" },
 };
 
 export default es;

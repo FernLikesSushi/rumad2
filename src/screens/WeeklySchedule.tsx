@@ -17,7 +17,7 @@ export function WeeklyScheduleScreen(props: { days: string[]; rows: ScheduleRow[
         <table class="courses">
           <thead>
             <tr>
-              <th>Periodos</th>
+              <th>{t().weeklyScheduleColumns.period}</th>
               <For each={props.days}>{(day) => <th>{day}</th>}</For>
             </tr>
           </thead>

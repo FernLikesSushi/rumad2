@@ -2,15 +2,15 @@ import { createSignal, For, Show } from "solid-js";
 import { t } from "../i18n";
 import { OptionButtons } from "../components/OptionButtons";
 import { FreeTextForm } from "../components/FreeTextForm";
-import type { ScheduleCourse, MatriculaPrompt, Send } from "../types";
+import type { ScheduleCourse, MatriculaMode, Send } from "../types";
 
 // Bajas/Altas/Cambio all show the same "course abbreviation, or FIN" free-
 // text prompt -- only the [Bajas]/[Altas]/[Cambio] tag differs on-screen.
-const FREE_TEXT_PROMPTS = new Set(["Bajas", "Altas", "Cambio"]);
+const FREE_TEXT_MODES = new Set(["Bajas", "Altas", "Cambio"]);
 
 export function MatriculaScreen(props: {
   courses: ScheduleCourse[];
-  prompt: MatriculaPrompt;
+  mode: MatriculaMode;
   busy: boolean;
   send: Send;
 }) {
@@ -29,20 +29,20 @@ export function MatriculaScreen(props: {
   // "CodigoReservar") -- localize via the catalog's `actionLabels` lookup,
   // falling back to the raw label for anything not listed there.
   function localizedActions() {
-    const { options } = props.prompt as Extract<MatriculaPrompt, { kind: "Actions" }>;
+    const { options } = props.mode as Extract<MatriculaMode, { kind: "Actions" }>;
     return options.map((option) => ({ ...option, label: t().actionLabels[option.label] ?? option.label }));
   }
 
   return (
     <>
-      <h2>M A T R I C U L A</h2>
+      <h2>{t().matriculaTitle}</h2>
       <table class="courses">
         <thead>
           <tr>
-            <th>Curso</th>
-            <th>Seccion</th>
-            <th>Cr.</th>
-            <th>Grado</th>
+            <th>{t().matriculaColumns.course}</th>
+            <th>{t().matriculaColumns.section}</th>
+            <th>{t().matriculaColumns.credits}</th>
+            <th>{t().matriculaColumns.status}</th>
           </tr>
         </thead>
         <tbody>
@@ -59,11 +59,11 @@ export function MatriculaScreen(props: {
         </tbody>
       </table>
 
-      <Show when={props.prompt.kind === "Actions"}>
+      <Show when={props.mode.kind === "Actions"}>
         <OptionButtons options={localizedActions()} separator="=" busy={props.busy} onChoose={choose} hideKey />
       </Show>
 
-      <Show when={FREE_TEXT_PROMPTS.has(props.prompt.kind)}>
+      <Show when={FREE_TEXT_MODES.has(props.mode.kind)}>
         <FreeTextForm value={freeText()} onInput={setFreeText} onSubmit={submit} busy={props.busy} />
       </Show>
     </>

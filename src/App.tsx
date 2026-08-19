@@ -35,14 +35,26 @@ function App() {
   // What to render is derived, not imperatively assigned: `Notice` is a
   // message alongside the current screen rather than a screen change, so
   // the memo keeps whatever was showing instead of switching to it.
+  //
+  // `response.error` must be checked *before* reading `response()` --
+  // Solid's resources throw the rejection reason when you read a resource
+  // that errored (that's how `<ErrorBoundary>` integration works), and
+  // this memo has no boundary around it. A command can genuinely reject
+  // (e.g. the backend's `TuiScreen::or_err()` promoting a rejection notice
+  // to an `Err`, live-confirmed: selecting a demo-account-restricted
+  // MainMenu option returns "Opcion NO esta disponible por el momento" as
+  // an error, not a screen) -- reading `response()` unconditionally in
+  // that case throws inside the memo with nothing to catch it, which
+  // stalls this computation (and anything downstream) instead of just
+  // showing the error dialog the other effect already handles.
   const screen = createMemo<TuiScreen | null>((prev) => {
-    if (response.loading) return prev ?? null;
+    if (response.loading || response.error) return prev ?? null;
     const result = response();
     if (result === undefined || result?.kind === "Notice") return prev ?? null;
     return result;
   }, null);
 
-  // `Matricula`'s prompt is nested one level deeper than the other screen
+  // `Matricula`'s mode is nested one level deeper than the other screen
   // kinds, which makes repeated inline `as Extract<...>` casts unwieldy --
   // narrow it once here instead.
   const matricula = createMemo(() => {
@@ -104,7 +116,7 @@ function App() {
             </Match>
 
             <Match when={screen()?.kind === "Login"}>
-              <LoginScreen login={login} busy={busy()} />
+              <LoginScreen login={login} send={send} busy={busy()} />
             </Match>
 
             <Match when={screen()?.kind === "SelectPeriod"}>
@@ -116,7 +128,7 @@ function App() {
             </Match>
 
             <Match when={matricula()}>
-              {(m) => <MatriculaScreen courses={m().courses} prompt={m().prompt} busy={busy()} send={send} />}
+              {(m) => <MatriculaScreen courses={m().courses} mode={m().mode} busy={busy()} send={send} />}
             </Match>
 
             <Match when={screen()?.kind === "CourseResults"}>
