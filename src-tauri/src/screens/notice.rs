@@ -18,6 +18,11 @@
 //! - `extract_bracketed_or_boxed_notice` ("<< message >>", or a boxed
 //!   "****...****" variant) is genuinely just informational in every
 //!   observed instance (a disclaimer, a redirect) rather than a rejection.
+//!   One exception, same reasoning as `CourseResultsScreen`'s title below:
+//!   `LoginScreen`'s own "NO oprimir tecla <Enter>..." warning is
+//!   permanent on-screen instruction for that form (present on every
+//!   render, not a one-off result of an action), not a transient dialog --
+//!   excluded by exact text match.
 
 use regex::Regex;
 use std::sync::OnceLock;
@@ -25,6 +30,11 @@ use std::sync::OnceLock;
 /// `CourseResultsScreen`'s own header, not a rejection -- see this
 /// module's doc comment.
 const COURSE_RESULTS_TITLE: &str = "Horarios de Matricula";
+
+/// `LoginScreen`'s own standing "don't press Enter" instruction, live-
+/// confirmed present on every render of that form -- see this module's
+/// doc comment.
+const LOGIN_ENTER_WARNING: &str = "NO oprimir tecla <Enter> al entrar los datos";
 
 fn bracketed_notice_pattern() -> &'static Regex {
     static PATTERN: OnceLock<Regex> = OnceLock::new();
@@ -70,7 +80,9 @@ pub(super) fn extract_starred_notice(raw: &str) -> Option<String> {
 /// excludes bare key-name hints like a lone "<<Enter>>" line (real
 /// advisories are full phrases, not a single word).
 pub(super) fn extract_bracketed_or_boxed_notice(raw: &str) -> Option<String> {
-    extract_matching_line(raw, bracketed_notice_pattern()).or_else(|| extract_boxed_notice(raw))
+    extract_matching_line(raw, bracketed_notice_pattern())
+        .filter(|message| message != LOGIN_ENTER_WARNING)
+        .or_else(|| extract_boxed_notice(raw))
 }
 
 /// Extracts a boxed advisory -- a "****...****" border line, then one or
@@ -117,6 +129,7 @@ mod tests {
         include_str!("../../../screens/matricula/horarios_de_seccion.txt");
     const TURNO_SELECCION: &str =
         include_str!("../../../screens/menu_despliegue/turno_seleccion.txt");
+    const LOGIN: &str = include_str!("../../../screens/login.txt");
 
     #[test]
     fn bracketed_notice_on_an_unmodeled_screen_is_extracted_cleanly() {
@@ -220,6 +233,21 @@ S e c c i o n  (Ej. 001#)                                          [PF4=(9)Fin]
         };
         assert_eq!(message, "Curso NO Existe en Archivo MTR-HORARIO");
         assert!(result.or_err().is_ok());
+    }
+
+    #[test]
+    fn bracketed_notice_excludes_logins_own_standing_warning() {
+        // "NO oprimir tecla <Enter>..." is permanent instruction on every
+        // render of the Login form, not a one-off dialog -- see this
+        // module's doc comment. Live-confirmed: it was showing as a popup
+        // every time the Login screen rendered before this exclusion.
+        assert_eq!(
+            extract_bracketed_or_boxed_notice(
+                "<<  NO oprimir tecla <Enter> al entrar los datos  >>"
+            ),
+            None
+        );
+        assert_eq!(classify(LOGIN).dialog, None);
     }
 
     #[test]
