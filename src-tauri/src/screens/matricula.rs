@@ -5,7 +5,8 @@ use regex::Regex;
 use serde::Serialize;
 use std::sync::OnceLock;
 
-use super::MenuOption;
+use super::{MenuOption, RumadScreen};
+use crate::ssh::session::TuiSession;
 
 /// One row of the student's schedule on the `Matricula` screen, e.g.
 /// "1.  INSO 4101      080     3    S". Empty slots (just "N." with
@@ -46,6 +47,22 @@ pub enum MatriculaMode {
 pub struct MatriculaScreen {
     pub courses: Vec<ScheduleCourse>,
     pub mode: MatriculaMode,
+}
+
+impl RumadScreen for MatriculaScreen {
+    /// `Actions` exits via its own `S`=Salir option -- a normal `select`,
+    /// same as `MenuScreen`'s "0"/"S=salir" (see that impl's `exit` doc
+    /// comment for why that still counts as a real exit destination, not
+    /// a bail). `Bajas`/`Altas`/`Cambio` have no such listed option --
+    /// they exit via the free-text "FIN" instead.
+    fn exit(&self, session: &mut TuiSession) -> anyhow::Result<()> {
+        match self.mode {
+            MatriculaMode::Actions { .. } => self.select(session, "S"),
+            MatriculaMode::Bajas | MatriculaMode::Altas | MatriculaMode::Cambio => {
+                self.line(session, "FIN")
+            }
+        }
+    }
 }
 
 fn course_pattern() -> &'static Regex {
@@ -89,7 +106,8 @@ mod tests {
 
     #[test]
     fn classifies_matricula_with_actions_mode() {
-        let TuiScreen::Matricula(MatriculaScreen { courses, mode }) = classify(SELECT).screen else {
+        let TuiScreen::Matricula(MatriculaScreen { courses, mode }) = classify(SELECT).screen
+        else {
             panic!("expected Matricula");
         };
         assert_eq!(
@@ -159,7 +177,8 @@ mod tests {
 
     #[test]
     fn classifies_matricula_with_cambio_mode() {
-        let TuiScreen::Matricula(MatriculaScreen { courses, mode }) = classify(CAMBIOS).screen else {
+        let TuiScreen::Matricula(MatriculaScreen { courses, mode }) = classify(CAMBIOS).screen
+        else {
             panic!("expected Matricula");
         };
         assert_eq!(courses.len(), 4);
@@ -171,7 +190,8 @@ mod tests {
         // alta_seccion.txt overlays "SECCIONES DISPONIBLES CURSO: ..." text
         // after the status column on some rows -- course_pattern must not
         // require end-of-line right after the status field.
-        let TuiScreen::Matricula(MatriculaScreen { courses, .. }) = classify(ALTA_SECCION).screen else {
+        let TuiScreen::Matricula(MatriculaScreen { courses, .. }) = classify(ALTA_SECCION).screen
+        else {
             panic!("expected Matricula");
         };
         assert_eq!(courses.len(), 4);

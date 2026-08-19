@@ -9,6 +9,10 @@ use regex::Regex;
 use serde::Serialize;
 use std::sync::OnceLock;
 
+use super::RumadScreen;
+use crate::ssh::key::Key;
+use crate::ssh::session::TuiSession;
+
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct CourseSection {
     /// May carry a trailing " *" (e.g. "101 *") marking a closed/full
@@ -39,6 +43,20 @@ pub struct CourseResultsScreen {
     pub course_code: String,
     pub course_title: String,
     pub sections: Vec<CourseSection>,
+}
+
+impl RumadScreen for CourseResultsScreen {
+    /// No numbered options on this screen, just "Enter to continue" (the
+    /// `line` default already sends a bare Enter) or PF4 to leave.
+    fn select(&self, _session: &mut TuiSession, _key: &str) -> anyhow::Result<()> {
+        anyhow::bail!("CourseResults has no selectable options; use line(\"\") or exit()")
+    }
+
+    /// PF4 exits this screen specifically -- confirmed live from its own
+    /// footer ("< Oprima Enter o [PF4(9)=Fin] >").
+    fn exit(&self, session: &mut TuiSession) -> anyhow::Result<()> {
+        session.send_key(Key::F4)
+    }
 }
 
 fn course_header_pattern() -> &'static Regex {
@@ -73,7 +91,11 @@ fn column(chars: &[char], (start, end): (usize, usize)) -> String {
     if start >= chars.len() {
         return String::new();
     }
-    chars[start..end.min(chars.len())].iter().collect::<String>().trim().to_string()
+    chars[start..end.min(chars.len())]
+        .iter()
+        .collect::<String>()
+        .trim()
+        .to_string()
 }
 
 fn is_digits(s: &str) -> bool {
@@ -121,11 +143,14 @@ mod tests {
     use super::*;
     use crate::screens::{classify, TuiScreen};
 
-    const SIMPLE: &str = include_str!("../../../screens/menu_despliegue/horario_resultados_simple.txt");
-    const MULTI: &str = include_str!("../../../screens/menu_despliegue/horario_resultados_multi.txt");
+    const SIMPLE: &str =
+        include_str!("../../../screens/menu_despliegue/horario_resultados_simple.txt");
+    const MULTI: &str =
+        include_str!("../../../screens/menu_despliegue/horario_resultados_multi.txt");
     const CLOSED_SECTION: &str =
         include_str!("../../../screens/menu_despliegue/horario_resultados_seccion_cerrada.txt");
-    const LABORATORIO: &str = include_str!("../../../screens/menu_despliegue/horario_resultados_laboratorio.txt");
+    const LABORATORIO: &str =
+        include_str!("../../../screens/menu_despliegue/horario_resultados_laboratorio.txt");
 
     #[test]
     fn classifies_single_section_results() {

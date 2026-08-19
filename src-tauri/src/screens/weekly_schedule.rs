@@ -11,6 +11,9 @@
 
 use serde::Serialize;
 
+use super::RumadScreen;
+use crate::ssh::session::TuiSession;
+
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct ScheduleRow {
     pub period: String,
@@ -28,6 +31,29 @@ pub struct WeeklyScheduleScreen {
     pub rows: Vec<ScheduleRow>,
 }
 
+impl RumadScreen for WeeklyScheduleScreen {
+    /// No numbered options on this read-only grid.
+    fn select(&self, _session: &mut TuiSession, _key: &str) -> anyhow::Result<()> {
+        anyhow::bail!("WeeklySchedule has no selectable options; use line(\"\") instead")
+    }
+
+    /// Unlike `CourseResults`, the real capture of this screen has no
+    /// visible footer/prompt line to confirm an exit keystroke against
+    /// (see this module's doc comment on that transcript's capture
+    /// issues) -- left unimplemented rather than guessing. `line` (bare
+    /// Enter, inherited default) is a safe bet since every other screen in
+    /// this app accepts it to continue/redraw.
+    fn exit(&self, _session: &mut TuiSession) -> anyhow::Result<()> {
+        anyhow::bail!(
+            "WeeklySchedule's exit keystroke isn't confirmed live; try line(\"\") instead"
+        )
+    }
+
+    fn can_exit(&self) -> bool {
+        false
+    }
+}
+
 /// A real capture of this screen had its last row missing a trailing
 /// column (cut short during capture, not a remote rendering quirk) --
 /// cells are padded to `days.len()` rather than assumed complete, so a
@@ -36,7 +62,12 @@ pub struct WeeklyScheduleScreen {
 fn table_cells(line: &str) -> Option<Vec<String>> {
     let line = line.trim();
     let inner = line.strip_prefix('|')?.strip_suffix('|')?;
-    Some(inner.split('|').map(|cell| cell.trim().to_string()).collect())
+    Some(
+        inner
+            .split('|')
+            .map(|cell| cell.trim().to_string())
+            .collect(),
+    )
 }
 
 pub(super) fn detect(raw: &str) -> bool {
@@ -58,12 +89,18 @@ pub(super) fn scrape(raw: &str) -> WeeklyScheduleScreen {
         // digits, but no internal "|" dividers -- just one cell instead of
         // one-per-column).
         .filter(|cells| {
-            cells.len() > 1 && cells.first().is_some_and(|period| period.chars().any(|c| c.is_ascii_digit()))
+            cells.len() > 1
+                && cells
+                    .first()
+                    .is_some_and(|period| period.chars().any(|c| c.is_ascii_digit()))
         })
         .map(|mut cells| {
             let period = cells.remove(0);
             cells.resize(days.len(), String::new());
-            ScheduleRow { period, days: cells }
+            ScheduleRow {
+                period,
+                days: cells,
+            }
         })
         .collect();
 
@@ -79,12 +116,21 @@ mod tests {
 
     #[test]
     fn classifies_weekly_schedule_grid() {
-        let TuiScreen::WeeklySchedule(WeeklyScheduleScreen { days, rows }) = classify(HORARIO_ESTIMADO).screen else {
+        let TuiScreen::WeeklySchedule(WeeklyScheduleScreen { days, rows }) =
+            classify(HORARIO_ESTIMADO).screen
+        else {
             panic!("expected WeeklySchedule");
         };
         assert_eq!(
             days,
-            vec!["Lunes", "Martes", "Mi\u{fffd}coles", "Jueves", "Viernes", "Sabado"]
+            vec![
+                "Lunes",
+                "Martes",
+                "Mi\u{fffd}coles",
+                "Jueves",
+                "Viernes",
+                "Sabado"
+            ]
         );
         assert_eq!(rows.len(), 7);
         assert_eq!(rows[0].period, "8:30- 9:20");
