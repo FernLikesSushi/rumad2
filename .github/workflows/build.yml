@@ -1,16 +1,26 @@
 name: Build
 
-# Verification build only, no GitHub Release: uploads installers as workflow
-# artifacts so a push/PR can be checked without publishing anything.
+# Push/PR to main: verification build only, installers uploaded as workflow
+# artifacts, nothing published. Publishing a GitHub Release instead attaches
+# those same installers directly to that (already-published, human-created)
+# release -- no workflow artifacts in that case, the release is the
+# deliverable. Native bundles (.msi/.exe/.deb/.AppImage/.dmg/.app) go through
+# the official tauri-apps/tauri-action, which builds via the Tauri CLI and
+# handles both upload paths itself (uploadWorkflowArtifacts / releaseId)
+# without us hand-computing per-platform bundle output paths.
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
+  release:
+    types: [published]
 
 jobs:
   build:
+    permissions:
+      contents: write # only used by tauri-action/the MSIX release-upload step, release-publish events only
     strategy:
       fail-fast: false
       matrix:
@@ -61,13 +71,25 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # No updater is configured (no `plugins.updater` in tauri.conf.json),
+      # so the updater-JSON/signature upload this action defaults to is
+      # switched off rather than uploading meaningless artifacts.
       - name: Build app
-        run: pnpm tauri build ${{ matrix.rust-target && format('--target {0}', matrix.rust-target) || '' }}
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: ${{ matrix.rust-target && format('--target {0}', matrix.rust-target) || '' }}
+          uploadUpdaterJson: false
+          uploadWorkflowArtifacts: ${{ github.event_name != 'release' }}
+          releaseId: ${{ github.event_name == 'release' && github.event.release.id || '' }}
+          retryAttempts: 3
 
       # MSIX isn't a Tauri-native bundle target (it only produces .msi via
       # WiX and a setup .exe via NSIS -- see
-      # https://tauri.app/distribute/windows-installer/), so it's hand-
-      # assembled here: pack the plain rumad-2.exe Tauri already built as a
+      # https://tauri.app/distribute/windows-installer/), so tauri-action
+      # above doesn't know about it either. It's hand-assembled here
+      # instead: pack the plain rumad-2.exe Tauri already built as a
       # Desktop Bridge MSIX with the Windows SDK's makeappx.exe, then sign
       # it -- Windows refuses to install an MSIX at all otherwise, unlike
       # the .msi/.exe above which install fine unsigned with just a
@@ -126,17 +148,26 @@ jobs:
 
           Copy-Item rumad-2-ci.cer "$bundleDir\rumad-2-ci.cer"
 
-      - name: Upload bundles
+      - name: Upload MSIX as workflow artifact
+        if: ${{ matrix.platform == 'windows-latest' && github.event_name != 'release' }}
         uses: actions/upload-artifact@v4
         with:
-          name: rumad-2-${{ matrix.platform }}${{ matrix.rust-target && format('-{0}', matrix.rust-target) || '' }}
+          name: rumad-2-windows-msix
           path: |
-            src-tauri/target/${{ matrix.rust-target && format('{0}/', matrix.rust-target) || '' }}release/bundle/deb/*.deb
-            src-tauri/target/${{ matrix.rust-target && format('{0}/', matrix.rust-target) || '' }}release/bundle/appimage/*.AppImage
-            src-tauri/target/${{ matrix.rust-target && format('{0}/', matrix.rust-target) || '' }}release/bundle/dmg/*.dmg
-            src-tauri/target/${{ matrix.rust-target && format('{0}/', matrix.rust-target) || '' }}release/bundle/macos/*.app
-            src-tauri/target/${{ matrix.rust-target && format('{0}/', matrix.rust-target) || '' }}release/bundle/msi/*.msi
-            src-tauri/target/${{ matrix.rust-target && format('{0}/', matrix.rust-target) || '' }}release/bundle/nsis/*-setup.exe
             src-tauri/target/release/bundle/msix/*.msix
             src-tauri/target/release/bundle/msix/*.cer
-          if-no-files-found: ignore
+
+      # tauri-action already resolved/uploaded to this same release above
+      # (via `releaseId`); this just attaches the one bundle type it
+      # doesn't know about.
+      - name: Upload MSIX to release
+        if: ${{ matrix.platform == 'windows-latest' && github.event_name == 'release' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ github.event.release.tag_name }}" \
+            src-tauri/target/release/bundle/msix/*.msix \
+            src-tauri/target/release/bundle/msix/*.cer \
+            --clobber \
+            --repo "${{ github.repository }}"
