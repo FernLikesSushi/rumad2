@@ -1,0 +1,142 @@
+name: Build
+
+# Verification build only, no GitHub Release: uploads installers as workflow
+# artifacts so a push/PR can be checked without publishing anything.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ubuntu-22.04
+            rust-target: ""
+          - platform: macos-latest
+            rust-target: aarch64-apple-darwin
+          - platform: macos-latest
+            rust-target: x86_64-apple-darwin
+          - platform: windows-latest
+            rust-target: ""
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # https://v2.tauri.app/start/prerequisites/#linux
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust-target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build app
+        run: pnpm tauri build ${{ matrix.rust-target && format('--target {0}', matrix.rust-target) || '' }}
+
+      # MSIX isn't a Tauri-native bundle target (it only produces .msi via
+      # WiX and a setup .exe via NSIS -- see
+      # https://tauri.app/distribute/windows-installer/), so it's hand-
+      # assembled here: pack the plain rumad-2.exe Tauri already built as a
+      # Desktop Bridge MSIX with the Windows SDK's makeappx.exe, then sign
+      # it -- Windows refuses to install an MSIX at all otherwise, unlike
+      # the .msi/.exe above which install fine unsigned with just a
+      # SmartScreen warning. There's no purchased/trusted signing cert yet,
+      # so this generates a throwaway self-signed one every run purely to
+      # satisfy that requirement; the resulting package is only installable
+      # by someone who explicitly trusts rumad-2-ci.cer first (also
+      # uploaded below) -- swap in a real cert (import it and drop the
+      # New-SelfSignedCertificate step) once one exists.
+      - name: Package MSIX
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $tauriConf = Get-Content src-tauri/tauri.conf.json | ConvertFrom-Json
+          $version = "$($tauriConf.version).0"
+          $publisher = "CN=rumad-2-ci"
+
+          $cert = New-SelfSignedCertificate -Type Custom -Subject $publisher `
+            -KeyUsage DigitalSignature -FriendlyName "rumad-2 CI (self-signed, testing only)" `
+            -CertStoreLocation "Cert:\CurrentUser\My" -KeyExportPolicy Exportable `
+            -TextExtension @("2.5.29.19={text}false", "2.5.29.37={text}1.3.6.1.5.5.7.3.3")
+
+          $pfxPasswordPlain = [System.Guid]::NewGuid().ToString()
+          $pfxPassword = ConvertTo-SecureString -String $pfxPasswordPlain -Force -AsPlainText
+          Export-PfxCertificate -Cert $cert -FilePath cert.pfx -Password $pfxPassword | Out-Null
+          Export-Certificate -Cert $cert -FilePath rumad-2-ci.cer | Out-Null
+
+          $payload = "msix-payload"
+          New-Item -ItemType Directory -Path "$payload\Assets" -Force | Out-Null
+          Copy-Item "src-tauri\target\release\rumad-2.exe" "$payload\rumad-2.exe"
+          Copy-Item "src-tauri\icons\Square150x150Logo.png" "$payload\Assets\Square150x150Logo.png"
+          Copy-Item "src-tauri\icons\Square44x44Logo.png" "$payload\Assets\Square44x44Logo.png"
+          Copy-Item "src-tauri\icons\StoreLogo.png" "$payload\Assets\StoreLogo.png"
+
+          (Get-Content .github/msix/AppxManifest.xml.template) `
+            -replace '__VERSION__', $version `
+            -replace '__PUBLISHER__', $publisher `
+            | Set-Content "$payload\AppxManifest.xml"
+
+          $sdkBin = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\*\x64" -Directory |
+            Sort-Object Name -Descending | Select-Object -First 1
+          $makeappx = Join-Path $sdkBin.FullName "makeappx.exe"
+          $signtool = Join-Path $sdkBin.FullName "signtool.exe"
+
+          $bundleDir = "src-tauri\target\release\bundle\msix"
+          New-Item -ItemType Directory -Path $bundleDir -Force | Out-Null
+          $msixPath = "$bundleDir\rumad-2_$($tauriConf.version)_x64.msix"
+
+          & $makeappx pack /d $payload /p $msixPath /overwrite
+          if ($LASTEXITCODE -ne 0) { throw "makeappx failed" }
+
+          & $signtool sign /fd SHA256 /a /f cert.pfx /p $pfxPasswordPlain $msixPath
+          if ($LASTEXITCODE -ne 0) { throw "signtool failed" }
+
+          Copy-Item rumad-2-ci.cer "$bundleDir\rumad-2-ci.cer"
+
+      - name: Upload bundles
+        uses: actions/upload-artifact@v4
+        with:
+          name: rumad-2-${{ matrix.platform }}${{ matrix.rust-target && format('-{0}', matrix.rust-target) || '' }}
+          path: |
+            src-tauri/target/${{ matrix.rust-target && format('{0}/', matrix.rust-target) || '' }}release/bundle/deb/*.deb
+            src-tauri/target/${{ matrix.rust-target && format('{0}/', matrix.rust-target) || '' }}release/bundle/appimage/*.AppImage
+            src-tauri/target/${{ matrix.rust-target && format('{0}/', matrix.rust-target) || '' }}release/bundle/dmg/*.dmg
+            src-tauri/target/${{ matrix.rust-target && format('{0}/', matrix.rust-target) || '' }}release/bundle/macos/*.app
+            src-tauri/target/${{ matrix.rust-target && format('{0}/', matrix.rust-target) || '' }}release/bundle/msi/*.msi
+            src-tauri/target/${{ matrix.rust-target && format('{0}/', matrix.rust-target) || '' }}release/bundle/nsis/*-setup.exe
+            src-tauri/target/release/bundle/msix/*.msix
+            src-tauri/target/release/bundle/msix/*.cer
+          if-no-files-found: ignore

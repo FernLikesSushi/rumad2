@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Minimal Desktop Bridge manifest: wraps the plain Win32 rumad-2.exe (built
+  by `tauri build`) as an MSIX, rather than a Store-style packaged app.
+  Tauri has no built-in MSIX bundler (only WiX .msi and NSIS .exe -- see
+  https://tauri.app/distribute/windows-installer/), so this is assembled by
+  hand and packed with the Windows SDK's makeappx.exe in
+  .github/workflows/build.yml. __VERSION__/__PUBLISHER__ are substituted by
+  that workflow at build time: __VERSION__ is tauri.conf.json's own
+  version with a fourth ".0" component appended (MSIX requires exactly
+  four numeric parts); __PUBLISHER__ must match the signing certificate's
+  Subject exactly, byte-for-byte, or signtool/Add-AppxPackage reject the
+  package -- see the workflow's cert-generation step for the value in use
+  today (an ephemeral, workflow-generated self-signed cert, not a real
+  trusted one -- see this repo's CI setup notes for why).
+-->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap rescap">
+
+  <Identity
+    Name="me.fern.rumad-2"
+    Publisher="__PUBLISHER__"
+    Version="__VERSION__"
+    ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>rumad-2</DisplayName>
+    <PublisherDisplayName>Fern</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="en-us" />
+  </Resources>
+
+  <Applications>
+    <Application Id="RUMAD2" Executable="rumad-2.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="rumad-2"
+        Description="A scraping app and library for the RUMAD system"
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png" />
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>
