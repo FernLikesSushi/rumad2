@@ -6,5 +6,5 @@
 
 .toggle-button.active {
   opacity: 1;
-  border-color: #396cd8;
+  border-color: var(--color-accent);
 }

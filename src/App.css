@@ -4,20 +4,59 @@
    lives in that file's own co-located .css instead -- see e.g.
    components/Header.css, screens/Unknown.css. */
 
+@import "tailwindcss";
+
+/* Design tokens -- plain CSS custom properties (Tailwind's `@theme` block
+   also registers them as utility values, e.g. `border-accent`, though
+   nothing here currently uses that; the point is having one place that
+   defines these colors instead of the same hex/rgba repeated by hand
+   across App.css/NoticeDialog.css/Spinner.css/ToggleButton.css/Unknown.css).
+   Light-mode values here; the dark-mode `:root` block below overrides
+   `--color-text`/`--color-bg` only -- everything that references them
+   (including other components' own .css files, e.g. NoticeDialog.css's
+   .dialog) gets the swap for free rather than needing its own dark-mode
+   media query. */
+@theme {
+  --color-accent: #396cd8;
+  --color-text: #0f0f0f;
+  --color-bg: #f6f6f6;
+  --color-surface: #ffffff;
+  --color-muted-bg: rgba(127, 127, 127, 0.12);
+  --color-muted-border: rgba(127, 127, 127, 0.25);
+  --color-muted-track: rgba(127, 127, 127, 0.3);
+}
+
 :root {
   font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
   font-size: 16px;
   line-height: 24px;
   font-weight: 400;
 
-  color: #0f0f0f;
-  background-color: #f6f6f6;
+  color: var(--color-text);
+  background-color: var(--color-bg);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
+}
+
+/* Tailwind's Preflight resets heading font-size/weight/margin to inherit
+   from the parent -- restoring the browser-default look here since every
+   screen has a bare `<h2>{title}</h2>` (Login, MenuScreen, Matricula,
+   CourseResults, WeeklySchedule, SearchScreen, Disconnected) relying on
+   it, and Header's `<h1>` likewise never set its own size explicitly. */
+h1 {
+  font-size: 2em;
+  font-weight: 700;
+  margin-block: 0.67em;
+}
+
+h2 {
+  font-size: 1.5em;
+  font-weight: 700;
+  margin-block: 0.83em;
 }
 
 .container {
@@ -74,7 +113,7 @@
 .courses td {
   text-align: left;
   padding: 0.3em 0.6em;
-  border-bottom: 1px solid rgba(127, 127, 127, 0.25);
+  border-bottom: 1px solid var(--color-muted-border);
 }
 
 input,
@@ -85,8 +124,8 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  color: #0f0f0f;
-  background-color: #ffffff;
+  color: var(--color-text);
+  background-color: var(--color-surface);
   transition: border-color 0.25s;
   box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
   outline: none;
@@ -97,18 +136,18 @@ button {
 }
 
 button:hover {
-  border-color: #396cd8;
+  border-color: var(--color-accent);
 }
 
 button:active {
-  border-color: #396cd8;
+  border-color: var(--color-accent);
   background-color: #e8e8e8;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    color: #f6f6f6;
-    background-color: #2f2f2f;
+    --color-text: #f6f6f6;
+    --color-bg: #2f2f2f;
   }
 
   input,
