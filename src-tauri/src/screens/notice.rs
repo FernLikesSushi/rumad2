@@ -1,35 +1,54 @@
-//! The remote's generalized "<< message >>" advisory pattern -- distinct
-//! from the specific "no esta disponible" rejection, which `classify`
-//! checks directly since it needs to win at high priority (see
-//! `TuiScreen::or_err`).
+//! The remote's generalized advisory patterns -- lines that are *entirely*
+//! wrapped in a marker on both sides, e.g. "<< message >>" or "*** message
+//! ***" -- distinct from the specific "no esta disponible" rejection,
+//! which `classify` checks directly since it needs to win at high priority
+//! (see `TuiScreen::or_err`).
 
 use regex::Regex;
 use std::sync::OnceLock;
 
-fn bracketed_notice_pattern() -> &'static Regex {
-    static PATTERN: OnceLock<Regex> = OnceLock::new();
-    // A line that is *entirely* a "<< message >>" advisory, e.g. "<< NO
-    // oprimir tecla <Enter> al entrar los datos >>" (note the harmless
-    // nested single-bracket "<Enter>") or "<< Esta factura NO ES
-    // OFICIAL... >>". Anchored to the whole (trimmed) line so it doesn't
-    // match a bracketed key hint embedded mid-instruction, like "Oprima
-    // <<Enter>> para Continuar". The `[^<>]` boundaries on the captured
-    // content require the brackets to be *exactly* double -- distinct from
-    // the remote's other, unrelated "<<<  Oprima Return  >>>" triple-angle
-    // style (a plain "press enter" prompt, not an advisory), which would
-    // otherwise partially match and capture a mangled leftover bracket.
-    PATTERN.get_or_init(|| Regex::new(r"^<<([^<>].*?[^<>])>>$").unwrap())
+fn advisory_patterns() -> &'static [Regex; 2] {
+    static PATTERNS: OnceLock<[Regex; 2]> = OnceLock::new();
+    PATTERNS.get_or_init(|| {
+        [
+            // A line that is *entirely* a "<< message >>" advisory, e.g.
+            // "<< NO oprimir tecla <Enter> al entrar los datos >>" (note
+            // the harmless nested single-bracket "<Enter>") or "<< Esta
+            // factura NO ES OFICIAL... >>". Anchored to the whole (trimmed)
+            // line so it doesn't match a bracketed key hint embedded
+            // mid-instruction, like "Oprima <<Enter>> para Continuar". The
+            // `[^<>]` boundaries on the captured content require the
+            // brackets to be *exactly* double -- distinct from the
+            // remote's other, unrelated "<<<  Oprima Return  >>>"
+            // triple-angle style (a plain "press enter" prompt, not an
+            // advisory), which would otherwise partially match and capture
+            // a mangled leftover bracket.
+            Regex::new(r"^<<([^<>].*?[^<>])>>$").unwrap(),
+            // A line that is *entirely* a "*** message ***" advisory, e.g.
+            // "*** NO tiene Matricula ***" (live-observed: shown browsing
+            // a period the student has no enrolled schedule for). The
+            // `[^*]` boundaries require exactly three stars on each side,
+            // same reasoning as the angle-bracket case -- MENU PRINCIPAL's
+            // own "***>>>  LEE tu Correo Electronico..." option line isn't
+            // anchored (it starts with "1.", not "***") and doesn't end in
+            // "***" either, so it can't collide with this pattern.
+            Regex::new(r"^\*\*\*([^*].*?[^*])\*\*\*$").unwrap(),
+        ]
+    })
 }
 
-/// Extracts a "<< message >>" advisory line, if the screen has one.
-/// Deliberately excludes bare key-name hints like a lone "<<Enter>>" line
-/// (real advisories are full phrases, not a single word) -- see
-/// `bracketed_notice_pattern`.
-pub(super) fn extract_bracketed_notice(raw: &str) -> Option<String> {
+/// Extracts an advisory line ("<< message >>" or "*** message ***"), if
+/// the screen has one. Deliberately excludes bare key-name hints like a
+/// lone "<<Enter>>" line (real advisories are full phrases, not a single
+/// word) -- see `advisory_patterns`.
+pub(super) fn extract_advisory_notice(raw: &str) -> Option<String> {
     raw.lines().find_map(|line| {
-        let captures = bracketed_notice_pattern().captures(line.trim())?;
-        let message = captures[1].trim();
-        message.contains(' ').then(|| message.to_string())
+        let trimmed = line.trim();
+        advisory_patterns().iter().find_map(|pattern| {
+            let captures = pattern.captures(trimmed)?;
+            let message = captures[1].trim();
+            message.contains(' ').then(|| message.to_string())
+        })
     })
 }
 
@@ -78,12 +97,36 @@ mod tests {
     }
 
     #[test]
-    fn extract_bracketed_notice_rejects_bare_key_hints() {
-        assert_eq!(extract_bracketed_notice("<<Enter>>"), None);
+    fn extract_advisory_notice_rejects_bare_key_hints() {
+        assert_eq!(extract_advisory_notice("<<Enter>>"), None);
         assert_eq!(
-            extract_bracketed_notice("Oprima <<Enter>> para Continuar"),
+            extract_advisory_notice("Oprima <<Enter>> para Continuar"),
             None
         );
-        assert_eq!(extract_bracketed_notice("<<<  Oprima Return  >>>"), None);
+        assert_eq!(extract_advisory_notice("<<<  Oprima Return  >>>"), None);
+    }
+
+    #[test]
+    fn starred_notice_is_extracted_cleanly() {
+        // Live-observed: browsing a period the student has no enrolled
+        // schedule for shows this in place of the usual course table.
+        let raw = "*** NO tiene Matricula ***";
+        let TuiScreen::Notice(NoticeScreen { message, .. }) = classify(raw) else {
+            panic!("expected Notice");
+        };
+        assert_eq!(message, "NO tiene Matricula");
+        // Informational, not a rejection -- must not become a command error.
+        assert!(classify(raw).or_err().is_ok());
+    }
+
+    #[test]
+    fn starred_notice_does_not_collide_with_main_menu_option_marker() {
+        // MENU PRINCIPAL's own "***>>>  LEE tu Correo..." option line
+        // isn't a "*** message ***" advisory (no closing "***", and it
+        // isn't the whole trimmed line) -- must not be mistaken for one.
+        assert_eq!(
+            extract_advisory_notice("1.  ***>>>  LEE tu Correo Electronico en ->  outlook.com"),
+            None
+        );
     }
 }
