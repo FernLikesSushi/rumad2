@@ -33,7 +33,11 @@ pub async fn connect(
     log_invoked(&format!(
         "connect(username={:?}, password={})",
         username,
-        if password.is_some() { "<redacted>" } else { "None" }
+        if password.is_some() {
+            "<redacted>"
+        } else {
+            "None"
+        }
     ));
     let watcher_app = app.clone();
     let result = blocking(move || {

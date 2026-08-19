@@ -13,7 +13,9 @@ use regex::Regex;
 use serde::Serialize;
 use std::sync::OnceLock;
 
-use super::MenuOption;
+use super::{MenuOption, RumadScreen};
+use crate::ssh::key::Key;
+use crate::ssh::session::TuiSession;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum MenuKind {
@@ -51,6 +53,36 @@ pub struct MenuScreen {
     pub options: Vec<MenuOption>,
 }
 
+impl RumadScreen for MenuScreen {
+    /// `MainMenu`/`MenuDespliegue`/`SelectPeriod` all have a free-text
+    /// prompt available (even if unused) via the default; `HorarioSemester`
+    /// genuinely has none, just its four numbered/lettered options.
+    fn line(&self, session: &mut TuiSession, text: &str) -> anyhow::Result<()> {
+        if self.menu == MenuKind::HorarioSemester {
+            anyhow::bail!("HorarioSemester has no free-text prompt; use select()")
+        }
+        session.send_line(text)
+    }
+
+    /// `MainMenu`/`MenuDespliegue`/`SelectPeriod` all exit via the default
+    /// "0" (confirmed live for the first two; `SelectPeriod`'s own
+    /// "S=salir" is just a normal `select`, not a separate exit keystroke,
+    /// so the default "0" is simply never used there but is harmless).
+    /// `HorarioSemester` is the one exception -- PF4 exits it specifically,
+    /// per its own footer's "[PF4=(9)Fin]" hint. Either way `exit()`
+    /// reaches a real destination for every kind, so `can_exit`'s default
+    /// (`true`) needs no override here -- see that method's own doc
+    /// comment on why this is deliberately still worth a dedicated
+    /// control even for the three kinds whose exit key is also listed
+    /// among `options`.
+    fn exit(&self, session: &mut TuiSession) -> anyhow::Result<()> {
+        match self.menu {
+            MenuKind::HorarioSemester => session.send_key(Key::F4),
+            _ => self.select(session, "0"),
+        }
+    }
+}
+
 /// Unique to `HorarioSemester`'s prompt: lowercase "semestre", unlike
 /// `SelectPeriod`'s "Indique Semestre:".
 pub(super) const HORARIO_SEMESTER_DETECT_HINT: &str = "Indique semestre";
@@ -72,7 +104,10 @@ fn compact_equals_pattern() -> &'static Regex {
 pub(super) fn scrape_horario_semester_options(raw: &str) -> Vec<MenuOption> {
     compact_equals_pattern()
         .captures_iter(raw)
-        .map(|c| MenuOption { key: c[1].to_string(), label: c[2].to_string() })
+        .map(|c| MenuOption {
+            key: c[1].to_string(),
+            label: c[2].to_string(),
+        })
         .collect()
 }
 
@@ -107,7 +142,10 @@ mod tests {
         );
         assert_eq!(
             screen.options.last().unwrap(),
-            &MenuOption { key: "0".into(), label: "Finalizar".into() }
+            &MenuOption {
+                key: "0".into(),
+                label: "Finalizar".into()
+            }
         );
     }
 
@@ -120,8 +158,14 @@ mod tests {
         assert_eq!(
             screen.options,
             vec![
-                MenuOption { key: "1".into(), label: "1er Sem".into() },
-                MenuOption { key: "2".into(), label: "2do Sem".into() },
+                MenuOption {
+                    key: "1".into(),
+                    label: "1er Sem".into()
+                },
+                MenuOption {
+                    key: "2".into(),
+                    label: "2do Sem".into()
+                },
                 MenuOption {
                     key: "3".into(),
                     label: "1er Verano o Verano Extendido".into()
@@ -130,7 +174,10 @@ mod tests {
                     key: "4".into(),
                     label: "2do Verano o Admision Temprana".into()
                 },
-                MenuOption { key: "S".into(), label: "salir".into() },
+                MenuOption {
+                    key: "S".into(),
+                    label: "salir".into()
+                },
             ]
         );
     }
@@ -144,10 +191,22 @@ mod tests {
         assert_eq!(
             screen.options,
             vec![
-                MenuOption { key: "1".into(), label: "1erVer".into() },
-                MenuOption { key: "2".into(), label: "1erSem".into() },
-                MenuOption { key: "3".into(), label: "2doSem".into() },
-                MenuOption { key: "4".into(), label: "2doVer".into() },
+                MenuOption {
+                    key: "1".into(),
+                    label: "1erVer".into()
+                },
+                MenuOption {
+                    key: "2".into(),
+                    label: "1erSem".into()
+                },
+                MenuOption {
+                    key: "3".into(),
+                    label: "2doSem".into()
+                },
+                MenuOption {
+                    key: "4".into(),
+                    label: "2doVer".into()
+                },
             ]
         );
     }

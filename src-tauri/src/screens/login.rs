@@ -5,6 +5,8 @@
 
 use serde::Serialize;
 
+use super::RumadScreen;
+use crate::ssh::key::Key;
 use crate::ssh::session::TuiSession;
 
 /// One field of the `Login` form, in on-screen order. `label`/`hint` are
@@ -59,9 +61,31 @@ impl LoginScreen {
         Ok(())
     }
 
-    fn sanitize(id_number: &str, access_code: &str, ssn_last4: &str, birth_date: &str) -> [String; 4] {
+    fn sanitize(
+        id_number: &str,
+        access_code: &str,
+        ssn_last4: &str,
+        birth_date: &str,
+    ) -> [String; 4] {
         [id_number, access_code, ssn_last4, birth_date]
             .map(|field| field.chars().filter(|c| !c.is_whitespace()).collect())
+    }
+}
+
+impl RumadScreen for LoginScreen {
+    fn select(&self, _session: &mut TuiSession, _key: &str) -> anyhow::Result<()> {
+        anyhow::bail!("Login has no single-keystroke selection; use LoginScreen::login")
+    }
+
+    fn line(&self, _session: &mut TuiSession, _text: &str) -> anyhow::Result<()> {
+        anyhow::bail!("Login has no free-text prompt; use LoginScreen::login")
+    }
+
+    /// PF4 exits the `Login` form specifically -- confirmed live from its
+    /// footer ("PF4=(9)"), unlike the "0" every other screen's `exit()`
+    /// sends.
+    fn exit(&self, session: &mut TuiSession) -> anyhow::Result<()> {
+        session.send_key(Key::F4)
     }
 }
 

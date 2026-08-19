@@ -144,7 +144,10 @@ mod tests {
         // should land in Unknown with the raw text intact, not a mangled
         // Notice with leftover bracket characters.
         let result = classify(HORARIOS_DE_SECCION);
-        assert!(matches!(result.screen, TuiScreen::Unknown(UnknownScreen { .. })));
+        assert!(matches!(
+            result.screen,
+            TuiScreen::Unknown(UnknownScreen { .. })
+        ));
         assert_eq!(result.dialog, None);
     }
 
@@ -169,7 +172,10 @@ mod tests {
         let result = classify(raw);
         assert_eq!(
             result.dialog,
-            Some(Dialog::Notice { message: "NO tiene Matricula".to_string(), raw: raw.to_string() })
+            Some(Dialog::Notice {
+                message: "NO tiene Matricula".to_string(),
+                raw: raw.to_string()
+            })
         );
         // Informational, not a rejection -- must not become a command error.
         assert!(result.or_err().is_ok());
@@ -190,7 +196,10 @@ mod tests {
     fn starred_notice_excludes_course_results_own_title() {
         // The one known non-rejection instance of the "*** ... ***"
         // marker -- see this module's doc comment.
-        assert_eq!(extract_starred_notice("*** Horarios de Matricula ***"), None);
+        assert_eq!(
+            extract_starred_notice("*** Horarios de Matricula ***"),
+            None
+        );
     }
 
     #[test]

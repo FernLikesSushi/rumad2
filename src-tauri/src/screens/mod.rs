@@ -59,9 +59,12 @@
 //! own dedicated types instead of being forced into a shared shape.
 //!
 //! Each screen type that has dedicated data gets its own submodule for its
-//! types/scrapers/tests; `classify`/`classify_screen`/`detect_dialog`
-//! themselves stay in this file rather than being scattered, since they
-//! need every submodule's detection hint in one place to reason about.
+//! types/scrapers/tests/`impl RumadScreen` (`interact.rs` owns only the
+//! shared trait definition, not any screen's implementation of it --
+//! `UnknownScreen`'s lives here instead, since it has no submodule of its
+//! own); `classify`/`classify_screen`/`detect_dialog` themselves stay in
+//! this file rather than being scattered, since they need every
+//! submodule's detection hint in one place to reason about.
 
 mod course_results;
 mod interact;
@@ -75,8 +78,15 @@ mod weekly_schedule;
 
 use serde::Serialize;
 
-pub(crate) use interact::RumadScreen;
+// Re-exported (rather than just `pub`) at this flat `screens::` path since
+// `screens` is itself `pub` (see `lib.rs`) for use as a scraping library
+// independent of the Tauri app -- these submodules stay private so callers
+// go through this curated surface instead of the internal module layout.
+// Field types like `CourseSection` are included even though nothing inside
+// this crate names them directly: an external caller needs them to do
+// anything with e.g. `CourseResultsScreen.sections`.
 pub use course_results::{CourseResultsScreen, CourseSection};
+pub(crate) use interact::RumadScreen;
 pub use login::{LoginField, LoginScreen};
 pub use matricula::{MatriculaMode, MatriculaScreen, ScheduleCourse};
 pub use menu::{MenuKind, MenuScreen};
@@ -101,6 +111,11 @@ pub struct UnknownScreen {
     pub raw: String,
     pub options: Vec<MenuOption>,
 }
+
+/// No dedicated interaction of its own -- inherits every `RumadScreen`
+/// default (`select`/`line` for the best-effort scraped `options`, "0" to
+/// exit, `can_exit` true).
+impl RumadScreen for UnknownScreen {}
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(tag = "kind")]
@@ -228,12 +243,20 @@ pub fn classify(raw: &str) -> ClassifiedScreen {
     // left to classify.
     let collapsed: String = raw.chars().filter(|c| !c.is_whitespace()).collect();
     if collapsed.contains("PROCESOCONCLUIDO") {
-        return ClassifiedScreen { screen: TuiScreen::Disconnected, dialog: None, can_exit: false };
+        return ClassifiedScreen {
+            screen: TuiScreen::Disconnected,
+            dialog: None,
+            can_exit: false,
+        };
     }
 
     let screen = classify_screen(raw);
     let can_exit = screen.as_rumad_screen().is_some_and(|s| s.can_exit());
-    ClassifiedScreen { screen, dialog: detect_dialog(raw, &collapsed), can_exit }
+    ClassifiedScreen {
+        screen,
+        dialog: detect_dialog(raw, &collapsed),
+        can_exit,
+    }
 }
 
 /// The screen underneath, regardless of whether a `Dialog` is also
@@ -243,7 +266,9 @@ pub fn classify(raw: &str) -> ClassifiedScreen {
 /// their relative order doesn't matter for correctness.
 fn classify_screen(raw: &str) -> TuiScreen {
     if raw.contains(login::DETECT_HINT) {
-        return TuiScreen::Login(LoginScreen { fields: login::login_fields() });
+        return TuiScreen::Login(LoginScreen {
+            fields: login::login_fields(),
+        });
     }
 
     if raw.contains("Indique Semestre") {
@@ -296,11 +321,15 @@ fn classify_screen(raw: &str) -> TuiScreen {
     }
 
     if raw.contains(search::HORARIO_CURSO_DETECT_HINT) {
-        return TuiScreen::Search(SearchScreen { search: SearchKind::HorarioCurso });
+        return TuiScreen::Search(SearchScreen {
+            search: SearchKind::HorarioCurso,
+        });
     }
 
     if raw.contains(search::HORARIO_SECCION_DETECT_HINT) {
-        return TuiScreen::Search(SearchScreen { search: SearchKind::HorarioSeccion });
+        return TuiScreen::Search(SearchScreen {
+            search: SearchKind::HorarioSeccion,
+        });
     }
 
     if raw.contains(menu::HORARIO_SEMESTER_DETECT_HINT) {
@@ -331,11 +360,17 @@ fn detect_dialog(raw: &str, collapsed: &str) -> Option<Dialog> {
         lower.contains("no esta disponible") || lower.contains("no está disponible")
     });
     if let Some(line) = notice_line {
-        return Some(Dialog::Notice { message: line.trim().to_string(), raw: raw.to_string() });
+        return Some(Dialog::Notice {
+            message: line.trim().to_string(),
+            raw: raw.to_string(),
+        });
     }
 
     if let Some(message) = notice::extract_starred_notice(raw) {
-        return Some(Dialog::Notice { message, raw: raw.to_string() });
+        return Some(Dialog::Notice {
+            message,
+            raw: raw.to_string(),
+        });
     }
 
     // Pads every letter with spaces for a marquee effect too ("<<<
@@ -346,7 +381,10 @@ fn detect_dialog(raw: &str, collapsed: &str) -> Option<Dialog> {
     }
 
     if let Some(message) = notice::extract_bracketed_or_boxed_notice(raw) {
-        return Some(Dialog::Notice { message, raw: raw.to_string() });
+        return Some(Dialog::Notice {
+            message,
+            raw: raw.to_string(),
+        });
     }
 
     None
@@ -426,7 +464,13 @@ Opcion deseada:   ";
             "              Cuenta ESTUDIANTE NO esta disponible por el momento\n{MAIN_MENU}"
         );
         let result = classify(&raw);
-        assert!(matches!(result.screen, TuiScreen::Menu(MenuScreen { menu: MenuKind::MainMenu, .. })));
+        assert!(matches!(
+            result.screen,
+            TuiScreen::Menu(MenuScreen {
+                menu: MenuKind::MainMenu,
+                ..
+            })
+        ));
         assert_eq!(
             result.or_err(),
             Err("Cuenta ESTUDIANTE NO esta disponible por el momento".to_string())
@@ -452,7 +496,11 @@ UNIVERSIDAD DE PUERTO RICO
 ";
         assert_eq!(
             classify(raw),
-            ClassifiedScreen { screen: TuiScreen::Disconnected, dialog: None, can_exit: false }
+            ClassifiedScreen {
+                screen: TuiScreen::Disconnected,
+                dialog: None,
+                can_exit: false
+            }
         );
     }
 
@@ -464,7 +512,13 @@ UNIVERSIDAD DE PUERTO RICO
         // it (same reasoning as the notice case above).
         let raw = format!("                       <<<  Programa  en  Proceso  >>>\n{MAIN_MENU}");
         let result = classify(&raw);
-        assert!(matches!(result.screen, TuiScreen::Menu(MenuScreen { menu: MenuKind::MainMenu, .. })));
+        assert!(matches!(
+            result.screen,
+            TuiScreen::Menu(MenuScreen {
+                menu: MenuKind::MainMenu,
+                ..
+            })
+        ));
         assert_eq!(result.dialog, Some(Dialog::Processing));
     }
 
@@ -478,17 +532,21 @@ UNIVERSIDAD DE PUERTO RICO
     // substring match. Everything else below *is* modeled now (each
     // owns its own classification tests in its own submodule) but stays
     // listed here for the shared "not MainMenu" cross-check.
-    const HORARIO_CONFIRMADO: &str = include_str!("../../../screens/matricula/horario_confirmado.txt");
+    const HORARIO_CONFIRMADO: &str =
+        include_str!("../../../screens/matricula/horario_confirmado.txt");
     const RESERVA: &str = include_str!("../../../screens/matricula/reserva.txt");
     const MENU_DESPLIEGUE: &str = include_str!("../../../screens/menu_despliegue/menu.txt");
-    const HORARIO_SEMESTRE: &str = include_str!("../../../screens/menu_despliegue/horario_semestre.txt");
+    const HORARIO_SEMESTRE: &str =
+        include_str!("../../../screens/menu_despliegue/horario_semestre.txt");
     const HORARIO_CURSO: &str = include_str!("../../../screens/menu_despliegue/horario_curso.txt");
-    const HORARIO_PROCESANDO: &str = include_str!("../../../screens/menu_despliegue/horario_procesando.txt");
+    const HORARIO_PROCESANDO: &str =
+        include_str!("../../../screens/menu_despliegue/horario_procesando.txt");
     const HORARIO_RESULTADOS_MULTI: &str =
         include_str!("../../../screens/menu_despliegue/horario_resultados_multi.txt");
     const HORARIO_RESULTADOS_SIMPLE: &str =
         include_str!("../../../screens/menu_despliegue/horario_resultados_simple.txt");
-    const TURNO_SELECCION: &str = include_str!("../../../screens/menu_despliegue/turno_seleccion.txt");
+    const TURNO_SELECCION: &str =
+        include_str!("../../../screens/menu_despliegue/turno_seleccion.txt");
 
     #[test]
     fn unmodeled_matricula_screens_fall_back_to_unknown() {
@@ -522,7 +580,10 @@ UNIVERSIDAD DE PUERTO RICO
             assert!(
                 !matches!(
                     classify(raw).screen,
-                    TuiScreen::Menu(MenuScreen { menu: MenuKind::MainMenu, .. })
+                    TuiScreen::Menu(MenuScreen {
+                        menu: MenuKind::MainMenu,
+                        ..
+                    })
                 ),
                 "expected not MainMenu for:\n{raw}"
             );
