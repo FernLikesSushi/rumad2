@@ -61,7 +61,8 @@ h2 {
 
 .container {
   margin: 0;
-  padding-top: 10vh;
+  padding: 10vh 1rem 1rem;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   justify-content: center;
