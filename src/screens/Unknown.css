@@ -1,5 +1,5 @@
 .raw {
-  background: rgba(127, 127, 127, 0.12);
+  background: var(--color-muted-bg);
   padding: 0.8em;
   border-radius: 8px;
   overflow-x: auto;
