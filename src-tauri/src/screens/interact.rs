@@ -10,9 +10,8 @@
 //! directly.
 
 use super::{
-    CourseResultsScreen, HorarioCursoScreen, HorarioSeccionScreen, HorarioSemesterScreen,
-    LoginScreen, MainMenuScreen, MatriculaScreen, MenuDespliegueScreen, SelectPeriodScreen,
-    UnknownScreen, WeeklyScheduleScreen,
+    CourseResultsScreen, LoginScreen, MatriculaMode, MatriculaScreen, MenuKind, MenuScreen,
+    SearchScreen, UnknownScreen, WeeklyScheduleScreen,
 };
 use crate::ssh::key::Key;
 use crate::ssh::session::TuiSession;
@@ -43,15 +42,67 @@ pub(crate) trait RumadScreen {
     fn exit(&self, session: &mut TuiSession) -> anyhow::Result<()> {
         self.select(session, "0")
     }
+
+    /// Whether `exit()` actually goes anywhere, rather than just bailing.
+    /// A screen whose exit key also happens to be listed among its own
+    /// `options` (`MainMenu`'s "0", `SelectPeriod`'s "S=salir") still
+    /// counts as `true` here -- the frontend's dedicated exit control
+    /// (see `ClassifiedScreen::can_exit`) is deliberately the *one*
+    /// consistent, discoverable way to leave any screen, the same role
+    /// PF4 plays on screens that use it, rather than making the user hunt
+    /// for "0" among a wall of option buttons on the ones that don't.
+    /// Only screens whose `exit()` genuinely has nowhere to send (see
+    /// `MatriculaScreen`/`WeeklyScheduleScreen`'s own overrides) return
+    /// `false`.
+    fn can_exit(&self) -> bool {
+        true
+    }
 }
 
-impl RumadScreen for MainMenuScreen {}
-impl RumadScreen for SelectPeriodScreen {}
 impl RumadScreen for UnknownScreen {}
-/// Structurally identical to `MainMenu` -- confirmed live, its own "0.
-/// Finalizar" is the same consistent exit key the default `exit()` sends
-/// (see that method's doc comment).
-impl RumadScreen for MenuDespliegueScreen {}
+
+impl RumadScreen for MenuScreen {
+    /// `MainMenu`/`MenuDespliegue`/`SelectPeriod` all have a free-text
+    /// prompt available (even if unused) via the default; `HorarioSemester`
+    /// genuinely has none, just its four numbered/lettered options.
+    fn line(&self, session: &mut TuiSession, text: &str) -> anyhow::Result<()> {
+        if self.menu == MenuKind::HorarioSemester {
+            anyhow::bail!("HorarioSemester has no free-text prompt; use select()")
+        }
+        session.send_line(text)
+    }
+
+    /// `MainMenu`/`MenuDespliegue`/`SelectPeriod` all exit via the default
+    /// "0" (confirmed live for the first two; `SelectPeriod`'s own
+    /// "S=salir" is just a normal `select`, not a separate exit keystroke,
+    /// so the default "0" is simply never used there but is harmless).
+    /// `HorarioSemester` is the one exception -- PF4 exits it specifically,
+    /// per its own footer's "[PF4=(9)Fin]" hint. Either way `exit()`
+    /// reaches a real destination for every kind, so `can_exit`'s default
+    /// (`true`) needs no override here -- see that method's own doc
+    /// comment on why this is deliberately still worth a dedicated
+    /// control even for the three kinds whose exit key is also listed
+    /// among `options`.
+    fn exit(&self, session: &mut TuiSession) -> anyhow::Result<()> {
+        match self.menu {
+            MenuKind::HorarioSemester => session.send_key(Key::F4),
+            _ => self.select(session, "0"),
+        }
+    }
+}
+
+impl RumadScreen for SearchScreen {
+    /// No numbered options on either kind, just the free-text search.
+    fn select(&self, _session: &mut TuiSession, _key: &str) -> anyhow::Result<()> {
+        anyhow::bail!("Search has no selectable options; use line()")
+    }
+
+    /// PF4 exits both kinds specifically -- their own footer's
+    /// "[PF4=(9)Fin]" hint.
+    fn exit(&self, session: &mut TuiSession) -> anyhow::Result<()> {
+        session.send_key(Key::F4)
+    }
+}
 
 impl RumadScreen for LoginScreen {
     fn select(&self, _session: &mut TuiSession, _key: &str) -> anyhow::Result<()> {
@@ -71,15 +122,18 @@ impl RumadScreen for LoginScreen {
 }
 
 impl RumadScreen for MatriculaScreen {
-    /// Unlike `MainMenu`/`MENU DESPLIEGUE`, `Matricula`'s `Actions` prompt
-    /// has no "0" option (its own `S`=Salir is just a normal `select`, not
-    /// a separate exit keystroke) and its `Bajas`/`Altas`/`Cambio`
-    /// sub-prompts exit via the free-text "FIN" instead. There's no single
-    /// keystroke that works across both shapes, so this is left
-    /// unimplemented rather than guessing -- callers should `select`/
-    /// `line` the screen's own documented way out instead.
-    fn exit(&self, _session: &mut TuiSession) -> anyhow::Result<()> {
-        anyhow::bail!("Matricula has no single exit keystroke; select \"S\" or send the line \"FIN\" instead")
+    /// `Actions` exits via its own `S`=Salir option -- a normal `select`,
+    /// same as `MenuScreen`'s "0"/"S=salir" (see that impl's `exit` doc
+    /// comment for why that still counts as a real exit destination, not
+    /// a bail). `Bajas`/`Altas`/`Cambio` have no such listed option --
+    /// they exit via the free-text "FIN" instead.
+    fn exit(&self, session: &mut TuiSession) -> anyhow::Result<()> {
+        match self.mode {
+            MatriculaMode::Actions { .. } => self.select(session, "S"),
+            MatriculaMode::Bajas | MatriculaMode::Altas | MatriculaMode::Cambio => {
+                self.line(session, "FIN")
+            }
+        }
     }
 }
 
@@ -110,45 +164,12 @@ impl RumadScreen for WeeklyScheduleScreen {
     /// (bare Enter, inherited default) is a safe bet since every other
     /// screen in this app accepts it to continue/redraw.
     fn exit(&self, _session: &mut TuiSession) -> anyhow::Result<()> {
-        anyhow::bail!("WeeklySchedule's exit keystroke isn't confirmed live; try line(\"\") instead")
-    }
-}
-
-impl RumadScreen for HorarioSemesterScreen {
-    /// No free-text prompt here, just the four numbered/lettered options.
-    fn line(&self, _session: &mut TuiSession, _text: &str) -> anyhow::Result<()> {
-        anyhow::bail!("HorarioSemester has no free-text prompt; use select()")
+        anyhow::bail!(
+            "WeeklySchedule's exit keystroke isn't confirmed live; try line(\"\") instead"
+        )
     }
 
-    /// PF4 exits this prompt specifically -- its own footer's
-    /// "[PF4=(9)Fin]" hint, same reasoning as `Login`/`CourseResults`.
-    fn exit(&self, session: &mut TuiSession) -> anyhow::Result<()> {
-        session.send_key(Key::F4)
-    }
-}
-
-impl RumadScreen for HorarioCursoScreen {
-    /// No numbered options, just the free-text course-code search.
-    fn select(&self, _session: &mut TuiSession, _key: &str) -> anyhow::Result<()> {
-        anyhow::bail!("HorarioCurso has no selectable options; use line()")
-    }
-
-    /// PF4 exits this prompt specifically -- its own footer's
-    /// "[PF4=(9)Fin]" hint, same reasoning as `HorarioSemester`.
-    fn exit(&self, session: &mut TuiSession) -> anyhow::Result<()> {
-        session.send_key(Key::F4)
-    }
-}
-
-impl RumadScreen for HorarioSeccionScreen {
-    /// No numbered options, just the free-text section-number search.
-    fn select(&self, _session: &mut TuiSession, _key: &str) -> anyhow::Result<()> {
-        anyhow::bail!("HorarioSeccion has no selectable options; use line()")
-    }
-
-    /// PF4 exits this prompt specifically -- its own footer's
-    /// "[PF4=(9)Fin]" hint, same reasoning as `HorarioCurso`.
-    fn exit(&self, session: &mut TuiSession) -> anyhow::Result<()> {
-        session.send_key(Key::F4)
+    fn can_exit(&self) -> bool {
+        false
     }
 }

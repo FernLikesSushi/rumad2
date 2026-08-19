@@ -23,6 +23,10 @@ pub struct LoginField {
     pub hint: String,
 }
 
+/// The real per-student authentication form, e.g. "Número de
+/// Identificación", "Código de Acceso Permanente", "Seguro Social
+/// (últimos 4)", "Fecha de Nacimiento" -- each field auto-advances with no
+/// Enter (see `login`'s own doc comment).
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct LoginScreen {
     pub fields: Vec<LoginField>,
@@ -102,7 +106,7 @@ mod tests {
 
     #[test]
     fn classifies_login_form() {
-        let TuiScreen::Login(LoginScreen { fields }) = classify(LOGIN) else {
+        let TuiScreen::Login(LoginScreen { fields }) = classify(LOGIN).screen else {
             panic!("expected Login");
         };
         assert_eq!(

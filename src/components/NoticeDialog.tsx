@@ -1,8 +1,8 @@
 import { Show } from "solid-js";
 import { t } from "../i18n";
-import type { Dialog } from "../types";
+import type { DialogBox } from "../types";
 
-export function NoticeDialog(props: { dialog: Dialog | null; onClose: () => void }) {
+export function NoticeDialog(props: { dialog: DialogBox | null; onClose: () => void }) {
   return (
     <Show when={props.dialog}>
       {(d) => (

@@ -39,6 +39,9 @@ pub enum MatriculaMode {
     Cambio,
 }
 
+/// The student's course schedule, e.g. rows like "1.  INSO 4101      080
+/// 3    S" under a header reading "M A T R I C U L A", plus whichever
+/// `MatriculaMode` sub-prompt is currently active underneath it.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct MatriculaScreen {
     pub courses: Vec<ScheduleCourse>,
@@ -86,7 +89,7 @@ mod tests {
 
     #[test]
     fn classifies_matricula_with_actions_mode() {
-        let TuiScreen::Matricula(MatriculaScreen { courses, mode }) = classify(SELECT) else {
+        let TuiScreen::Matricula(MatriculaScreen { courses, mode }) = classify(SELECT).screen else {
             panic!("expected Matricula");
         };
         assert_eq!(
@@ -138,7 +141,7 @@ mod tests {
 
     #[test]
     fn classifies_matricula_with_bajas_mode() {
-        let TuiScreen::Matricula(MatriculaScreen { courses, mode }) = classify(BAJAS) else {
+        let TuiScreen::Matricula(MatriculaScreen { courses, mode }) = classify(BAJAS).screen else {
             panic!("expected Matricula");
         };
         assert_eq!(courses.len(), 4);
@@ -147,7 +150,7 @@ mod tests {
 
     #[test]
     fn classifies_matricula_with_altas_mode() {
-        let TuiScreen::Matricula(MatriculaScreen { courses, mode }) = classify(ALTA) else {
+        let TuiScreen::Matricula(MatriculaScreen { courses, mode }) = classify(ALTA).screen else {
             panic!("expected Matricula");
         };
         assert_eq!(courses.len(), 4);
@@ -156,7 +159,7 @@ mod tests {
 
     #[test]
     fn classifies_matricula_with_cambio_mode() {
-        let TuiScreen::Matricula(MatriculaScreen { courses, mode }) = classify(CAMBIOS) else {
+        let TuiScreen::Matricula(MatriculaScreen { courses, mode }) = classify(CAMBIOS).screen else {
             panic!("expected Matricula");
         };
         assert_eq!(courses.len(), 4);
@@ -168,7 +171,7 @@ mod tests {
         // alta_seccion.txt overlays "SECCIONES DISPONIBLES CURSO: ..." text
         // after the status column on some rows -- course_pattern must not
         // require end-of-line right after the status field.
-        let TuiScreen::Matricula(MatriculaScreen { courses, .. }) = classify(ALTA_SECCION) else {
+        let TuiScreen::Matricula(MatriculaScreen { courses, .. }) = classify(ALTA_SECCION).screen else {
             panic!("expected Matricula");
         };
         assert_eq!(courses.len(), 4);

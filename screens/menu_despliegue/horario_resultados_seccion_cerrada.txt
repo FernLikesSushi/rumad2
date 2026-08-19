@@ -1,0 +1,17 @@
+19/ago/2026           RECINTO UNIVERSITARIO DE MAYAGUEZ                 2:35 pm
+                        *** Horarios de Matricula ***
+                   ESTADO DE SECCIONES  1er Sem  2026-2027
+
+C u r s o:  ELEC 3101        ---> CIRCUITOS ELECTRICOS I
+
+Sec.  Salon    Periodos            Crd.  Profesor              Cap.  Uti.  Disp.
+----  -----    --------            ----  --------              ----  ----  -----
+101 * EE204  LW       4:00- 5:15pm   3                          45    45    00
+
+
+                     * Totales: ELEC 3101      1 seccion        45    45    00
+
+
+
+
+                                               < Oprima Enter o [PF4(9)=Fin] >

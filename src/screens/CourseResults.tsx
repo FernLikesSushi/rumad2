@@ -10,14 +10,9 @@ export function CourseResultsScreen(props: {
   send: Send;
 }) {
   // Read-only screen: nothing to select, just "Enter to continue" (a bare
-  // Line) or PF4 to leave (see `RumadScreen for CourseResultsScreen` in
-  // the backend for why PF4 specifically is grounded here).
+  // Line). PF4-to-leave is handled by App.tsx's shared exit control.
   function continueScreen() {
     props.send({ kind: "Line", text: "" });
-  }
-
-  function exitScreen() {
-    props.send({ kind: "Exit" });
   }
 
   return (
@@ -60,9 +55,6 @@ export function CourseResultsScreen(props: {
       <div class="row">
         <button disabled={props.busy} onClick={continueScreen}>
           {t().continueLabel}
-        </button>
-        <button disabled={props.busy} onClick={exitScreen}>
-          {t().screenExit}
         </button>
       </div>
     </>

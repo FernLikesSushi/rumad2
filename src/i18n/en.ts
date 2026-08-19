@@ -47,13 +47,17 @@ const en: Messages = {
     ssnLast4: { label: "Social Security (last 4)", hint: "e.g. 1234" },
     birthDate: { label: "Date of Birth", hint: "e.g. MMDDYYYY" },
   },
-  mainMenuTitle: "MAIN MENU",
-  menuDespliegueTitle: "OTHER INFORMATION",
+  menuTitles: {
+    MainMenu: "MAIN MENU",
+    MenuDespliegue: "OTHER INFORMATION",
+    SelectPeriod: "Select Semester",
+  },
   horarioMatriculaTitle: "Enrollment Schedule",
-  horarioCursoHint: "Course (e.g. QUIM3001L) - you may enter just the subject",
-  horarioSeccionHint: "Section (e.g. 001#)",
+  searchHints: {
+    HorarioCurso: "Course (e.g. QUIM3001L) - you may enter just the subject",
+    HorarioSeccion: "Section (e.g. 001#)",
+  },
   processingTitle: "Still processing...",
-  selectPeriodTitle: "Select Semester",
   matriculaTitle: "E N R O L L M E N T",
   matriculaColumns: { course: "Course", section: "Section", credits: "Cr.", status: "Grade" },
   courseResultsColumns: {

@@ -1,6 +1,5 @@
 import { createSignal, For } from "solid-js";
 import { t } from "../i18n";
-import type { Send } from "../types";
 
 // Hardcoded rather than read from the backend's `fields` -- the remote's
 // own labels for this specific form arrive mangled over the wire (see
@@ -31,7 +30,6 @@ function toRemoteFormat(isoDate: string): string {
 
 export function LoginScreen(props: {
   login: (idNumber: string, accessCode: string, ssnLast4: string, birthDate: string) => void;
-  send: Send;
   busy: boolean;
 }) {
   const [values, setValues] = createSignal<Record<string, string>>({});
@@ -47,13 +45,6 @@ export function LoginScreen(props: {
     props.login(v.id_number, v.access_code, v.ssn_last4, toRemoteFormat(birthDate()));
     setValues({});
     setBirthDate("");
-  }
-
-  // `LoginScreen`'s own `RumadScreen::exit` sends PF4 (its footer's own
-  // "PF4=(9)" hint, live-confirmed) rather than the "0" every other
-  // screen's default `exit` sends -- see the backend impl's doc comment.
-  function exitScreen() {
-    props.send({ kind: "Exit" });
   }
 
   return (
@@ -79,9 +70,6 @@ export function LoginScreen(props: {
         <div class="row">
           <button type="submit" disabled={props.busy}>
             {t().send}
-          </button>
-          <button type="button" disabled={props.busy} onClick={exitScreen}>
-            {t().screenExit}
           </button>
         </div>
       </form>

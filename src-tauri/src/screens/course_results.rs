@@ -11,9 +11,14 @@ use std::sync::OnceLock;
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct CourseSection {
+    /// May carry a trailing " *" (e.g. "101 *") marking a closed/full
+    /// section -- passed through as-is rather than parsed into a flag,
+    /// same treatment as `available`'s trailing "-".
     pub section: String,
     /// Room, or empty for sections scheduled "Por acuerdo" (by
-    /// arrangement, no fixed room/time).
+    /// arrangement, no fixed room/time). Can itself contain a space (e.g.
+    /// "S 121" -- building letter, room number) -- passed through as-is
+    /// rather than split further.
     pub room: String,
     pub schedule: String,
     pub credits: String,
@@ -26,6 +31,8 @@ pub struct CourseSection {
     pub available: String,
 }
 
+/// Read-only search results for one course code, e.g. "C u r s o:  HIST
+/// 3220        ---> INT HIST:ENF SOCIAL" plus a table of open sections.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CourseResultsScreen {
@@ -41,58 +48,72 @@ fn course_header_pattern() -> &'static Regex {
     PATTERN.get_or_init(|| Regex::new(r"(?m)^C u r s o:\s*(\S+ \S+)\s*--->\s*(.+?)\s*$").unwrap())
 }
 
-fn section_row_pattern() -> &'static Regex {
-    static PATTERN: OnceLock<Regex> = OnceLock::new();
-    // Columns are whitespace-separated except "room"+"schedule" together,
-    // which can itself contain an internal space (e.g. "12:15- 1:05pm"),
-    // so room+schedule is captured as one non-greedy blob up to the next
-    // isolated whitespace-bounded digit run (credits). Anchoring the tail
-    // on three more digit groups (credits, capacity, used) plus a
-    // digits-with-optional-trailing-dash group (available) is what keeps
-    // this from matching the header/separator/totals rows, none of which
-    // have that shape.
-    PATTERN.get_or_init(|| {
-        Regex::new(r"(?m)^(\S+)\s+(.+?)\s+(\d+)\s+([A-Z][A-Za-z .,'-]*?)\s+(\d+)\s+(\d+)\s+(\d+-?)\s*$")
-            .unwrap()
-    })
-}
-
 pub(super) fn detect_course(raw: &str) -> Option<(String, String)> {
     let captures = course_header_pattern().captures(raw)?;
     Some((captures[1].to_string(), captures[2].trim().to_string()))
 }
 
-pub(super) fn scrape_sections(raw: &str) -> Vec<CourseSection> {
-    section_row_pattern()
-        .captures_iter(raw)
-        .map(|c| CourseSection {
-            section: c[1].to_string(),
-            room: String::new(),
-            schedule: c[2].trim().to_string(),
-            credits: c[3].to_string(),
-            professor: c[4].trim().to_string(),
-            capacity: c[5].to_string(),
-            used: c[6].to_string(),
-            available: c[7].to_string(),
-        })
-        .map(split_room_from_schedule)
-        .collect()
+// Section rows are fixed-width VMS report columns, not whitespace-
+// delimited -- confirmed against a real transcript where the "Salon"
+// column itself contains an internal space ("S 121"), which broke an
+// earlier whitespace-splitting approach. Boundaries below are the byte --
+// well, char -- offsets where real data consistently lines up regardless
+// of content length (room name, professor name, ...):
+// Sec.[0..6) Salon[6..13) Periodos[13..35) Crd.[35..39) Profesor[39..64)
+// Cap.[64..68) Uti.[68..74) Disp.[74..).
+const SECTION_COL: (usize, usize) = (0, 6);
+const ROOM_COL: (usize, usize) = (6, 13);
+const SCHEDULE_COL: (usize, usize) = (13, 35);
+const CREDITS_COL: (usize, usize) = (35, 39);
+const PROFESSOR_COL: (usize, usize) = (39, 64);
+const CAPACITY_COL: (usize, usize) = (64, 68);
+const USED_COL: (usize, usize) = (68, 74);
+
+fn column(chars: &[char], (start, end): (usize, usize)) -> String {
+    if start >= chars.len() {
+        return String::new();
+    }
+    chars[start..end.min(chars.len())].iter().collect::<String>().trim().to_string()
 }
 
-/// The row regex can't cleanly separate "room" from "schedule" up front
-/// (both live in one non-greedy capture, see `section_row_pattern`), so
-/// this splits the room token (present) from the rest once the split
-/// point is unambiguous: a section scheduled "Por acuerdo" has no room at
-/// all, otherwise the first word is the room.
-fn split_room_from_schedule(mut section: CourseSection) -> CourseSection {
-    if section.schedule == "Por acuerdo" {
-        return section;
+fn is_digits(s: &str) -> bool {
+    !s.is_empty() && s.chars().all(|c| c.is_ascii_digit())
+}
+
+/// Parses one line as a section row, rejecting anything that isn't one
+/// (header, separator, "* Totales" summary, blank lines) by requiring
+/// digits to actually land in the credits/capacity/used/available
+/// columns -- none of those other line kinds have digits there.
+fn parse_section_row(line: &str) -> Option<CourseSection> {
+    let chars: Vec<char> = line.chars().collect();
+    let section = column(&chars, SECTION_COL);
+    let credits = column(&chars, CREDITS_COL);
+    let capacity = column(&chars, CAPACITY_COL);
+    let used = column(&chars, USED_COL);
+    let available = column(&chars, (74, chars.len()));
+    let available_digits = available.strip_suffix('-').unwrap_or(&available);
+
+    if section.is_empty() || !is_digits(&credits) || !is_digits(&capacity) || !is_digits(&used) {
+        return None;
     }
-    if let Some((room, rest)) = section.schedule.split_once(char::is_whitespace) {
-        section.room = room.to_string();
-        section.schedule = rest.trim().to_string();
+    if !is_digits(available_digits) {
+        return None;
     }
-    section
+
+    Some(CourseSection {
+        section,
+        room: column(&chars, ROOM_COL),
+        schedule: column(&chars, SCHEDULE_COL),
+        credits,
+        professor: column(&chars, PROFESSOR_COL),
+        capacity,
+        used,
+        available,
+    })
+}
+
+pub(super) fn scrape_sections(raw: &str) -> Vec<CourseSection> {
+    raw.lines().filter_map(parse_section_row).collect()
 }
 
 #[cfg(test)]
@@ -102,6 +123,9 @@ mod tests {
 
     const SIMPLE: &str = include_str!("../../../screens/menu_despliegue/horario_resultados_simple.txt");
     const MULTI: &str = include_str!("../../../screens/menu_despliegue/horario_resultados_multi.txt");
+    const CLOSED_SECTION: &str =
+        include_str!("../../../screens/menu_despliegue/horario_resultados_seccion_cerrada.txt");
+    const LABORATORIO: &str = include_str!("../../../screens/menu_despliegue/horario_resultados_laboratorio.txt");
 
     #[test]
     fn classifies_single_section_results() {
@@ -109,7 +133,7 @@ mod tests {
             course_code,
             course_title,
             sections,
-        }) = classify(SIMPLE)
+        }) = classify(SIMPLE).screen
         else {
             panic!("expected CourseResults");
         };
@@ -136,7 +160,7 @@ mod tests {
             course_code,
             course_title,
             sections,
-        }) = classify(MULTI)
+        }) = classify(MULTI).screen
         else {
             panic!("expected CourseResults");
         };
@@ -156,5 +180,65 @@ mod tests {
         assert_eq!(scheduled.room, "CH318A");
         assert_eq!(scheduled.schedule, "LWV      9:15-10:05");
         assert_eq!(scheduled.professor, "RAMON DIAZ MELENDEZ");
+    }
+
+    #[test]
+    fn classifies_closed_section_with_no_assigned_professor() {
+        let TuiScreen::CourseResults(CourseResultsScreen {
+            course_code,
+            course_title,
+            sections,
+        }) = classify(CLOSED_SECTION).screen
+        else {
+            panic!("expected CourseResults");
+        };
+        assert_eq!(course_code, "ELEC 3101");
+        assert_eq!(course_title, "CIRCUITOS ELECTRICOS I");
+        assert_eq!(
+            sections,
+            vec![CourseSection {
+                section: "101 *".to_string(),
+                room: "EE204".to_string(),
+                schedule: "LW       4:00- 5:15pm".to_string(),
+                credits: "3".to_string(),
+                professor: String::new(),
+                capacity: "45".to_string(),
+                used: "45".to_string(),
+                available: "00".to_string(),
+            }]
+        );
+    }
+
+    #[test]
+    fn classifies_lab_sections_with_multi_word_rooms() {
+        let TuiScreen::CourseResults(CourseResultsScreen {
+            course_code,
+            course_title,
+            sections,
+        }) = classify(LABORATORIO).screen
+        else {
+            panic!("expected CourseResults");
+        };
+        assert_eq!(course_code, "BIOL 3011L");
+        assert_eq!(course_title, "LABORATORIO DE BIOLOGIA I");
+        assert_eq!(sections.len(), 6);
+
+        let first = &sections[0];
+        assert_eq!(first.section, "015L*");
+        assert_eq!(first.room, "L 210");
+        assert_eq!(first.schedule, "W        8:15- 9:05");
+        assert_eq!(first.credits, "0");
+        assert_eq!(first.professor, "");
+        assert_eq!(first.capacity, "28");
+        assert_eq!(first.used, "17");
+        assert_eq!(first.available, "11");
+
+        let second = &sections[1];
+        assert_eq!(second.section, "016L*");
+        assert_eq!(second.room, "L 208A");
+
+        let oversubscribed = &sections[5];
+        assert_eq!(oversubscribed.section, "056L*");
+        assert_eq!(oversubscribed.available, "13-");
     }
 }

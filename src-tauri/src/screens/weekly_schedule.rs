@@ -19,6 +19,9 @@ pub struct ScheduleRow {
     pub days: Vec<String>,
 }
 
+/// The student's own schedule as a weekly day/time grid, e.g. a "Lunes",
+/// "Martes", ... column header row and one `ScheduleRow` per time period
+/// underneath.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct WeeklyScheduleScreen {
     pub days: Vec<String>,
@@ -76,7 +79,7 @@ mod tests {
 
     #[test]
     fn classifies_weekly_schedule_grid() {
-        let TuiScreen::WeeklySchedule(WeeklyScheduleScreen { days, rows }) = classify(HORARIO_ESTIMADO) else {
+        let TuiScreen::WeeklySchedule(WeeklyScheduleScreen { days, rows }) = classify(HORARIO_ESTIMADO).screen else {
             panic!("expected WeeklySchedule");
         };
         assert_eq!(

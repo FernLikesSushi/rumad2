@@ -6,7 +6,7 @@
 use tauri::AppHandle;
 
 use super::exec::{act, log_invoked};
-use crate::screens::{self, TuiScreen};
+use crate::screens::{self, ClassifiedScreen, TuiScreen};
 
 #[tauri::command]
 pub async fn login(
@@ -15,13 +15,13 @@ pub async fn login(
     access_code: String,
     ssn_last4: String,
     birth_date: String,
-) -> Result<TuiScreen, String> {
+) -> Result<ClassifiedScreen, String> {
     log_invoked(&format!(
         "login(id_number={id_number:?}, access_code=<redacted>, ssn_last4=<redacted>, birth_date={birth_date:?})"
     ));
     act(app, move |session| {
         let raw = session.screen_text();
-        let TuiScreen::Login(login_screen) = screens::classify(&raw) else {
+        let TuiScreen::Login(login_screen) = screens::classify(&raw).screen else {
             anyhow::bail!("not on the Login screen");
         };
         login_screen.login(session, &id_number, &access_code, &ssn_last4, &birth_date)

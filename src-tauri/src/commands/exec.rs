@@ -1,14 +1,14 @@
 //! Execution plumbing shared by every command: running blocking SSH work
 //! off the IPC thread, sending input to the session and turning the
-//! resulting screen text into a classified `TuiScreen`, and the stdout
-//! logging that mirrors both onto the terminal.
+//! resulting screen text into a classified `ClassifiedScreen`, and the
+//! stdout logging that mirrors both onto the terminal.
 
 use std::thread;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager};
 
 use super::AppState;
-use crate::screens::{self, TuiScreen};
+use crate::screens::{self, ClassifiedScreen, TuiScreen};
 use crate::ssh::session::TuiSession;
 
 /// Event name the frontend listens for (`@tauri-apps/api/event`'s
@@ -16,19 +16,28 @@ use crate::ssh::session::TuiSession;
 /// see that function's doc comment.
 const SCREEN_CHANGED_EVENT: &str = "screen-changed";
 
-/// Finish a command: if the screen signals a graceful end of session
-/// (`Disconnected` -- the remote closes the channel shortly after showing
-/// it), drop the session so later commands correctly report "not
-/// connected" instead of erroring on a dead channel. Otherwise apply
-/// `or_err` to promote known failure notices to an `Err`.
-pub(super) fn finish(
-    guard: &mut Option<TuiSession>,
-    screen: TuiScreen,
-) -> Result<TuiScreen, String> {
-    if screen == TuiScreen::Disconnected {
+/// If the screen signals a graceful end of session (`Disconnected` -- the
+/// remote closes the channel shortly after showing it), drop the session
+/// so later commands correctly report "not connected" instead of erroring
+/// on a dead channel. A real side effect on `AppState`, so this runs
+/// regardless of whether the caller wants `or_err`'s `Err`-promotion too
+/// (`finish` does; `spawn_screen_watcher` doesn't -- an `or_err`-promoted
+/// rejection is a normal thing to observe mid-poll, not a reason to stop
+/// watching).
+fn clear_if_disconnected(guard: &mut Option<TuiSession>, result: &ClassifiedScreen) {
+    if result.screen == TuiScreen::Disconnected {
         *guard = None;
     }
-    screen.or_err()
+}
+
+/// Finish a command: applies `clear_if_disconnected`, then `or_err` to
+/// promote known failure notices to an `Err`.
+pub(super) fn finish(
+    guard: &mut Option<TuiSession>,
+    result: ClassifiedScreen,
+) -> Result<ClassifiedScreen, String> {
+    clear_if_disconnected(guard, &result);
+    result.or_err()
 }
 
 /// Logs every command invocation and the raw remote screen after it runs,
@@ -48,24 +57,33 @@ pub(super) fn log_screen(raw: &str) {
 /// blocking SSH handshake there would freeze the entire window. Every
 /// command in `mod.rs` is `async fn` and routes its actual work through
 /// here (directly, or via `act` below).
-pub(super) async fn blocking<F>(body: F) -> Result<TuiScreen, String>
+pub(super) async fn blocking<F>(body: F) -> Result<ClassifiedScreen, String>
 where
-    F: FnOnce() -> Result<TuiScreen, String> + Send + 'static,
+    F: FnOnce() -> Result<ClassifiedScreen, String> + Send + 'static,
 {
     tauri::async_runtime::spawn_blocking(body)
         .await
         .map_err(|e| e.to_string())?
 }
 
-fn handle_scene_change(guard: &mut Option<TuiSession>) -> Result<TuiScreen, std::string::String> {
+/// Re-reads and re-classifies the current screen, applying
+/// `clear_if_disconnected`'s side effect -- the shared tail end of every
+/// foreground read (`act`) and every background tick
+/// (`spawn_screen_watcher`). Deliberately doesn't apply `or_err`'s
+/// `Err`-promotion itself: `act` wants that for its command-facing
+/// result, but `spawn_screen_watcher` doesn't -- an `or_err`-promoted
+/// rejection is a normal thing to observe mid-poll, not a reason to stop
+/// watching.
+fn handle_scene_change(guard: &mut Option<TuiSession>) -> Result<ClassifiedScreen, String> {
     let Some(session) = guard else {
         return Err("not connected".to_string());
     };
 
     let raw = session.screen_text();
     log_screen(&raw);
-    let screen = screens::classify(&raw);
-    finish(guard, screen)
+    let result = screens::classify(&raw);
+    clear_if_disconnected(guard, &result);
+    Ok(result)
 }
 
 /// Runs `send` against the already-connected session and returns the
@@ -73,7 +91,7 @@ fn handle_scene_change(guard: &mut Option<TuiSession>) -> Result<TuiScreen, std:
 /// `interact::send`, and `login`, which differ only in what `send` does
 /// (nothing, dispatch through the current screen's `RumadScreen` impl, or
 /// a sequence of `Login` fields).
-pub(super) async fn act<F>(app: AppHandle, send: F) -> Result<TuiScreen, String>
+pub(super) async fn act<F>(app: AppHandle, send: F) -> Result<ClassifiedScreen, String>
 where
     F: FnOnce(&mut TuiSession) -> anyhow::Result<()> + Send + 'static,
 {
@@ -82,7 +100,7 @@ where
         let mut guard = state.0.lock().map_err(|_| "session lock poisoned")?;
         let session = guard.as_mut().ok_or("not connected")?;
         send(session).map_err(|e| e.to_string())?;
-        handle_scene_change(&mut guard)
+        handle_scene_change(&mut guard)?.or_err()
     })
     .await
 }
@@ -90,15 +108,15 @@ where
 /// Long-lived background reader, one per connected session (started right
 /// after `connect` stores it): ticks continuously, draining whatever's
 /// arrived on the channel and emitting `SCREEN_CHANGED_EVENT` whenever the
-/// classified screen actually changes. Exists because the remote isn't
-/// always driven by a request -- some screens redraw a second time on
-/// their own after computing a result server-side (see
-/// `TuiScreen::Processing`), and nothing else is watching for that once
-/// the command that triggered it has already returned. Exits once the
-/// session is gone (`disconnect`, or the remote's own "PROCESO
-/// CONCLUIDO"). Runs independently of `act`'s own foreground reads --
-/// both just take turns through the same `AppState` lock.
-pub(super) fn spawn_screen_watcher(app: AppHandle, mut last: TuiScreen) {
+/// classified result actually changes (screen, dialog, or both). Exists
+/// because the remote isn't always driven by a request -- some screens
+/// redraw a second time on their own after computing a result
+/// server-side (see `Dialog::Processing`), and nothing else is watching
+/// for that once the command that triggered it has already returned.
+/// Exits once the session is gone (`disconnect`, or the remote's own
+/// "PROCESO CONCLUIDO"). Runs independently of `act`'s own foreground
+/// reads -- both just take turns through the same `AppState` lock.
+pub(super) fn spawn_screen_watcher(app: AppHandle, mut last: ClassifiedScreen) {
     thread::spawn(move || loop {
         thread::sleep(Duration::from_millis(200));
 
@@ -113,14 +131,17 @@ pub(super) fn spawn_screen_watcher(app: AppHandle, mut last: TuiScreen) {
             Ok(changed) => changed,
             Err(_) => return,
         };
-        let screen = screens::classify(&session.screen_text());
-        
-        if changed && screen != last {
-            handle_scene_change(&mut guard).ok();
-            drop(guard);
-            
-            let _ = app.emit(SCREEN_CHANGED_EVENT, &screen);
-            last = screen;
+        if !changed {
+            continue;
+        }
+        let Ok(result) = handle_scene_change(&mut guard) else {
+            return;
+        };
+        drop(guard);
+
+        if result != last {
+            let _ = app.emit(SCREEN_CHANGED_EVENT, &result);
+            last = result;
         }
     });
 }
