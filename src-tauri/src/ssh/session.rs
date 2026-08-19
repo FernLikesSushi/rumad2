@@ -83,6 +83,14 @@ impl TuiSession {
         self.settle(Duration::from_millis(500), Duration::from_secs(10))
     }
 
+    /// Send raw text with no trailing Enter. Needed for fixed-field forms
+    /// like the real student `Login` screen, which explicitly warns
+    /// against pressing Enter while filling it in.
+    pub fn send_text(&mut self, text: &str) -> Result<()> {
+        self.write_all(text.as_bytes())?;
+        self.settle(Duration::from_millis(500), Duration::from_secs(10))
+    }
+
     /// Send a single non-printable key (arrows, Escape, Ctrl-C, ...).
     pub fn send_key(&mut self, key: Key) -> Result<()> {
         self.write_all(key.as_bytes())?;

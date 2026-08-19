@@ -1,0 +1,23 @@
+18/ago/2026              Universidad de Puerto Rico                     8:29 pm
+                      RECINTO UNIVERSITARIO DE MAYAGUEZ
+                             E S T U D I A N T E
+
+
+             --------------------------------------------------
+             |                                                |
+             |   Nmero Identificaci�       :                  |
+             |       Ej. 802999999                            |
+             |                                                |
+             |   C�igo de Acceso Permanente :                 |
+             |       Ej. 1234                                 |
+             |                                                |
+             |   Seguro Social               :                |
+             |       Ej. 1234  (ltimos 4)                     |
+             |                                                |
+             |   Fecha Nacimiento            :                |
+             |       Ej. MMDDAAAA                             |
+             |                                                |
+             --------------------------------------------------
+            <<  NO oprimir tecla <Enter> al entrar los datos  >>
+
+                                       [PF1=(6)Refrescar Pantalla   PF4=(9)Fin]

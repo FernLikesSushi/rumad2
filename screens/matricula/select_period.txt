@@ -1,0 +1,23 @@
+ 18/ago/2026        U.P.R. - Recinto Universitario de Mayaguez          8:23 pm
+                      M A T R I C U L A                        ESTUDIANTE
+ REDACTED-USER-ID  REDACTED-NAME        0509-3  36 01/jun/2026 Crs. TTY
+                                                            10:15 am    21   04
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Indique Semestre:   1=1er Sem,   2=2do Sem,   3=1er Verano o Verano Extendido
+                    4=2do Verano o Admision Temprana    S=salir

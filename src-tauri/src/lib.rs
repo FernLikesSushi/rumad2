@@ -14,6 +14,7 @@ pub fn run() {
             commands::connect,
             commands::get_screen,
             commands::send_input,
+            commands::send_text,
             commands::send_key,
             commands::disconnect,
         ])

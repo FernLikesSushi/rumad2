@@ -182,6 +182,19 @@ button {
   align-self: flex-start;
 }
 
+.courses {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+
+.courses th,
+.courses td {
+  text-align: left;
+  padding: 0.3em 0.6em;
+  border-bottom: 1px solid rgba(127, 127, 127, 0.25);
+}
+
 .spinner {
   display: inline-block;
   width: 0.9em;
