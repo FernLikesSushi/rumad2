@@ -60,7 +60,7 @@ export function MatriculaScreen(props: {
       </table>
 
       <Show when={props.mode.kind === "Actions"}>
-        <OptionButtons options={localizedActions()} separator="=" busy={props.busy} onChoose={choose} hideKey />
+        <OptionButtons options={localizedActions()} busy={props.busy} onChoose={choose} hideKey />
       </Show>
 
       <Show when={FREE_TEXT_MODES.has(props.mode.kind)}>

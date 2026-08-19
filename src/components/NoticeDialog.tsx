@@ -1,6 +1,7 @@
 import { Show } from "solid-js";
 import { t } from "../i18n";
 import type { DialogBox } from "../types";
+import "./NoticeDialog.css";
 
 export function NoticeDialog(props: { dialog: DialogBox | null; onClose: () => void }) {
   return (

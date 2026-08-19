@@ -1,0 +1,23 @@
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+}
+
+.options button {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.6em;
+  text-align: left;
+}
+
+.option-hint {
+  font-size: 0.75em;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.option-label {
+  text-align: left;
+}
