@@ -35,7 +35,20 @@ function App() {
   // A `Dialog::Processing` overlay counts as busy too -- the remote is
   // still computing, so every screen's own controls stay disabled the
   // same way they do while a command is genuinely in flight.
-  const busy = createMemo(() => response.loading || response()?.dialog?.kind === "Processing");
+  //
+  // Same "check `response.error` before reading `response()`" hazard as
+  // `screen`/`canExit` below (see their shared comment) -- this one is
+  // easy to miss since `response.loading` short-circuits the common case,
+  // but a resolved *rejection* still needs its own check before the `||`
+  // falls through to reading `response()`, or this throws uncaught and
+  // silently breaks rendering (live-confirmed: the error dialog for
+  // "Opcion NO esta disponible por el momento" never appeared because of
+  // exactly this).
+  const busy = createMemo(() => {
+    if (response.loading) return true;
+    if (response.error) return false;
+    return response()?.dialog?.kind === "Processing";
+  });
 
   // What to render is derived, not imperatively assigned. Unlike the old
   // design, `screen` here is always the backend's own freshly-classified
