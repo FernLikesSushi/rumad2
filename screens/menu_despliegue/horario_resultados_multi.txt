@@ -1,0 +1,23 @@
+18/ago/2026           RECINTO UNIVERSITARIO DE MAYAGUEZ                10:11 pm
+                        *** Horarios de Matricula ***
+                   ESTADO DE SECCIONES  1er Sem  2026-2027
+
+C u r s o:  HIST 3455        ---> INTRODUCCION A LA HISTORIA
+
+Sec.  Salon    Periodos            Crd.  Profesor              Cap.  Uti.  Disp.
+----  -----    --------            ----  --------              ----  ----  -----
+005D           Por acuerdo           3   ANGEL MORALES CRUZ     45    80    35-
+025   CH318A LWV      9:15-10:05     3   RAMON DIAZ MELENDEZ    28    28    00
+035   CH318A LWV     10:15-11:05     3   RAMON DIAZ MELENDEZ    28    28    00
+055   CH317  LWV     12:15- 1:05pm   3   LUIS SANTIAGO          28    28    00
+062   CH318A MJ       1:15- 2:30pm   3   DAVID FIGUEROA REYES   30    30    00
+085   CH317  LWV      3:15- 4:05pm   3   LUIS SANTIAGO          28    28    00
+095   CH317  LWV      4:15- 5:05pm   3   LUIS SANTIAGO          28    28    00
+098   CH316  MJ       4:15- 5:30pm   3   DAVID FIGUEROA REYES   28    28    00
+
+
+                     * Totales: HIST 3455      8 secciones     243   278    35-
+
+
+
+                                               < Oprima Enter o [PF4(9)=Fin] >

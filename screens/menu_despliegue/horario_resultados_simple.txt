@@ -1,0 +1,17 @@
+18/ago/2026           RECINTO UNIVERSITARIO DE MAYAGUEZ                10:11 pm
+                        *** Horarios de Matricula ***
+                   ESTADO DE SECCIONES  1er Sem  2026-2027
+
+C u r s o:  HIST 3220        ---> INT HIST:ENF SOCIAL
+
+Sec.  Salon    Periodos            Crd.  Profesor              Cap.  Uti.  Disp.
+----  -----    --------            ----  --------              ----  ----  -----
+032   CH316  MJ       8:00- 9:15     3   NOEMI TORRES VEGA      32    32    00
+
+
+                     * Totales: HIST 3220      1 seccion        32    32    00
+
+
+
+
+                                               < Oprima Enter o [PF4(9)=Fin] >

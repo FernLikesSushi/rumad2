@@ -1,0 +1,171 @@
+//! The student's course schedule (`M A T R I C U L A`) plus whichever
+//! sub-prompt is currently active.
+
+use regex::Regex;
+use serde::Serialize;
+use std::sync::OnceLock;
+
+use super::MenuOption;
+
+/// One row of the student's schedule on the `Matricula` screen, e.g.
+/// "1.  INSO 4101      080     3    S". Empty slots (just "N." with
+/// nothing after -- the real form has 12) aren't included.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct ScheduleCourse {
+    pub slot: String,
+    pub course: String,
+    pub section: String,
+    pub credits: String,
+    pub status: String,
+}
+
+/// Which sub-prompt `Matricula` is currently showing. The header and
+/// course list stay identical across these -- only the bottom prompt (and
+/// what input it expects) changes.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(tag = "kind")]
+pub enum MatriculaPrompt {
+    /// "Indique: A=Alta B=Baja C=Cambio ..." -- pick a top-level action.
+    Actions { options: Vec<MenuOption> },
+    /// "Abreviatura y numero de curso  o  FIN" (tagged `[Bajas]`) -- a drop
+    /// is in progress; expects a free-text course code, or "FIN" to stop.
+    Bajas,
+    /// Same prompt shape as `Bajas` (tagged `[Altas]` instead) -- an add is
+    /// in progress.
+    Altas,
+    /// Same prompt shape again (tagged `[Cambio]`) -- a section change is
+    /// in progress.
+    Cambio,
+}
+
+fn course_pattern() -> &'static Regex {
+    static PATTERN: OnceLock<Regex> = OnceLock::new();
+    // Matches filled schedule rows like " 1.  INSO 4101      080     3    S".
+    // Empty slots ("7.", "8.", ...) simply don't match, so they're
+    // naturally excluded rather than needing separate handling. Not
+    // anchored to end-of-line: a course-selection sub-flow (e.g.
+    // `alta_seccion.txt`) overlays a "SECCIONES DISPONIBLES ..." side
+    // panel on the same rows as the course list, so trailing content after
+    // the status column must be tolerated rather than required absent.
+    PATTERN.get_or_init(|| {
+        Regex::new(r"(?m)^\s*(\d{1,2})\.\s+([A-Z]{2,4}\s+\d{3,4})\s+(\d{2,3})\s+(\d{1,2})\s+(\S+)")
+            .unwrap()
+    })
+}
+
+pub(super) fn scrape_courses(raw: &str) -> Vec<ScheduleCourse> {
+    course_pattern()
+        .captures_iter(raw)
+        .map(|c| ScheduleCourse {
+            slot: c[1].to_string(),
+            course: c[2].split_whitespace().collect::<Vec<_>>().join(" "),
+            section: c[3].to_string(),
+            credits: c[4].to_string(),
+            status: c[5].to_string(),
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::screens::{classify, TuiScreen};
+
+    const SELECT: &str = include_str!("../../../screens/matricula/select.txt");
+    const BAJAS: &str = include_str!("../../../screens/matricula/bajas.txt");
+    const ALTA: &str = include_str!("../../../screens/matricula/alta.txt");
+    const CAMBIOS: &str = include_str!("../../../screens/matricula/cambios.txt");
+    const ALTA_SECCION: &str = include_str!("../../../screens/matricula/alta_seccion.txt");
+
+    #[test]
+    fn classifies_matricula_with_actions_prompt() {
+        let TuiScreen::Matricula { courses, prompt } = classify(SELECT) else {
+            panic!("expected Matricula");
+        };
+        assert_eq!(
+            courses,
+            vec![
+                ScheduleCourse {
+                    slot: "1".into(),
+                    course: "INGE 3045".into(),
+                    section: "086".into(),
+                    credits: "3".into(),
+                    status: "S".into(),
+                },
+                ScheduleCourse {
+                    slot: "2".into(),
+                    course: "BIOL 3031".into(),
+                    section: "066".into(),
+                    credits: "3".into(),
+                    status: "S".into(),
+                },
+                ScheduleCourse {
+                    slot: "3".into(),
+                    course: "EDFI 3645".into(),
+                    section: "041".into(),
+                    credits: "2".into(),
+                    status: "S".into(),
+                },
+                ScheduleCourse {
+                    slot: "4".into(),
+                    course: "FILO 4045".into(),
+                    section: "020".into(),
+                    credits: "3".into(),
+                    status: "S".into(),
+                },
+            ]
+        );
+        let MatriculaPrompt::Actions { options } = prompt else {
+            panic!("expected Actions prompt");
+        };
+        assert_eq!(
+            options.iter().map(|o| o.key.as_str()).collect::<Vec<_>>(),
+            ["A", "B", "C", "H", "P", "M", "F", "O", "S"]
+        );
+        assert_eq!(options[0].label, "Alta");
+        // The single-space-separated tail ("...O=CodigoReservar S=Salir")
+        // is the case that broke a whitespace-run-based split.
+        assert_eq!(options[7].label, "CodigoReservar");
+        assert_eq!(options[8].label, "Salir");
+    }
+
+    #[test]
+    fn classifies_matricula_with_bajas_prompt() {
+        let TuiScreen::Matricula { courses, prompt } = classify(BAJAS) else {
+            panic!("expected Matricula");
+        };
+        assert_eq!(courses.len(), 4);
+        assert_eq!(prompt, MatriculaPrompt::Bajas);
+    }
+
+    #[test]
+    fn classifies_matricula_with_altas_prompt() {
+        let TuiScreen::Matricula { courses, prompt } = classify(ALTA) else {
+            panic!("expected Matricula");
+        };
+        assert_eq!(courses.len(), 4);
+        assert_eq!(prompt, MatriculaPrompt::Altas);
+    }
+
+    #[test]
+    fn classifies_matricula_with_cambio_prompt() {
+        let TuiScreen::Matricula { courses, prompt } = classify(CAMBIOS) else {
+            panic!("expected Matricula");
+        };
+        assert_eq!(courses.len(), 4);
+        assert_eq!(prompt, MatriculaPrompt::Cambio);
+    }
+
+    #[test]
+    fn course_rows_tolerate_a_trailing_side_panel() {
+        // alta_seccion.txt overlays "SECCIONES DISPONIBLES CURSO: ..." text
+        // after the status column on some rows -- course_pattern must not
+        // require end-of-line right after the status field.
+        let TuiScreen::Matricula { courses, .. } = classify(ALTA_SECCION) else {
+            panic!("expected Matricula");
+        };
+        assert_eq!(courses.len(), 4);
+        assert_eq!(courses[0].course, "INGE 3045");
+        assert_eq!(courses[0].status, "S");
+    }
+}
