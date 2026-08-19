@@ -4,6 +4,7 @@
    lives in that file's own co-located .css instead -- see e.g.
    components/Header.css, screens/Unknown.css. */
 
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@700;800&display=swap");
 @import "tailwindcss";
 
 /* Design tokens -- plain CSS custom properties (Tailwind's `@theme` block
@@ -15,7 +16,9 @@
    `--color-text`/`--color-bg` only -- everything that references them
    (including other components' own .css files, e.g. NoticeDialog.css's
    .dialog) gets the swap for free rather than needing its own dark-mode
-   media query. */
+   media query. `--font-heading` is separate from the body's `Inter,
+   Avenir, ...` stack -- used by h1 (Header's "RUMAD") and h2 (every
+   screen's own title) below. */
 @theme {
   --color-accent: #396cd8;
   --color-text: #0f0f0f;
@@ -24,6 +27,7 @@
   --color-muted-bg: rgba(127, 127, 127, 0.12);
   --color-muted-border: rgba(127, 127, 127, 0.25);
   --color-muted-track: rgba(127, 127, 127, 0.3);
+  --font-heading: "Poppins", Inter, Avenir, Helvetica, Arial, sans-serif;
 }
 
 :root {
@@ -48,15 +52,21 @@
    CourseResults, WeeklySchedule, SearchScreen, Disconnected) relying on
    it, and Header's `<h1>` likewise never set its own size explicitly. */
 h1 {
+  font-family: var(--font-heading);
   font-size: 2em;
   font-weight: 700;
   margin-block: 0.67em;
 }
 
+/* Every screen's own title -- centered like Header's h1, even though
+   `.screen` itself sets `text-align: left` for the form/table content
+   below it. */
 h2 {
+  font-family: var(--font-heading);
   font-size: 1.5em;
   font-weight: 700;
   margin-block: 0.83em;
+  text-align: center;
 }
 
 .container {
