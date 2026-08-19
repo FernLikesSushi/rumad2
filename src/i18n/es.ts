@@ -28,9 +28,26 @@ const es: Messages = {
   continueLabel: "Continuar",
   screenExit: "Salir de esta pantalla",
   weeklyScheduleTitle: "Horario de Matricula",
-  // The remote's own labels are already Spanish, so there's nothing to
-  // translate here -- the fallback-to-raw-label behavior covers it.
-  actionLabels: {},
+  // "Alta"/"Baja"/"Cambio"/"Salir" are already ordinary Spanish words, so
+  // those fall back to the raw label -- but "HorEst"/"EvaluoPago"/
+  // "MatEvaluo"/"HorEstGrafico"/"CodigoReservar" are squished CamelCase
+  // abbreviations (see `screens/matricula/select.txt`), not readable on
+  // their own, so those get expanded here too.
+  actionLabels: {
+    HorEst: "Horario Estudiantil",
+    EvaluoPago: "Evaluo de Pago",
+    MatEvaluo: "Matricula Evaluada",
+    HorEstGrafico: "Horario Estudiantil Grafico",
+    CodigoReservar: "Codigo de Reservacion",
+  },
+  // Unlike `actionLabels`, these raw labels are compact codes ("1erVer"),
+  // not already-readable Spanish -- expanded to full words here.
+  periodLabels: {
+    "1erVer": "1er Verano",
+    "1erSem": "1er Semestre",
+    "2doSem": "2do Semestre",
+    "2doVer": "2do Verano",
+  },
   loginFields: {
     idNumber: { label: "Número de Identificación", hint: "Ej. 802999999" },
     accessCode: { label: "Código de Acceso Permanente", hint: "Ej. 1234" },

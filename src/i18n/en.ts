@@ -41,6 +41,12 @@ const en: Messages = {
     CodigoReservar: "Reservation Code",
     Salir: "Exit",
   },
+  periodLabels: {
+    "1erVer": "1st Summer",
+    "1erSem": "1st Semester",
+    "2doSem": "2nd Semester",
+    "2doVer": "2nd Summer",
+  },
   loginFields: {
     idNumber: { label: "ID Number", hint: "e.g. 802999999" },
     accessCode: { label: "Permanent Access Code", hint: "e.g. 1234" },

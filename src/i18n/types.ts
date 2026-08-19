@@ -31,6 +31,11 @@ export interface Messages {
   // not listed here (a screen the remote adds later, an option this
   // catalog hasn't been updated for yet, ...).
   actionLabels: Record<string, string>;
+  // Same tradeoff as `actionLabels`, keyed by `HorarioSemester`'s own raw
+  // compact labels ("1erVer", "1erSem", "2doSem", "2doVer" -- see
+  // `menu.rs`'s `scrape_horario_semester_options`). Callers fall back to
+  // the raw label the same way.
+  periodLabels: Record<string, string>;
   // `Login`'s 4 fields are hardcoded on both ends (see `Login.tsx`'s doc
   // comment -- the remote's own labels for this specific form arrive
   // mangled over the wire) rather than read off the backend's `fields`,
