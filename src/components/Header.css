@@ -16,8 +16,3 @@ h1 {
   align-items: center;
   gap: 0.75em;
 }
-
-.locale-switch {
-  display: flex;
-  gap: 0.25em;
-}
