@@ -38,7 +38,7 @@ export function Settings() {
         <div class="divider w-full" />
 
         <div class="flex items-center gap-2">
-            <ToggleButton label="🇪🇸 Español" active={locale() === "es"} onClick={() => setLocale("es")} />
+            <ToggleButton label="🇵🇷 Español" active={locale() === "es"} onClick={() => setLocale("es")} />
             <ToggleButton label="🇬🇧 English" active={locale() === "en"} onClick={() => setLocale("en")} />
         </div>
 

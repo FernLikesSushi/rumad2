@@ -4,12 +4,11 @@ import { t } from "../i18n";
 import { Settings } from "./Settings";
 
 export function SettingsButton({ }) {
-    // TODO: localize the aria-label/title text below
     const [open, setOpen] = createSignal(false);
 
     return (
         <>
-            <button type="button" class="btn btn-ghost btn-circle" aria-label={"Settings"} onClick={() => setOpen(true)}>
+            <button type="button" class="btn btn-ghost btn-circle" aria-label={t().settings} onClick={() => setOpen(true)}>
                 <SettingsIcon />
             </button>
 
@@ -29,7 +28,7 @@ export function SettingsButton({ }) {
                         >
                             <X />
                         </button>
-                        <h3 class="font-bold text-lg">{"Settings"}</h3>
+                        <h3 class="font-bold text-lg">{t().settings}</h3>
                         <Settings />
                     </div>
                 </div>

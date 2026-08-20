@@ -17,7 +17,7 @@ import { WeeklyScheduleScreen } from "../screens/WeeklySchedule";
 import { SearchScreen } from "../screens/SearchScreen";
 import { DisconnectedScreen } from "../screens/Disconnected";
 import { UnknownScreen } from "../screens/Unknown";
-import { LogOut, Settings } from "lucide-solid";
+import { ArrowLeft, LogOut, Settings } from "lucide-solid";
 import { Header } from '../components/Header';
 
 // Everything TUI-state-related once a connection exists: `Connect` only
@@ -214,7 +214,8 @@ export function TuiRouter() {
 
             <div class="flex justify-center">
               <Show when={canExit()}>
-                <button class="btn" disabled={busy()} onClick={exitScreen}>
+                <button class="btn gap-2 items-center" disabled={busy()} onClick={exitScreen}>
+                  <ArrowLeft />
                   {t().screenExit}
                 </button>
               </Show>

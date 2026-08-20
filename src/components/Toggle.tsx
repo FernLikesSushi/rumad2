@@ -3,7 +3,7 @@ export function Toggle(props: { label: string; checked: boolean; onChange: (chec
     <label class="flex items-center gap-2 text-xs opacity-60 cursor-pointer">
       <input
         type="checkbox"
-        class="toggle toggle-sm"
+        class="toggle"
         checked={props.checked}
         onChange={(e) => props.onChange(e.currentTarget.checked)}
       />
