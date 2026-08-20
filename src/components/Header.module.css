@@ -10,9 +10,3 @@
 h1 {
   text-align: center;
 }
-
-.header-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.75em;
-}
