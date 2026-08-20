@@ -1,6 +1,5 @@
 import { For, Show } from "solid-js";
 import type { MenuOption } from "../types";
-import styles from "./OptionButtons.module.css";
 
 export function OptionButtons(props: {
   options: MenuOption[];
@@ -13,14 +12,14 @@ export function OptionButtons(props: {
   hideKey?: boolean;
 }) {
   return (
-    <div class={styles.options}>
+    <div class="flex flex-col gap-2">
       <For each={props.options}>
         {(option) => (
-          <button disabled={props.busy} onClick={() => props.onChoose(option.key)}>
+          <button class="btn justify-start gap-2" disabled={props.busy} onClick={() => props.onChoose(option.key)}>
             <Show when={!props.hideKey}>
-              <span class={styles["option-hint"]}>{option.key}</span>
+              <span class="text-xs opacity-60 shrink-0">{option.key}</span>
             </Show>
-            <span class={styles["option-label"]}>{option.label}</span>
+            <span>{option.label}</span>
           </button>
         )}
       </For>

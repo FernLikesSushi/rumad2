@@ -4,8 +4,8 @@ export function DisconnectedScreen(props: { busy: boolean; onReconnect: () => vo
   return (
     <>
       <h2>{t().disconnectedTitle}</h2>
-      <p class="hint">{t().disconnectedHint}</p>
-      <button disabled={props.busy} onClick={props.onReconnect}>
+      <p class="text-[0.85em] opacity-75">{t().disconnectedHint}</p>
+      <button class="btn btn-outline btn-primary" disabled={props.busy} onClick={props.onReconnect}>
         {t().reconnect}
       </button>
     </>

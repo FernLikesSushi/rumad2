@@ -1,43 +1,45 @@
-/* Global: theme tokens, element resets, and utility classes shared across
-   several unrelated components/screens (kept centralized rather than
-   duplicated per-file). Anything used by exactly one component/screen
-   lives in that file's own co-located .css instead -- see e.g.
-   components/Header.css, screens/Unknown.css. */
+/* Global: font/theme setup and element resets shared across the whole app.
+   Component and layout styling itself is daisyUI classes / inline Tailwind
+   utilities at each call site -- see CLAUDE.md's daisyUI migration notes
+   for why nothing here duplicates what daisyUI's theme/base layer already
+   provides (colors, `:root` background/text, dark-mode switching). */
 
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@700;800&display=swap");
 @import "tailwindcss";
+@plugin "daisyui" {
+  themes: emerald --default, forest --prefersdark;
+}
 
-/* Design tokens -- plain CSS custom properties (Tailwind's `@theme` block
-   also registers them as utility values, e.g. `border-accent`, though
-   nothing here currently uses that; the point is having one place that
-   defines these colors instead of the same hex/rgba repeated by hand
-   across App.css/NoticeDialog.css/Spinner.css/ToggleButton.css/Unknown.css).
-   Light-mode values here; the dark-mode `:root` block below overrides
-   `--color-text`/`--color-bg` only -- everything that references them
-   (including other components' own .css files, e.g. NoticeDialog.css's
-   .dialog) gets the swap for free rather than needing its own dark-mode
-   media query. `--font-heading` is separate from the body's `Inter,
-   Avenir, ...` stack -- used by h1 (Header's "RUMAD") and h2 (every
-   screen's own title) below. */
+/* The emerald *theme*'s own built-in primary isn't literally the color
+   "emerald" -- this overrides both themes' primary to the actual emerald
+   green, per https://daisyui.com/docs/themes/#how-to-customize-an-existing-theme
+   (same theme `name`, only the vars actually being changed; everything
+   else inherits from the built-in theme unchanged). */
+@plugin "daisyui/theme" {
+  name: "emerald";
+  --color-primary: #50c878;
+}
+
+@plugin "daisyui/theme" {
+  name: "forest";
+  --color-primary: #50c878;
+}
+
+/* `--font-heading` is daisyUI's one gap -- it has no heading-font concept
+   -- and is separate from the body's `Inter, Avenir, ...` stack. Used by
+   h1 (Header's "RUMAD") and h2 (every screen's own title) below. */
 @theme {
-  --color-accent: #396cd8;
-  --color-text: #0f0f0f;
-  --color-bg: #f6f6f6;
-  --color-surface: #ffffff;
-  --color-muted-bg: rgba(127, 127, 127, 0.12);
-  --color-muted-border: rgba(127, 127, 127, 0.25);
-  --color-muted-track: rgba(127, 127, 127, 0.3);
   --font-heading: "Poppins", Inter, Avenir, Helvetica, Arial, sans-serif;
 }
 
 :root {
+  /* square buttons */
+  --radius-field: 0.75rem;
+
   font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
   font-size: 16px;
   line-height: 24px;
   font-weight: 400;
-
-  color: var(--color-text);
-  background-color: var(--color-bg);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -58,9 +60,9 @@ h1 {
   margin-block: 0.67em;
 }
 
-/* Every screen's own title -- centered like Header's h1, even though
-   `.screen` itself sets `text-align: left` for the form/table content
-   below it. */
+/* Every screen's own title -- centered, even though the form/table content
+   below it stays left-aligned (each screen sets its own `text-left` on its
+   layout wrapper). */
 h2 {
   font-family: var(--font-heading);
   font-size: 1.5em;
@@ -69,110 +71,15 @@ h2 {
   text-align: center;
 }
 
-.container {
-  margin: 0;
-  padding: 10vh 1rem 1rem;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  text-align: center;
-}
-
-.footer {
-  margin-top: 1em;
-  text-align: center;
-}
-
-/* Used by App's own action row, FreeTextForm, Login, CourseResults. */
-.row {
-  display: flex;
-  justify-content: center;
-}
-
-/* Shell layout shared by ConnectForm/Login's form and every other screen. */
-.login,
-.screen {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6em;
-  max-width: 32em;
-  margin: 0 auto;
-  text-align: left;
-}
-
-/* Small muted caption line, used by several screens (Unknown, ConnectForm,
-   SearchScreen, Disconnected, CourseResults). */
-.hint {
-  font-size: 0.85em;
-  opacity: 0.75;
-}
-
-.disconnect {
-  align-self: flex-start;
-}
-
-/* Shared by every screen that renders a course/section table (Matricula,
-   CourseResults, WeeklySchedule). */
-.table-scroll {
-  overflow-x: auto;
-  max-width: 100%;
-}
-
-.courses {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9em;
-}
-
-.courses th,
-.courses td {
-  text-align: left;
-  padding: 0.3em 0.6em;
-  border-bottom: 1px solid var(--color-muted-border);
-}
-
-input,
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  color: var(--color-text);
-  background-color: var(--color-surface);
-  transition: border-color 0.25s;
-  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
-  outline: none;
-}
-
-button {
-  cursor: pointer;
-}
-
-button:hover {
-  border-color: var(--color-accent);
-}
-
-button:active {
-  border-color: var(--color-accent);
-  background-color: #e8e8e8;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-text: #f6f6f6;
-    --color-bg: #2f2f2f;
-  }
-
-  input,
-  button {
-    color: #ffffff;
-    background-color: #0f0f0f98;
-  }
-
-  button:active {
-    background-color: #0f0f0f69;
+/* Promotes buttons to their own GPU compositing layer so WebKitGTK
+   anti-aliases the rounded corners (`--radius-field` above) properly --
+   without this they render visibly jagged in the Tauri webview. Same
+   underlying WebKitGTK rendering quirk as the Wayland compositing issue
+   this app has hit before. Scoped to WebKit engines only (Chromium
+   doesn't implement `-webkit-touch-callout`) */
+@supports (-webkit-touch-callout: none) {
+  .btn {
+    transform: translateZ(0);
+    backface-visibility: hidden;
   }
 }

@@ -13,8 +13,8 @@ export function WeeklyScheduleScreen(props: { days: string[]; rows: ScheduleRow[
   return (
     <>
       <h2>{t().weeklyScheduleTitle}</h2>
-      <div class="table-scroll">
-        <table class="courses">
+      <div class="overflow-x-auto max-w-full">
+        <table class="table">
           <thead>
             <tr>
               <th>{t().weeklyScheduleColumns.period}</th>
@@ -34,7 +34,7 @@ export function WeeklyScheduleScreen(props: { days: string[]; rows: ScheduleRow[
         </table>
       </div>
 
-      <button disabled={props.busy} onClick={continueScreen}>
+      <button class="btn btn-outline btn-primary" disabled={props.busy} onClick={continueScreen}>
         {t().continueLabel}
       </button>
     </>
