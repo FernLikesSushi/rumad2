@@ -18,9 +18,9 @@ export function CourseResultsScreen(props: {
   return (
     <>
       <h2>{props.courseCode}</h2>
-      <p class="hint">{props.courseTitle}</p>
-      <div class="table-scroll">
-        <table class="courses">
+      <p class="text-[0.85em] opacity-75">{props.courseTitle}</p>
+      <div class="overflow-x-auto max-w-full">
+        <table class="table">
           <thead>
             <tr>
               <th>{t().courseResultsColumns.section}</th>
@@ -52,8 +52,8 @@ export function CourseResultsScreen(props: {
         </table>
       </div>
 
-      <div class="row">
-        <button disabled={props.busy} onClick={continueScreen}>
+      <div class="flex justify-center">
+        <button class="btn btn-outline btn-primary" disabled={props.busy} onClick={continueScreen}>
           {t().continueLabel}
         </button>
       </div>

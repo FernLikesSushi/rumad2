@@ -49,7 +49,7 @@ export function MatriculaScreen(props: {
   return (
     <>
       <h2>{t().matriculaTitle}</h2>
-      <table class="courses">
+      <table class="table">
         <thead>
           <tr>
             <th>{t().matriculaColumns.course}</th>

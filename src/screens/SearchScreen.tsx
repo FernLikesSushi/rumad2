@@ -14,7 +14,7 @@ export function SearchScreen(props: { search: SearchKind; busy: boolean; send: S
   return (
     <>
       <h2>{t().horarioMatriculaTitle}</h2>
-      <p class="hint">{t().searchHints[props.search]}</p>
+      <p class="text-[0.85em] opacity-75">{t().searchHints[props.search]}</p>
       <FreeTextForm value={text()} onInput={setText} onSubmit={submit} busy={props.busy} />
     </>
   );

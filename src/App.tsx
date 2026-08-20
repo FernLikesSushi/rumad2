@@ -10,7 +10,13 @@ import "./App.css";
 // logout, or the remote's own "PROCESO CONCLUIDO").
 function App() {
   return (
-    <HashRouter root={(props) => <main class="container">{props.children}</main>}>
+    <HashRouter
+      root={(props) => (
+        <main class="m-0 box-border flex flex-col justify-center text-center px-4 pb-4 pt-[10vh]">
+          {props.children}
+        </main>
+      )}
+    >
       <Route path="/" component={Connect} />
       <Route path="/session" component={TuiRouter} />
     </HashRouter>

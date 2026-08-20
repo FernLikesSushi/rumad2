@@ -16,7 +16,6 @@ import { WeeklyScheduleScreen } from "../screens/WeeklySchedule";
 import { SearchScreen } from "../screens/SearchScreen";
 import { DisconnectedScreen } from "../screens/Disconnected";
 import { UnknownScreen } from "../screens/Unknown";
-import headerStyles from "../components/Header.module.css";
 
 // Everything TUI-state-related once a connection exists: `Connect` only
 // ever navigates here after a successful `connect`, but doesn't carry the
@@ -143,15 +142,15 @@ export function TuiRouter() {
 
   return (
     <>
-      <div class={headerStyles.header}>
-        <h1>{t().title}</h1>
+      <div class="flex flex-col items-center gap-2 max-w-lg mx-auto">
+        <h1 class="text-center">{t().title}</h1>
       </div>
 
       <NoticeDialog dialog={dialogBox()} onClose={() => setDialogBox(null)} />
 
       <Show when={screen()}>
         {(screen) => (
-          <div class="screen">
+          <div class="flex flex-col gap-2.5 max-w-lg mx-auto text-left">
             <Switch>
               <Match when={screen().kind === "Menu"}>
                 {(() => {
@@ -212,14 +211,14 @@ export function TuiRouter() {
               </Match>
             </Switch>
 
-            <div class="row">
+            <div class="flex justify-center">
               <Show when={canExit()}>
-                <button disabled={busy()} onClick={exitScreen}>
+                <button class="btn" disabled={busy()} onClick={exitScreen}>
                   {t().screenExit}
                 </button>
               </Show>
               <Show when={screen().kind !== "Disconnected"}>
-                <button class="disconnect" disabled={busy()} onClick={disconnect}>
+                <button class="btn self-start" disabled={busy()} onClick={disconnect}>
                   {t().logout}
                 </button>
               </Show>
@@ -229,7 +228,7 @@ export function TuiRouter() {
       </Show>
 
       <Show when={busy()}>
-        <div class="footer text-5xl">
+        <div class="mt-4 text-center">
           <Spinner />
         </div>
       </Show>

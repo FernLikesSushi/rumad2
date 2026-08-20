@@ -50,10 +50,11 @@ export function LoginScreen(props: {
   return (
     <>
       <h2>{t().authTitle}</h2>
-      <form class="login" onSubmit={submit}>
+      <form class="flex flex-col gap-2.5 max-w-lg mx-auto text-left" onSubmit={submit}>
         <For each={textFields()}>
           {(field) => (
             <input
+              class="input"
               type={field.masked ? "password" : "text"}
               placeholder={`${field.label} (${field.hint})`}
               value={values()[field.key] ?? ""}
@@ -63,12 +64,13 @@ export function LoginScreen(props: {
         </For>
         <input
           type="date"
+          class="input"
           aria-label={t().loginFields.birthDate.label}
           value={birthDate()}
           onInput={(e) => setBirthDate(e.currentTarget.value)}
         />
-        <div class="row">
-          <button type="submit" disabled={props.busy}>
+        <div class="flex justify-center">
+          <button type="submit" class="btn btn-outline btn-primary" disabled={props.busy}>
             {t().send}
           </button>
         </div>

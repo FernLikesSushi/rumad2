@@ -12,13 +12,14 @@ export function FreeTextForm(props: {
   }
 
   return (
-    <form class="row" onSubmit={handleSubmit}>
+    <form class="flex justify-center" onSubmit={handleSubmit}>
       <input
+        class="input"
         placeholder={t().sendPlaceholder}
         value={props.value}
         onInput={(e) => props.onInput(e.currentTarget.value)}
       />
-      <button type="submit" disabled={props.busy}>
+      <button type="submit" class="btn btn-outline btn-primary" disabled={props.busy}>
         {t().send}
       </button>
     </form>
