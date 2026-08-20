@@ -43,12 +43,14 @@ export function Connect() {
 
   return (
     <>
-    <Header />
+      <Header />
       <NoticeDialog dialog={dialogBox()} onClose={() => setDialogBox(null)} />
-      <button type="submit" class="btn btn-outline btn-primary" disabled={busy()} onClick={submit}>
-        {busy() ? t().connecting : t().connect}
-        <PawPrint />
-      </button>
+      <div class="flex flex-col items-center justify-center gap-4 flex-1">
+        <button type="submit" class="btn btn-outline btn-primary max-w-md" disabled={busy()} onClick={submit}>
+          {busy() ? t().connecting : t().connect}
+          <PawPrint />
+        </button>
+      </div>
     </>
   );
 }

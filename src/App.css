@@ -52,23 +52,34 @@
    from the parent -- restoring the browser-default look here since every
    screen has a bare `<h2>{title}</h2>` (Login, MenuScreen, Matricula,
    CourseResults, WeeklySchedule, SearchScreen, Disconnected) relying on
-   it, and Header's `<h1>` likewise never set its own size explicitly. */
-h1 {
-  font-family: var(--font-heading);
-  font-size: 2em;
-  font-weight: 700;
-  margin-block: 0.67em;
-}
+   it, and Header's `<h1>` likewise never set its own size explicitly.
+   Deliberately in `@layer base` (Tailwind's own base layer, lower
+   priority than its `utilities` layer) rather than plain unlayered CSS --
+   unlike the `--radius-field`/`--color-primary` overrides above, which
+   are meant to always win regardless of layer, these are *defaults* a
+   one-off Tailwind utility class on a specific `<h1>`/`<h2>` (e.g.
+   `text-sm`) should be able to override per instance. Plain unlayered
+   CSS always beats layered CSS regardless of source order or
+   specificity, so `text-sm` on an unlayered `h1` rule would silently
+   have no effect -- live-confirmed on Header's title. */
+@layer base {
+  h1 {
+    font-family: var(--font-heading);
+    font-size: 2em;
+    font-weight: 700;
+    margin-block: 0.67em;
+  }
 
-/* Every screen's own title -- centered, even though the form/table content
-   below it stays left-aligned (each screen sets its own `text-left` on its
-   layout wrapper). */
-h2 {
-  font-family: var(--font-heading);
-  font-size: 1.5em;
-  font-weight: 700;
-  margin-block: 0.83em;
-  text-align: center;
+  /* Every screen's own title -- centered, even though the form/table
+     content below it stays left-aligned (each screen sets its own
+     `text-left` on its layout wrapper). */
+  h2 {
+    font-family: var(--font-heading);
+    font-size: 1.5em;
+    font-weight: 700;
+    margin-block: 0.83em;
+    text-align: center;
+  }
 }
 
 /* Promotes buttons to their own GPU compositing layer so WebKitGTK
