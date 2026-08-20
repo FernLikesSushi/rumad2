@@ -20,6 +20,7 @@ export interface Messages {
   noticeTitle: string;
   authTitle: string;
   developerMode: string;
+  settings: string;
   continueLabel: string;
   screenExit: string;
   weeklyScheduleTitle: string;
