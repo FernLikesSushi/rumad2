@@ -127,6 +127,18 @@ impl TuiSession {
         let _ = self.send_line("0");
     }
 
+    /// Whether the remote has actually closed its end of the channel --
+    /// the only reliable signal that the session is truly over. Screen
+    /// *text* alone (e.g. the "PROCESO CONCLUIDO" banner) isn't enough:
+    /// it can apparently show up without the connection actually closing.
+    /// Reflects `channel.eof()`, which libssh2 sets as a side effect of a
+    /// read actually reaching end-of-stream -- so this is only meaningful
+    /// right after a pump (`pump_once`/`settle`/`drain_available`) has
+    /// run, not as an independent poll.
+    pub(crate) fn is_closed(&self) -> bool {
+        self.channel.eof()
+    }
+
     fn write_all(&mut self, bytes: &[u8]) -> Result<()> {
         self.channel
             .write_all(bytes)
