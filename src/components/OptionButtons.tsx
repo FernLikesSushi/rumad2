@@ -1,6 +1,6 @@
 import { For, Show } from "solid-js";
 import type { MenuOption } from "../types";
-import "./OptionButtons.css";
+import styles from "./OptionButtons.module.css";
 
 export function OptionButtons(props: {
   options: MenuOption[];
@@ -13,14 +13,14 @@ export function OptionButtons(props: {
   hideKey?: boolean;
 }) {
   return (
-    <div class="options">
+    <div class={styles.options}>
       <For each={props.options}>
         {(option) => (
           <button disabled={props.busy} onClick={() => props.onChoose(option.key)}>
             <Show when={!props.hideKey}>
-              <span class="option-hint">{option.key}</span>
+              <span class={styles["option-hint"]}>{option.key}</span>
             </Show>
-            <span class="option-label">{option.label}</span>
+            <span class={styles["option-label"]}>{option.label}</span>
           </button>
         )}
       </For>

@@ -1,6 +1,6 @@
 import { t } from "../i18n";
-import "./Spinner.css";
+import styles from "./Spinner.module.css";
 
 export function Spinner() {
-  return <span class="spinner" role="status" aria-label={t().loading} />;
+  return <span class={styles.spinner} role="status" aria-label={t().loading} />;
 }

@@ -16,7 +16,7 @@ import { WeeklyScheduleScreen } from "../screens/WeeklySchedule";
 import { SearchScreen } from "../screens/SearchScreen";
 import { DisconnectedScreen } from "../screens/Disconnected";
 import { UnknownScreen } from "../screens/Unknown";
-import "../components/Header.css";
+import headerStyles from "../components/Header.module.css";
 
 // Everything TUI-state-related once a connection exists: `Connect` only
 // ever navigates here after a successful `connect`, but doesn't carry the
@@ -143,11 +143,8 @@ export function TuiRouter() {
 
   return (
     <>
-      <div class="header">
+      <div class={headerStyles.header}>
         <h1>{t().title}</h1>
-        <div class="header-controls">
-          <Toggle label={t().developerMode} checked={devMode()} onChange={setDevMode} />
-        </div>
       </div>
 
       <NoticeDialog dialog={dialogBox()} onClose={() => setDialogBox(null)} />

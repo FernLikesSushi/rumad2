@@ -5,7 +5,7 @@ import { OptionButtons } from "../components/OptionButtons";
 import { FreeTextForm } from "../components/FreeTextForm";
 import { createKeyboardListener } from "../components/KeyboardListener";
 import type { MenuOption, Send } from "../types";
-import "./Unknown.css";
+import styles from "./Unknown.module.css";
 
 export function UnknownScreen(props: { raw: string; options: MenuOption[]; busy: boolean; send: Send }) {
   const [freeText, setFreeText] = createSignal("");
@@ -29,7 +29,7 @@ export function UnknownScreen(props: { raw: string; options: MenuOption[]; busy:
     <>
       <p class="hint">{t().unknownHint}</p>
       <Show when={devMode()}>
-        <pre class="raw">{props.raw}</pre>
+        <pre class={styles.raw}>{props.raw}</pre>
       </Show>
       <OptionButtons options={props.options} busy={props.busy} onChoose={choose} />
       <FreeTextForm value={freeText()} onInput={setFreeText} onSubmit={submit} busy={props.busy} />
