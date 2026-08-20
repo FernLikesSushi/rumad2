@@ -3,9 +3,10 @@ import { useNavigate } from "@solidjs/router";
 import { t } from "../i18n";
 import { runAction } from "../api";
 import { NoticeDialog } from "../components/NoticeDialog";
-import { ConnectForm } from "../screens/ConnectForm";
 import type { DialogBox } from "../types";
 import { Header } from "../components/Header";
+import { loadUsername, password } from "../username";
+import { PawPrint } from "lucide-solid";
 
 // The pre-connection page: owns the initial `connect` call and its own
 // local busy/error state -- there's no TUI session yet for anything else
@@ -35,11 +36,19 @@ export function Connect() {
     }
   }
 
+  function submit(e: Event) {
+    e.preventDefault();
+    connect(loadUsername(), password());
+  }
+
   return (
     <>
     <Header />
       <NoticeDialog dialog={dialogBox()} onClose={() => setDialogBox(null)} />
-      <ConnectForm onConnect={connect} busy={busy()} />
+      <button type="submit" class="btn btn-outline btn-primary" disabled={busy()} onClick={submit}>
+        {busy() ? t().connecting : t().connect}
+        <PawPrint />
+      </button>
     </>
   );
 }
