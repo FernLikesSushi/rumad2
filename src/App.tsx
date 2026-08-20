@@ -1,25 +1,19 @@
-import { createSignal, Show } from "solid-js";
-import type { ClassifiedScreen } from "./types";
+import { HashRouter, Route } from "@solidjs/router";
 import { Connect } from "./page/Connect";
 import { TuiRouter } from "./page/TuiRouter";
 import "./App.css";
 
-// The thin top-level shell: picks between the two pages based on whether
-// a connection exists yet. `Connect` owns the initial `connect` call and
-// hands off the resulting screen here via `setConnected`; from that point
-// on `TuiRouter` owns everything TUI-state-related (its own resource,
-// dialogs, busy state, header) until the session ends and calls
-// `onDisconnected`, which resets `connected` back to null and remounts
-// `Connect`.
+// The thin top-level shell: a two-route router picking between the two
+// pages. `Connect` navigates to "/session" after a successful `connect`;
+// `TuiRouter` fetches its own starting screen on mount rather than being
+// handed one, and navigates back to "/" once the session ends (explicit
+// logout, or the remote's own "PROCESO CONCLUIDO").
 function App() {
-  const [connected, setConnected] = createSignal<ClassifiedScreen | null>(null);
-
   return (
-    <main class="container">
-      <Show when={connected()} fallback={<Connect onConnected={setConnected} />}>
-        {(initial) => <TuiRouter initial={initial()} onDisconnected={() => setConnected(null)} />}
-      </Show>
-    </main>
+    <HashRouter root={(props) => <main class="container">{props.children}</main>}>
+      <Route path="/" component={Connect} />
+      <Route path="/session" component={TuiRouter} />
+    </HashRouter>
   );
 }
 
