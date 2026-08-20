@@ -46,9 +46,12 @@
 //! `ClassifiedScreen { screen, dialog }`, rather than the old design where
 //! a detected notice would short-circuit and *replace* the screen
 //! (forcing the frontend to separately track "the last real screen" to
-//! paper over that). The one exception is `Disconnected`: the remote
-//! closes the channel shortly after showing it, so there's nothing
-//! underneath left to classify.
+//! paper over that). `Disconnected` is *not* derived here at all --
+//! its "PROCESO CONCLUIDO" banner text can show up without the SSH
+//! channel actually closing, so it's just another bracketed advisory as
+//! far as this module is concerned; `commands::exec::handle_scene_change`
+//! is what actually decides `Disconnected`, from the live channel's own
+//! EOF state.
 //!
 //! **Identical screens share one struct.** Four real prompts are just a
 //! numbered/lettered list of options (`MenuScreen`, distinguished by
@@ -150,13 +153,13 @@ pub enum TuiScreen {
     /// Puede indicar solo MATERIA             [PF4=(9)Fin]" -- see
     /// `SearchKind` for the two real prompts this covers.
     Search(SearchScreen),
-    /// The remote's own "<<< P R O C E S O  C O N C L U I D O >>>" banner --
-    /// a graceful end of session (seen after logging out, and after the
-    /// shared demo account's idle timeout fires). The remote closes the
-    /// channel shortly after showing this, so there's nothing left to
-    /// interact with; the command layer drops the session when it sees
-    /// this rather than leaving the frontend to send input into a dead
-    /// connection.
+    /// The SSH channel has actually closed (`TuiSession::is_closed()`),
+    /// meaning there's nothing left to interact with -- decided by the
+    /// command layer from the live channel's EOF state, not by this
+    /// module. Not the same thing as seeing the remote's own "<<< P R O
+    /// C E S O  C O N C L U I D O >>>" banner text: that can show up
+    /// without the channel actually closing, so it's just an ordinary
+    /// bracketed `Dialog::Notice` as far as `classify` is concerned.
     Disconnected,
     Unknown(UnknownScreen),
 }
@@ -234,22 +237,18 @@ impl ClassifiedScreen {
 }
 
 pub fn classify(raw: &str) -> ClassifiedScreen {
-    // The banner pads every letter with spaces for a marquee effect
-    // ("<<<   P R O C E S O    C O N C L U I D O   >>>"), so compare
-    // against whitespace-collapsed text rather than matching it literally.
-    // Checked before anything else, and short-circuits with no `Dialog`
-    // (unlike every other case below): the remote closes the channel
-    // shortly after showing this, so there's no live screen underneath
-    // left to classify.
+    // `TuiScreen::Disconnected` is deliberately *not* derived here from the
+    // "PROCESO CONCLUIDO" banner text -- that text can apparently show up
+    // without the SSH channel actually closing, so treating it as an
+    // unconditional graceful-end-of-session signal was wrong. The banner
+    // is real remote output, though, so `detect_dialog` below still
+    // surfaces it as an ordinary `Dialog::Notice` (its own dedicated
+    // collapsed-text check, same as "Programa en Proceso"). Whether the
+    // session is *actually* over is a live-channel fact, not a text fact
+    // -- see `commands::exec::handle_scene_change`, which checks
+    // `TuiSession::is_closed()` and overrides to `Disconnected` only when
+    // the channel has genuinely reached EOF.
     let collapsed: String = raw.chars().filter(|c| !c.is_whitespace()).collect();
-    if collapsed.contains("PROCESOCONCLUIDO") {
-        return ClassifiedScreen {
-            screen: TuiScreen::Disconnected,
-            dialog: None,
-            can_exit: false,
-        };
-    }
-
     let screen = classify_screen(raw);
     let can_exit = screen.as_rumad_screen().is_some_and(|s| s.can_exit());
     ClassifiedScreen {
@@ -374,10 +373,24 @@ fn detect_dialog(raw: &str, collapsed: &str) -> Option<Dialog> {
     }
 
     // Pads every letter with spaces for a marquee effect too ("<<<
-    // Programa  en  Proceso  >>>"), same reasoning as the
-    // "PROCESOCONCLUIDO" check in `classify`.
+    // Programa  en  Proceso  >>>"). Triple-angle-bracket, like "PROCESO
+    // CONCLUIDO" below -- `notice::extract_bracketed_or_boxed_notice`'s
+    // regex only matches *exactly* double brackets (see its own doc
+    // comment), so this needs its own collapsed-text check rather than
+    // falling through to that.
     if collapsed.contains("ProgramaenProceso") {
         return Some(Dialog::Processing);
+    }
+
+    // Same triple-bracket reasoning as "Programa en Proceso" above --
+    // shown as a `Notice` rather than silently dropped, even though
+    // (per `TuiScreen::Disconnected`'s doc comment) this text alone no
+    // longer means the session actually ended.
+    if collapsed.contains("PROCESOCONCLUIDO") {
+        return Some(Dialog::Notice {
+            message: "PROCESO CONCLUIDO".to_string(),
+            raw: raw.to_string(),
+        });
     }
 
     if let Some(message) = notice::extract_bracketed_or_boxed_notice(raw) {
@@ -478,7 +491,12 @@ Opcion deseada:   ";
     }
 
     #[test]
-    fn classifies_proceso_concluido_banner() {
+    fn proceso_concluido_banner_does_not_force_disconnected() {
+        // The banner text alone isn't authoritative for `Disconnected`
+        // (see `TuiScreen::Disconnected`'s doc comment) -- only
+        // `commands::exec::handle_scene_change`'s live `TuiSession::
+        // is_closed()` check is, which this text-only classifier has no
+        // access to. So this just overlays as an ordinary `Notice`.
         let raw = "\
 UNIVERSIDAD DE PUERTO RICO
                       Recinto Universitario de Mayaguez
@@ -494,13 +512,14 @@ UNIVERSIDAD DE PUERTO RICO
 
                 <<<   P R O C E S O    C O N C L U I D O   >>>
 ";
+        let result = classify(raw);
+        assert!(!matches!(result.screen, TuiScreen::Disconnected));
         assert_eq!(
-            classify(raw),
-            ClassifiedScreen {
-                screen: TuiScreen::Disconnected,
-                dialog: None,
-                can_exit: false
-            }
+            result.dialog,
+            Some(Dialog::Notice {
+                message: "PROCESO CONCLUIDO".to_string(),
+                raw: raw.to_string(),
+            })
         );
     }
 

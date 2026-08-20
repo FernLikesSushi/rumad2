@@ -16,14 +16,14 @@ use crate::ssh::session::TuiSession;
 /// see that function's doc comment.
 const SCREEN_CHANGED_EVENT: &str = "screen-changed";
 
-/// If the screen signals a graceful end of session (`Disconnected` -- the
-/// remote closes the channel shortly after showing it), drop the session
-/// so later commands correctly report "not connected" instead of erroring
-/// on a dead channel. A real side effect on `AppState`, so this runs
-/// regardless of whether the caller wants `or_err`'s `Err`-promotion too
-/// (`finish` does; `spawn_screen_watcher` doesn't -- an `or_err`-promoted
-/// rejection is a normal thing to observe mid-poll, not a reason to stop
-/// watching).
+/// If the screen signals a graceful end of session (`Disconnected` --
+/// `handle_scene_change` below has already confirmed the SSH channel
+/// actually closed), drop the session so later commands correctly report
+/// "not connected" instead of erroring on a dead channel. A real side
+/// effect on `AppState`, so this runs regardless of whether the caller
+/// wants `or_err`'s `Err`-promotion too (`finish` does; `spawn_screen_watcher`
+/// doesn't -- an `or_err`-promoted rejection is a normal thing to observe
+/// mid-poll, not a reason to stop watching).
 fn clear_if_disconnected(guard: &mut Option<TuiSession>, result: &ClassifiedScreen) {
     if result.screen == TuiScreen::Disconnected {
         *guard = None;
@@ -74,6 +74,14 @@ where
 /// result, but `spawn_screen_watcher` doesn't -- an `or_err`-promoted
 /// rejection is a normal thing to observe mid-poll, not a reason to stop
 /// watching.
+///
+/// `screens::classify` is text-only and, deliberately, never returns
+/// `Disconnected` on its own (see that function's doc comment) -- the
+/// remote's "PROCESO CONCLUIDO" banner can show up without the SSH
+/// channel actually closing. This is the one place that overrides to
+/// `Disconnected`, and only once `TuiSession::is_closed()` confirms the
+/// channel has genuinely reached EOF (always called right after a pump,
+/// so that's freshly accurate here).
 fn handle_scene_change(guard: &mut Option<TuiSession>) -> Result<ClassifiedScreen, String> {
     let Some(session) = guard else {
         return Err("not connected".to_string());
@@ -81,7 +89,14 @@ fn handle_scene_change(guard: &mut Option<TuiSession>) -> Result<ClassifiedScree
 
     let raw = session.screen_text();
     log_screen(&raw);
-    let result = screens::classify(&raw);
+    let mut result = screens::classify(&raw);
+    if session.is_closed() {
+        result = ClassifiedScreen {
+            screen: TuiScreen::Disconnected,
+            dialog: None,
+            can_exit: false,
+        };
+    }
     clear_if_disconnected(guard, &result);
     Ok(result)
 }
@@ -113,9 +128,10 @@ where
 /// redraw a second time on their own after computing a result
 /// server-side (see `Dialog::Processing`), and nothing else is watching
 /// for that once the command that triggered it has already returned.
-/// Exits once the session is gone (`disconnect`, or the remote's own
-/// "PROCESO CONCLUIDO"). Runs independently of `act`'s own foreground
-/// reads -- both just take turns through the same `AppState` lock.
+/// Exits once the session is gone (`disconnect`, or the SSH channel
+/// actually closing -- see `handle_scene_change`). Runs independently of
+/// `act`'s own foreground reads -- both just take turns through the same
+/// `AppState` lock.
 pub(super) fn spawn_screen_watcher(app: AppHandle, mut last: ClassifiedScreen) {
     thread::spawn(move || loop {
         thread::sleep(Duration::from_millis(200));
