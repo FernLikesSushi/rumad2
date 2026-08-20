@@ -1,6 +1,7 @@
 import { createEffect, createSignal } from "solid-js";
 import { t } from "../i18n";
 import { loadUsername, saveUsername } from "../username";
+import { PawPrint } from "lucide-solid";
 
 export function ConnectForm(props: { onConnect: (username: string, password: string) => void; busy: boolean }) {
   const [username, setUsername] = createSignal(loadUsername());
@@ -33,6 +34,7 @@ export function ConnectForm(props: { onConnect: (username: string, password: str
       />
       <button type="submit" class="btn btn-outline btn-primary" disabled={props.busy}>
         {props.busy ? t().connecting : t().connect}
+        <PawPrint  />
       </button>
     </form>
   );
