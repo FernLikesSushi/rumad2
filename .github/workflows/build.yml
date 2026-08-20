@@ -9,10 +9,10 @@ name: Build
 # handles both upload paths itself (uploadWorkflowArtifacts / releaseId)
 # without us hand-computing per-platform bundle output paths.
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  # push:
+  #   branches: [main]
+  # pull_request:
+  #   branches: [main]
   workflow_dispatch:
   release:
     types: [published]
