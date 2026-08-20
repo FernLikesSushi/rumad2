@@ -12,7 +12,7 @@ function App() {
   return (
     <HashRouter
       root={(props) => (
-        <main class="m-0 box-border flex flex-col justify-center text-center px-4 pb-4 pt-[10vh]">
+        <main class="flex flex-col justify-center text-center px-4 py-4">
           {props.children}
         </main>
       )}

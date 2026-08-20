@@ -5,6 +5,7 @@ import { runAction } from "../api";
 import { NoticeDialog } from "../components/NoticeDialog";
 import { ConnectForm } from "../screens/ConnectForm";
 import type { DialogBox } from "../types";
+import { Header } from "../components/Header";
 
 // The pre-connection page: owns the initial `connect` call and its own
 // local busy/error state -- there's no TUI session yet for anything else
@@ -36,6 +37,7 @@ export function Connect() {
 
   return (
     <>
+    <Header />
       <NoticeDialog dialog={dialogBox()} onClose={() => setDialogBox(null)} />
       <ConnectForm onConnect={connect} busy={busy()} />
     </>

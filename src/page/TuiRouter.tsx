@@ -1,3 +1,4 @@
+import { SettingsButton } from './../components/SettingsButton'
 import { createSignal, createResource, createMemo, createEffect, onMount, onCleanup, Match, Switch, Show } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { listen } from "@tauri-apps/api/event";
@@ -16,6 +17,8 @@ import { WeeklyScheduleScreen } from "../screens/WeeklySchedule";
 import { SearchScreen } from "../screens/SearchScreen";
 import { DisconnectedScreen } from "../screens/Disconnected";
 import { UnknownScreen } from "../screens/Unknown";
+import { LogOut, Settings } from "lucide-solid";
+import { Header } from '../components/Header';
 
 // Everything TUI-state-related once a connection exists: `Connect` only
 // ever navigates here after a successful `connect`, but doesn't carry the
@@ -142,9 +145,7 @@ export function TuiRouter() {
 
   return (
     <>
-      <div class="flex flex-col items-center gap-2 max-w-lg mx-auto">
-        <h1 class="text-center">{t().title}</h1>
-      </div>
+      <Header disconnect={disconnect} />
 
       <NoticeDialog dialog={dialogBox()} onClose={() => setDialogBox(null)} />
 
@@ -215,11 +216,6 @@ export function TuiRouter() {
               <Show when={canExit()}>
                 <button class="btn" disabled={busy()} onClick={exitScreen}>
                   {t().screenExit}
-                </button>
-              </Show>
-              <Show when={screen().kind !== "Disconnected"}>
-                <button class="btn self-start" disabled={busy()} onClick={disconnect}>
-                  {t().logout}
                 </button>
               </Show>
             </div>
