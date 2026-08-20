@@ -1,7 +1,10 @@
 import { PawPrint } from "lucide-solid";
 import { createEffect, createSignal, Signal } from "solid-js";
-import { t } from "../i18n";
+import { locale, setLocale, t } from "../i18n";
 import { loadUsername, password, saveUsername, setPassword } from "../username";
+import { devMode, setDevMode } from "../devMode";
+import { Toggle } from "./Toggle";
+import { ToggleButton } from "./ToggleButton";
 
 export function Settings() {
 
@@ -31,5 +34,16 @@ export function Settings() {
             value={password()}
             onInput={(e) => setPassword(e.currentTarget.value)}
         />
+
+        <div class="divider w-full" />
+
+        <div class="flex items-center gap-2">
+            <ToggleButton label="🇪🇸 Español" active={locale() === "es"} onClick={() => setLocale("es")} />
+            <ToggleButton label="🇬🇧 English" active={locale() === "en"} onClick={() => setLocale("en")} />
+        </div>
+
+        <div class="divider w-full" />
+
+        <Toggle label={t().developerMode} checked={devMode()} onChange={setDevMode} />
     </form>
 }

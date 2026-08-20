@@ -12,7 +12,13 @@ function App() {
   return (
     <HashRouter
       root={(props) => (
-        <main class="flex flex-col justify-center text-center px-4 py-4">
+        // `justify-start`, not `-center`: this wraps every page's children as
+        // one group, so centering it would re-center (and visibly shift) the
+        // header whenever the rest of the content is short or still loading
+        // (e.g. TuiRouter before its first `get_screen` resolves, when Header
+        // is briefly the only child). Each page centers its own content area
+        // independently instead (see Connect's button wrapper's own `flex-1`).
+        <main class="flex flex-col justify-start text-center px-4 py-4 min-h-screen">
           {props.children}
         </main>
       )}

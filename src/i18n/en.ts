@@ -1,7 +1,7 @@
 import type { Messages } from "./types";
 
 const en: Messages = {
-  title: "RUMAD",
+  title: "RUMAD 2 (Experimental)",
   loading: "Loading",
   close: "Close",
   loginHint:
