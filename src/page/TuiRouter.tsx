@@ -151,7 +151,7 @@ export function TuiRouter() {
 
       <Show when={screen()}>
         {(screen) => (
-          <div class="flex flex-col gap-2.5 max-w-lg mx-auto text-left flex-1">
+          <div class="flex flex-col gap-2.5 px-4 text-left flex-1">
             <Switch>
               <Match when={screen().kind === "Menu"}>
                 {(() => {
