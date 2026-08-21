@@ -26,6 +26,7 @@ const es: Messages = {
   authTitle: "Autenticacion",
   developerMode: "Modo desarrollador",
   settings: "Configuracion",
+  madeWith: "Hecho con",
   continueLabel: "Continuar",
   screenExit: "Salir de esta pantalla",
   weeklyScheduleTitle: "Horario de Matricula",

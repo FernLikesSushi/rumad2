@@ -22,6 +22,7 @@ const en: Messages = {
   authTitle: "Authentication",
   developerMode: "Developer mode",
   settings: "Settings",
+  madeWith: "Made with",
   continueLabel: "Continue",
   screenExit: "Leave this screen",
   weeklyScheduleTitle: "Class Schedule",
