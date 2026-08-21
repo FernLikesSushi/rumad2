@@ -1,6 +1,9 @@
+import { Footer } from './components/Footer';
 import { HashRouter, Route } from "@solidjs/router";
+import { Heart } from "lucide-solid";
 import { Connect } from "./page/Connect";
 import { TuiRouter } from "./page/TuiRouter";
+import { t } from "./i18n";
 import "./App.css";
 
 // The thin top-level shell: a two-route router picking between the two
@@ -20,6 +23,7 @@ function App() {
         // independently instead (see Connect's button wrapper's own `flex-1`).
         <main class="flex flex-col justify-start text-center px-4 py-4 min-h-screen">
           {props.children}
+          <Footer />
         </main>
       )}
     >
