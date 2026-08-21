@@ -1,7 +1,8 @@
-import { createMemo, createSignal, For, Show } from "solid-js";
+import { createMemo, createSignal, Show } from "solid-js";
 import { t, localizeButton } from "../i18n";
 import { OptionButtons } from "../components/OptionButtons";
 import { FreeTextForm } from "../components/FreeTextForm";
+import { CourseTable } from "../components/CourseTable";
 import type { ScheduleCourse, MatriculaMode, Send } from "../types";
 import { createKeyboardListener } from "../components/KeyboardListener";
 
@@ -49,28 +50,7 @@ export function MatriculaScreen(props: {
   return (
     <>
       <h2>{t().matriculaTitle}</h2>
-      <table class="table">
-        <thead>
-          <tr>
-            <th>{t().matriculaColumns.course}</th>
-            <th>{t().matriculaColumns.section}</th>
-            <th>{t().matriculaColumns.credits}</th>
-            <th>{t().matriculaColumns.status}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <For each={props.courses}>
-            {(c) => (
-              <tr>
-                <td>{c.course}</td>
-                <td>{c.section}</td>
-                <td>{c.credits}</td>
-                <td>{c.status}</td>
-              </tr>
-            )}
-          </For>
-        </tbody>
-      </table>
+      <CourseTable courses={props.courses} />
 
       <Show when={props.mode.kind === "Actions"}>
         <OptionButtons options={localizedActions()} busy={props.busy} onChoose={choose} hideKey />
