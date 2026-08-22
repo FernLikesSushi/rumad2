@@ -196,3 +196,128 @@ jobs:
             src-tauri/target/release/bundle/msix/*.cer \
             --clobber \
             --repo "${{ github.repository }}"
+
+  # No Android keystore or Apple Developer signing cert exists as a repo
+  # secret yet, so these are debug/unsigned verification builds only --
+  # good enough to prove the app still builds for each platform, not
+  # something installable on a real device or store-ready. Swap in real
+  # credentials (an Android keystore + signingConfig, an Apple cert +
+  # `TAURI_APPLE_DEVELOPMENT_TEAM`/`--export-method`) once those exist,
+  # and drop `--debug`/`--no-sign` accordingly.
+  #
+  # This assumes `gen/android` and `gen/apple` are committed to the repo
+  # (run `pnpm tauri android init` / `pnpm tauri ios init` locally once
+  # and commit the result) -- unlike `gen/schemas`, they aren't generated
+  # in CI, since regenerating them every run would silently discard any
+  # manual customization made in them (AndroidManifest.xml permissions,
+  # Info.plist entries, native code, etc.). Until that commit happens,
+  # this job will fail at the build step with `gen/android`/`gen/apple`
+  # missing.
+  build-mobile:
+    permissions:
+      contents: write # only used by the release-upload steps, release-publish events only
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: android
+            runner: ubuntu-22.04
+          - platform: ios
+            runner: macos-latest
+
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Set up JDK
+        if: matrix.platform == 'android'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # GitHub's ubuntu runner images already bundle an NDK (as
+      # ANDROID_NDK_HOME) -- tauri's CLI specifically looks for NDK_HOME
+      # though, which isn't set under that name, so just point it at the
+      # one already on disk instead of installing a redundant copy.
+      - name: Set NDK_HOME
+        if: matrix.platform == 'android'
+        run: echo "NDK_HOME=$ANDROID_NDK_HOME" >> "$GITHUB_ENV"
+
+      - name: Install CocoaPods
+        if: matrix.platform == 'ios'
+        run: brew install cocoapods
+
+      - name: Build Android APK (debug, unsigned)
+        if: matrix.platform == 'android'
+        run: pnpm tauri android build --debug --apk
+
+      # Best-effort: unlike the Android leg, this hasn't been verified
+      # against a real run (no macOS/Xcode available to test against
+      # locally) -- `--no-sign` should skip needing an Apple Developer
+      # certificate/team, but a device-target archive/export step may
+      # still need one regardless. `continue-on-error` so a signing-
+      # related failure here doesn't fail the whole workflow.
+      - name: Build iOS app (unsigned)
+        if: matrix.platform == 'ios'
+        continue-on-error: true
+        run: pnpm tauri ios build --no-sign
+
+      - name: Upload Android APK as workflow artifact
+        if: ${{ matrix.platform == 'android' && github.event_name != 'release' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: rumad-2-android-apk
+          path: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+
+      - name: Upload Android APK to release
+        if: ${{ matrix.platform == 'android' && github.event_name == 'release' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          apk=$(find src-tauri/gen/android/app/build/outputs/apk -name '*.apk' | head -n1)
+          if [ -z "$apk" ]; then
+            echo "No APK produced -- skipping upload."
+            exit 0
+          fi
+          gh release upload "${{ github.event.release.tag_name }}" "$apk" --clobber --repo "${{ github.repository }}"
+
+      - name: Upload iOS app as workflow artifact
+        if: ${{ matrix.platform == 'ios' && github.event_name != 'release' }}
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: rumad-2-ios-app
+          path: |
+            src-tauri/gen/apple/build/**/*.ipa
+            src-tauri/gen/apple/build/**/*.app
+
+      - name: Upload iOS app to release
+        if: ${{ matrix.platform == 'ios' && github.event_name == 'release' }}
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          artifact=$(find src-tauri/gen/apple/build -name '*.ipa' | head -n1)
+          if [ -z "$artifact" ]; then
+            echo "No iOS .ipa produced -- skipping upload."
+            exit 0
+          fi
+          gh release upload "${{ github.event.release.tag_name }}" "$artifact" --clobber --repo "${{ github.repository }}"
