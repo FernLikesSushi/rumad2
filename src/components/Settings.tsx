@@ -2,8 +2,8 @@ import { PawPrint } from "lucide-solid";
 import { createEffect, createSignal, Show, Signal } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { locale, setLocale, t } from "../i18n";
-import { loadUsername, password, saveUsername, setPassword } from "../username";
-import { devMode, setDevMode } from "../devMode";
+import { loadUsername, password, saveUsername, setPassword } from "../data/username";
+import { devMode, setDevMode } from "../data/devMode";
 import { Toggle } from "./Toggle";
 import { ToggleButton } from "./ToggleButton";
 

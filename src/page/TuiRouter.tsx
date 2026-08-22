@@ -3,8 +3,8 @@ import { createSignal, createResource, createMemo, createEffect, onMount, onClea
 import { useNavigate } from "@solidjs/router";
 import { listen } from "@tauri-apps/api/event";
 import { t } from "../i18n";
-import { runAction } from "../api";
-import { devMode, setDevMode } from "../devMode";
+import { runAction } from "../screens/api";
+import { devMode, setDevMode } from "../data/devMode";
 import type { TuiScreen, ClassifiedScreen, Action, Send } from "../types";
 import { NoticeDialog, createDialog } from "../components/NoticeDialog";
 import { Spinner } from "../components/Spinner";

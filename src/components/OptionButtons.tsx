@@ -1,6 +1,6 @@
 import { For, Show } from "solid-js";
 import type { MenuOption } from "../types";
-import { iconFor, type IconMenu } from "../menuIcons";
+import { iconFor, type IconMenu } from "../data/menuIcons";
 
 export function OptionButtons(props: {
   options: MenuOption[];

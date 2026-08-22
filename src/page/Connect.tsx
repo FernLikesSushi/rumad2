@@ -1,13 +1,13 @@
 import { createSignal, onCleanup, Show } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { t } from "../i18n";
-import { runAction } from "../api";
+import { runAction } from "../screens/api";
 import { NoticeDialog, createDialog } from "../components/NoticeDialog";
 import { Header } from "../components/Header";
-import { loadUsername, password } from "../username";
+import { loadUsername, password } from "../data/username";
 import { PawPrint } from "lucide-solid";
 import { FadingText } from "../components/FadingText";
-import { shuffledQuotes } from "../i18n/quotes";
+import { shuffledQuotes } from "../data/quotes";
 import { createKeyboardListener } from "../components/KeyboardListener";
 
 const LOKI_CODE = "loki";

@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { Action, ClassifiedScreen } from "./types";
+import type { Action, ClassifiedScreen } from "../types";
 
 // The resource's fetcher: `null` means "session ended",
 // anything else is whatever the invoked command

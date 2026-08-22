@@ -1,6 +1,6 @@
 import type { JSX } from "solid-js";
 import { LogOut, Plus, Minus, RefreshCw, Calendar } from "lucide-solid";
-import type { MenuKind } from "./types";
+import type { MenuKind } from "../types";
 
 export type IconMenu = MenuKind | "Matricula" | "Unknown";
 
