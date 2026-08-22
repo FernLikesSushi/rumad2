@@ -14,7 +14,7 @@ import { WeeklyScheduleScreen } from "../screens/WeeklySchedule";
 import { SearchScreen } from "../screens/SearchScreen";
 import { DisconnectedScreen } from "../screens/Disconnected";
 import { UnknownScreen } from "../screens/Unknown";
-import { ArrowLeft, StepForward } from "lucide-solid";
+import { ArrowLeft, LogOut, StepForward } from "lucide-solid";
 
 const KINDS: TuiScreen["kind"][] = [
   "Menu",
@@ -105,6 +105,13 @@ export function DevScreens() {
                   <ArrowLeft />
                   {t().screenExit}
                 </button>
+
+                <button class="btn items-center" onClick={() => navigate("/")}>
+                  <LogOut />
+                  {t().logout}
+                </button>
+
+                
               </div>
             </div>
           </div>
