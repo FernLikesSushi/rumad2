@@ -23,6 +23,7 @@ const en: Messages = {
   developerMode: "Developer mode",
   settings: "Settings",
   madeWith: "Made with",
+  footerBio: "By a software engineer who loves sushi, cake and exploding kittens.",
   continueLabel: "Continue",
   screenExit: "Leave this screen",
   weeklyScheduleTitle: "Class Schedule",
