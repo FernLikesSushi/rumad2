@@ -2,8 +2,7 @@ import { createSignal } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { t } from "../i18n";
 import { runAction } from "../api";
-import { NoticeDialog } from "../components/NoticeDialog";
-import type { DialogBox } from "../types";
+import { NoticeDialog, createDialog } from "../components/NoticeDialog";
 import { Header } from "../components/Header";
 import { loadUsername, password } from "../username";
 import { PawPrint } from "lucide-solid";
@@ -17,7 +16,7 @@ import { PawPrint } from "lucide-solid";
 export function Connect() {
   const navigate = useNavigate();
   const [busy, setBusy] = createSignal(false);
-  const [dialogBox, setDialogBox] = createSignal<DialogBox | null>(null);
+  const { dialog: dialog, show: showDialog, close: closeDialog } = createDialog();
 
   async function connect(username: string, password: string) {
     setBusy(true);
@@ -30,7 +29,7 @@ export function Connect() {
       // "disconnect" does -- see `runAction`).
       if (result) navigate("/session");
     } catch (err) {
-      setDialogBox({ title: t().errorTitle, message: String(err) });
+      showDialog({ title: t().errorTitle, message: String(err) });
     } finally {
       setBusy(false);
     }
@@ -44,7 +43,7 @@ export function Connect() {
   return (
     <>
       <Header />
-      <NoticeDialog dialog={dialogBox()} onClose={() => setDialogBox(null)} />
+      <NoticeDialog dialog={dialog()} onClose={closeDialog} />
       <div class="flex flex-col items-center justify-center gap-4 flex-1">
         <button type="submit" class="btn btn-outline btn-primary max-w-md" disabled={busy()} onClick={submit}>
           {busy() ? t().connecting : t().connect}

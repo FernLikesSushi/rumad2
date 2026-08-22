@@ -5,8 +5,8 @@ import { listen } from "@tauri-apps/api/event";
 import { t } from "../i18n";
 import { runAction } from "../api";
 import { devMode, setDevMode } from "../devMode";
-import type { TuiScreen, ClassifiedScreen, DialogBox, Action, Send } from "../types";
-import { NoticeDialog } from "../components/NoticeDialog";
+import type { TuiScreen, ClassifiedScreen, Action, Send } from "../types";
+import { NoticeDialog, createDialog } from "../components/NoticeDialog";
 import { Spinner } from "../components/Spinner";
 import { Toggle } from "../components/Toggle";
 import { MenuScreen } from "../screens/MenuScreen";
@@ -33,7 +33,7 @@ import { Header } from '../components/Header';
 // own "PROCESO CONCLUIDO" (`Disconnected`'s "Reconectar").
 export function TuiRouter() {
   const navigate = useNavigate();
-  const [dialogBox, setDialogBox] = createSignal<DialogBox | null>(null);
+  const { dialog: dialogBox, show: showDialog, close: closeDialog } = createDialog();
 
   // set the initial command to get the current screen when the component mounts
   const [action, setAction] = createSignal<Action>({ cmd: "get_screen", args: {} });
@@ -95,12 +95,12 @@ export function TuiRouter() {
     if (response.loading) return;
     const err = response.error;
     if (err) {
-      setDialogBox({ title: t().errorTitle, message: String(err) });
+      showDialog({ title: t().errorTitle, message: String(err) });
       return;
     }
     const result = response();
     if (result?.dialog?.kind === "Notice") {
-      setDialogBox({ title: t().noticeTitle, message: result.dialog.message });
+      showDialog({ title: t().noticeTitle, message: result.dialog.message });
     }
   });
 
@@ -147,7 +147,7 @@ export function TuiRouter() {
     <>
       <Header disconnect={disconnect} />
 
-      <NoticeDialog dialog={dialogBox()} onClose={() => setDialogBox(null)} />
+      <NoticeDialog dialog={dialogBox()} onClose={closeDialog} />
 
       <Show when={screen()}>
         {(screen) => (
