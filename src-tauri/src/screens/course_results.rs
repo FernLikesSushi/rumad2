@@ -24,15 +24,31 @@ pub struct CourseSection {
     /// "S 121" -- building letter, room number) -- passed through as-is
     /// rather than split further.
     pub room: String,
+    /// Raw schedule string as printed in the table, e.g. "LWV      9:15-10:05"
     pub schedule: String,
-    pub credits: String,
+    pub credits: u8,
     pub professor: String,
-    pub capacity: String,
-    pub used: String,
-    /// Seats left, or a count with a trailing "-" meaning oversubscribed
-    /// by that many (e.g. "35-") -- passed through as-is rather than
-    /// parsed, since the sign carries meaning.
-    pub available: String,
+    pub capacity: u8,
+    pub used: u8,
+    /// Seats left, or negative when oversubscribed by that many (e.g. the
+    /// remote's own "35-" becomes -35).
+    pub available: i16,
+    /// `schedule` parsed into one entry per meeting day -- see
+    /// `parse_schedule`. Empty for "Por acuerdo" (by arrangement) sections
+    /// or anything else that doesn't match the expected shape.
+    pub meetings: Vec<Meeting>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Meeting {
+    /// ISO 8601 weekday number (Monday=1 .. Sunday=7).
+    pub day: u8,
+    /// Minutes since midnight, 24-hour -- see `parse_schedule`'s doc
+    /// comment for the am/pm heuristic.
+    /// 0 is midnight, 60 is 1:00am, 12*60=720 is noon, 13*60=780 is 1:00pm, etc.
+    pub start_minutes: u32,
+    pub end_minutes: u32,
 }
 
 /// Read-only search results for one course code, e.g. "C u r s o:  HIST
@@ -106,6 +122,84 @@ fn is_digits(s: &str) -> bool {
     !s.is_empty() && s.chars().all(|c| c.is_ascii_digit())
 }
 
+fn schedule_pattern() -> &'static Regex {
+    static PATTERN: OnceLock<Regex> = OnceLock::new();
+    PATTERN.get_or_init(|| {
+        Regex::new(r"(?i)^([LMWJVS]+)\s+(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})\s*(am|pm)?")
+            .unwrap()
+    })
+}
+
+/// L=Lunes M=Martes W=Miercoles J=Jueves V=Viernes S=Sabado -- "W" stands
+/// in for Miercoles since "M" is already Martes. Cross-checked against
+/// `screens/matricula/horario_confirmado.txt` and `horario_estimado.txt`:
+/// FILO4045's "LWV" and EDFI3645's "LW" there land on exactly the
+/// Lunes/Miercoles/Viernes columns of the real weekly grid; "S" for
+/// Sabado isn't itself exercised by either transcript but follows the
+/// same pattern. Returned as an ISO 8601 weekday number (Monday=1).
+fn iso_weekday(code: char) -> Option<u8> {
+    match code.to_ascii_uppercase() {
+        'L' => Some(1),
+        'M' => Some(2),
+        'W' => Some(3),
+        'J' => Some(4),
+        'V' => Some(5),
+        'S' => Some(6),
+        _ => None,
+    }
+}
+
+fn resolve_hour(hour: u32, force_pm: bool) -> u32 {
+    if hour == 12 {
+        12
+    } else if force_pm {
+        hour + 12
+    } else {
+        hour
+    }
+}
+
+/// Parses `schedule` (e.g. "MJ       8:00- 9:15", "LWV     12:15- 1:05pm")
+/// into one `Meeting` per day letter. "Por acuerdo" (by arrangement) and
+/// anything else that doesn't match yields an empty list.
+///
+/// Only one am/pm marker ever appears, trailing the end time, and doesn't
+/// always apply to the start time too -- e.g. "10:15- 1:05pm" (a real
+/// `horario_resultados_laboratorio.txt` row) is 10:15am-1:05pm, not
+/// 10:15pm. Resolved by comparing the raw start/end hour digits: if
+/// start > end (and neither is 12), the range crosses noon, so the start
+/// stays AM and only the end becomes PM regardless of the marker;
+/// otherwise the marker (if any) applies to both. `hour == 12` always
+/// means noon on its own since these schedules never run past midnight.
+/// Verified against every schedule string in this module's real
+/// transcripts.
+fn parse_schedule(schedule: &str) -> Vec<Meeting> {
+    let Some(captures) = schedule_pattern().captures(schedule) else {
+        return Vec::new();
+    };
+    let days = &captures[1];
+    let start_hour: u32 = captures[2].parse().unwrap_or(0);
+    let start_min: u32 = captures[3].parse().unwrap_or(0);
+    let end_hour: u32 = captures[4].parse().unwrap_or(0);
+    let end_min: u32 = captures[5].parse().unwrap_or(0);
+    let marker_pm = captures
+        .get(6)
+        .is_some_and(|m| m.as_str().eq_ignore_ascii_case("pm"));
+
+    let crosses_noon = start_hour != 12 && end_hour != 12 && start_hour > end_hour;
+    let start_minutes = resolve_hour(start_hour, !crosses_noon && marker_pm) * 60 + start_min;
+    let end_minutes = resolve_hour(end_hour, marker_pm || crosses_noon) * 60 + end_min;
+
+    days.chars()
+        .filter_map(iso_weekday)
+        .map(|day| Meeting {
+            day,
+            start_minutes,
+            end_minutes,
+        })
+        .collect()
+}
+
 /// Parses one line as a section row, rejecting anything that isn't one
 /// (header, separator, "* Totales" summary, blank lines) by requiring
 /// digits to actually land in the credits/capacity/used/available
@@ -126,15 +220,23 @@ fn parse_section_row(line: &str) -> Option<CourseSection> {
         return None;
     }
 
+    let schedule = column(&chars, SCHEDULE_COL);
+    let meetings = parse_schedule(&schedule);
+    let available: i16 = match available.strip_suffix('-') {
+        Some(digits) => -digits.parse::<i16>().unwrap_or(0),
+        None => available.parse().unwrap_or(0),
+    };
+
     Some(CourseSection {
         section,
         room: column(&chars, ROOM_COL),
-        schedule: column(&chars, SCHEDULE_COL),
-        credits,
+        schedule,
+        credits: credits.parse().unwrap_or(0),
         professor: column(&chars, PROFESSOR_COL),
-        capacity,
-        used,
+        capacity: capacity.parse().unwrap_or(0),
+        used: used.parse().unwrap_or(0),
         available,
+        meetings,
     })
 }
 
@@ -174,11 +276,15 @@ mod tests {
                 section: "032".to_string(),
                 room: "CH316".to_string(),
                 schedule: "MJ       8:00- 9:15".to_string(),
-                credits: "3".to_string(),
+                credits: 3,
                 professor: "NOEMI TORRES VEGA".to_string(),
-                capacity: "32".to_string(),
-                used: "32".to_string(),
-                available: "00".to_string(),
+                capacity: 32,
+                used: 32,
+                available: 0,
+                meetings: vec![
+                    Meeting { day: 2, start_minutes: 8 * 60, end_minutes: 9 * 60 + 15 },
+                    Meeting { day: 4, start_minutes: 8 * 60, end_minutes: 9 * 60 + 15 },
+                ],
             }]
         );
     }
@@ -202,13 +308,60 @@ mod tests {
         assert_eq!(por_acuerdo.room, "");
         assert_eq!(por_acuerdo.schedule, "Por acuerdo");
         assert_eq!(por_acuerdo.professor, "ANGEL MORALES CRUZ");
-        assert_eq!(por_acuerdo.available, "35-");
+        assert_eq!(por_acuerdo.available, -35);
+        assert_eq!(por_acuerdo.meetings, vec![]);
 
         let scheduled = &sections[1];
         assert_eq!(scheduled.section, "025");
         assert_eq!(scheduled.room, "CH318A");
         assert_eq!(scheduled.schedule, "LWV      9:15-10:05");
         assert_eq!(scheduled.professor, "RAMON DIAZ MELENDEZ");
+        assert_eq!(
+            scheduled.meetings,
+            vec![
+                Meeting {
+                    day: 1,
+                    start_minutes: 9 * 60 + 15,
+                    end_minutes: 10 * 60 + 5
+                },
+                Meeting {
+                    day: 3,
+                    start_minutes: 9 * 60 + 15,
+                    end_minutes: 10 * 60 + 5
+                },
+                Meeting {
+                    day: 5,
+                    start_minutes: 9 * 60 + 15,
+                    end_minutes: 10 * 60 + 5
+                },
+            ]
+        );
+
+        // "055" ("LWV     12:15- 1:05pm") crosses noon with an explicit
+        // marker -- both start (forced noon via hour==12) and end become
+        // PM.
+        let crosses_noon_marked = &sections[3];
+        assert_eq!(crosses_noon_marked.section, "055");
+        assert_eq!(
+            crosses_noon_marked.meetings,
+            vec![
+                Meeting {
+                    day: 1,
+                    start_minutes: 12 * 60 + 15,
+                    end_minutes: 13 * 60 + 5
+                },
+                Meeting {
+                    day: 3,
+                    start_minutes: 12 * 60 + 15,
+                    end_minutes: 13 * 60 + 5
+                },
+                Meeting {
+                    day: 5,
+                    start_minutes: 12 * 60 + 15,
+                    end_minutes: 13 * 60 + 5
+                },
+            ]
+        );
     }
 
     #[test]
@@ -229,11 +382,23 @@ mod tests {
                 section: "101 *".to_string(),
                 room: "EE204".to_string(),
                 schedule: "LW       4:00- 5:15pm".to_string(),
-                credits: "3".to_string(),
+                credits: 3,
                 professor: String::new(),
-                capacity: "45".to_string(),
-                used: "45".to_string(),
-                available: "00".to_string(),
+                capacity: 45,
+                used: 45,
+                available: 0,
+                meetings: vec![
+                    Meeting {
+                        day: 1,
+                        start_minutes: 16 * 60,
+                        end_minutes: 17 * 60 + 15
+                    },
+                    Meeting {
+                        day: 3,
+                        start_minutes: 16 * 60,
+                        end_minutes: 17 * 60 + 15
+                    },
+                ],
             }]
         );
     }
@@ -256,18 +421,31 @@ mod tests {
         assert_eq!(first.section, "015L*");
         assert_eq!(first.room, "L 210");
         assert_eq!(first.schedule, "W        8:15- 9:05");
-        assert_eq!(first.credits, "0");
+        assert_eq!(first.credits, 0);
         assert_eq!(first.professor, "");
-        assert_eq!(first.capacity, "28");
-        assert_eq!(first.used, "17");
-        assert_eq!(first.available, "11");
+        assert_eq!(first.capacity, 28);
+        assert_eq!(first.used, 17);
+        assert_eq!(first.available, 11);
+        assert_eq!(
+            first.meetings,
+            vec![Meeting { day: 3, start_minutes: 8 * 60 + 15, end_minutes: 9 * 60 + 5 }]
+        );
 
         let second = &sections[1];
         assert_eq!(second.section, "016L*");
         assert_eq!(second.room, "L 208A");
 
+        // "055L*" ("W       10:15- 1:05pm") crosses noon without a marker
+        // on the start -- 10:15am, not 10:15pm.
+        let crosses_noon = &sections[4];
+        assert_eq!(crosses_noon.section, "055L*");
+        assert_eq!(
+            crosses_noon.meetings,
+            vec![Meeting { day: 3, start_minutes: 10 * 60 + 15, end_minutes: 13 * 60 + 5 }]
+        );
+
         let oversubscribed = &sections[5];
         assert_eq!(oversubscribed.section, "056L*");
-        assert_eq!(oversubscribed.available, "13-");
+        assert_eq!(oversubscribed.available, -13);
     }
 }
