@@ -69,6 +69,7 @@
 //! this file rather than being scattered, since they need every
 //! submodule's detection hint in one place to reason about.
 
+mod confirmed_schedule;
 mod course_results;
 mod interact;
 mod login;
@@ -88,6 +89,7 @@ use serde::Serialize;
 // Field types like `CourseSection` are included even though nothing inside
 // this crate names them directly: an external caller needs them to do
 // anything with e.g. `CourseResultsScreen.sections`.
+pub use confirmed_schedule::{ConfirmedCourse, ConfirmedScheduleScreen};
 pub use course_results::{CourseResultsScreen, CourseSection};
 pub(crate) use interact::RumadScreen;
 pub use login::{LoginField, LoginScreen};
@@ -145,6 +147,13 @@ pub enum TuiScreen {
     /// professor/capacity). Not the student's own schedule, just a
     /// lookup.
     CourseResults(CourseResultsScreen),
+    /// The student's confirmed enrollment (`Matricula`'s own
+    /// "[CONFIRMADA]" report): one row per enrolled course with its
+    /// section/credits/room/schedule/professor. Distinct from
+    /// `CourseResults` (every section of one course, a lookup) and
+    /// `Matricula` (the interactive course list, no room/schedule/
+    /// professor data).
+    ConfirmedSchedule(ConfirmedScheduleScreen),
     /// The student's own schedule as a weekly day/time grid (`MENU
     /// DESPLIEGUE` -> "Horario de matricula grafico") -- purely
     /// informational, unlike `Matricula`'s interactive course list.
@@ -173,6 +182,7 @@ impl TuiScreen {
             TuiScreen::Login(s) => Some(s),
             TuiScreen::Matricula(s) => Some(s),
             TuiScreen::CourseResults(s) => Some(s),
+            TuiScreen::ConfirmedSchedule(s) => Some(s),
             TuiScreen::WeeklySchedule(s) => Some(s),
             TuiScreen::Search(s) => Some(s),
             TuiScreen::Unknown(s) => Some(s),
@@ -317,6 +327,10 @@ fn classify_screen(raw: &str) -> TuiScreen {
             course_title,
             sections: course_results::scrape_sections(raw),
         });
+    }
+
+    if raw.contains(confirmed_schedule::DETECT_HINT) {
+        return TuiScreen::ConfirmedSchedule(confirmed_schedule::scrape(raw));
     }
 
     if weekly_schedule::detect(raw) {
@@ -545,18 +559,18 @@ UNIVERSIDAD DE PUERTO RICO
         assert_eq!(result.dialog, Some(Dialog::Processing));
     }
 
-    // `HORARIO_CONFIRMADO`/`RESERVA` are real (redacted) transcripts
-    // captured for a flow that isn't specifically modeled yet -- per this
-    // module's own doc comment, `TuiScreen` variants only get written
-    // against a real transcript, never guessed ahead of one being
-    // captured. That test locks in that `classify` still handles them
-    // gracefully (no panic, `Unknown` with the raw text preserved) rather
-    // than misfiring into an unrelated variant on some incidental
-    // substring match. Everything else below *is* modeled now (each
-    // owns its own classification tests in its own submodule) but stays
-    // listed here for the shared "not MainMenu" cross-check.
-    const HORARIO_CONFIRMADO: &str =
-        include_str!("../../../screens/matricula/horario_confirmado.txt");
+    // `RESERVA` is a real (redacted) transcript captured for a flow that
+    // isn't specifically modeled yet -- per this module's own doc
+    // comment, `TuiScreen` variants only get written against a real
+    // transcript, never guessed ahead of one being captured. That test
+    // locks in that `classify` still handles it gracefully (no panic,
+    // `Unknown` with the raw text preserved) rather than misfiring into
+    // an unrelated variant on some incidental substring match.
+    // `horario_confirmado.txt` used to sit alongside it here too, but is
+    // now modeled as `ConfirmedSchedule` (see `confirmed_schedule.rs`'s
+    // own classification test). Everything else below *is* modeled now
+    // (each owns its own classification tests in its own submodule) but
+    // stays listed here for the shared "not MainMenu" cross-check.
     const RESERVA: &str = include_str!("../../../screens/matricula/reserva.txt");
     const MENU_DESPLIEGUE: &str = include_str!("../../../screens/menu_despliegue/menu.txt");
     const HORARIO_SEMESTRE: &str =
@@ -573,16 +587,10 @@ UNIVERSIDAD DE PUERTO RICO
 
     #[test]
     fn unmodeled_matricula_screens_fall_back_to_unknown() {
-        // Neither shares the `M A T R I C U L A` (spaced) banner
-        // `classify` keys off of -- `horario_confirmado.txt`'s own header
-        // renders it unspaced ("* MATRICULA ... *"), so it must not
-        // accidentally match.
-        for raw in [HORARIO_CONFIRMADO, RESERVA] {
-            let TuiScreen::Unknown(UnknownScreen { raw: got, .. }) = classify(raw).screen else {
-                panic!("expected Unknown for:\n{raw}");
-            };
-            assert_eq!(got, raw);
-        }
+        let TuiScreen::Unknown(UnknownScreen { raw: got, .. }) = classify(RESERVA).screen else {
+            panic!("expected Unknown for:\n{RESERVA}");
+        };
+        assert_eq!(got, RESERVA);
     }
 
     #[test]

@@ -34,6 +34,7 @@ const es: Messages = {
   continueLabel: "Continuar",
   screenExit: "Salir de esta pantalla",
   weeklyScheduleTitle: "Horario de Matricula",
+  weekdaysShort: ["Lun", "Mar", "Mie", "Jue", "Vie", "Sab"],
   // "Alta"/"Baja"/"Cambio"/"Salir" are already ordinary Spanish words, so
   // those fall back to the raw label -- but "HorEst"/"EvaluoPago"/
   // "MatEvaluo"/"HorEstGrafico"/"CodigoReservar" are squished CamelCase
@@ -93,6 +94,8 @@ const es: Messages = {
     available: "Disp.",
   },
   weeklyScheduleColumns: { period: "Periodos" },
+  confirmedScheduleTitle: "Horario Confirmado",
+  confirmedScheduleColumns: { course: "Curso", section: "Seccion", credits: "Cr.", room: "Salon", professor: "Profesor" },
 };
 
 export default es;

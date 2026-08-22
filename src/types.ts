@@ -21,6 +21,15 @@ export type CourseSection = {
   meetings: Meeting[];
 };
 
+export type ConfirmedCourse = {
+  course: string;
+  section: string;
+  credits: number;
+  room: string;
+  professor: string;
+  meetings: Meeting[];
+};
+
 export type ScheduleRow = { period: string; days: string[] };
 
 // Mirrors Rust's `MenuKind`/`SearchKind` 
@@ -32,6 +41,7 @@ export type TuiScreen =
   | { kind: "Login"; fields: LoginField[] }
   | { kind: "Matricula"; courses: ScheduleCourse[]; mode: MatriculaMode }
   | { kind: "CourseResults"; courseCode: string; courseTitle: string; sections: CourseSection[] }
+  | { kind: "ConfirmedSchedule"; courses: ConfirmedCourse[] }
   | { kind: "WeeklySchedule"; days: string[]; rows: ScheduleRow[] }
   | { kind: "Search"; search: SearchKind }
   | { kind: "Disconnected" }

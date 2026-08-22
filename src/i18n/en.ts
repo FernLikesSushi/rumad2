@@ -30,6 +30,7 @@ const en: Messages = {
   continueLabel: "Continue",
   screenExit: "Leave this screen",
   weeklyScheduleTitle: "Class Schedule",
+  weekdaysShort: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
   // Grounded in screens/matricula/select.txt's own footer ("Indique:
   // A=Alta B=Baja C=Cambio H=HorEst P=EvaluoPago M=MatEvaluo
   // F=HorEstGrafico O=CodigoReservar S=Salir") plus the matching MENU
@@ -120,6 +121,8 @@ const en: Messages = {
     available: "Avail.",
   },
   weeklyScheduleColumns: { period: "Period" },
+  confirmedScheduleTitle: "Confirmed Schedule",
+  confirmedScheduleColumns: { course: "Course", section: "Section", credits: "Cr.", room: "Room", professor: "Professor" },
 };
 
 export default en;
