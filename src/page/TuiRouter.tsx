@@ -17,7 +17,7 @@ import { WeeklyScheduleScreen } from "../screens/WeeklySchedule";
 import { SearchScreen } from "../screens/SearchScreen";
 import { DisconnectedScreen } from "../screens/Disconnected";
 import { UnknownScreen } from "../screens/Unknown";
-import { ArrowLeft, LogOut, Settings } from "lucide-solid";
+import { ArrowLeft, LogOut, Settings, StepForward } from "lucide-solid";
 import { Header } from '../components/Header';
 
 // Owns the TUI session's state once connected -- the send/login/disconnect
@@ -51,6 +51,11 @@ export function TuiRouter() {
     return response()?.canExit ?? prev;
   }, false);
 
+  const canContinue = createMemo<boolean>((prev) => {
+    if (response.loading || response.error) return prev;
+    return response()?.canContinue ?? prev;
+  }, false);
+
   createEffect(() => {
     if (response.loading) return;
     const err = response.error;
@@ -68,6 +73,10 @@ export function TuiRouter() {
 
   function exitScreen() {
     send({ kind: "Exit" });
+  }
+
+  function continueScreen() {
+    send({ kind: "Continue" });
   }
 
   function login(idNumber: string, accessCode: string, ssnLast4: string, birthDate: string) {
@@ -153,13 +162,22 @@ export function TuiRouter() {
               </Match>
             </Switch>
 
-            <div class="flex justify-center">
-              <Show when={canExit()}>
-                <button class="btn gap-2 items-center" disabled={busy()} onClick={exitScreen}>
-                  <ArrowLeft />
-                  {t().screenExit}
-                </button>
-              </Show>
+            <div class="flex flex-col items-center gap-2.5 py-16">
+              <div class="grid grid-cols-2 grid-rows-1 justify-center gap-4 ">
+                <Show when={canContinue()} fallback={<div />} keyed>
+                  <button class="btn btn-outline btn-primary" disabled={busy()} onClick={continueScreen}>
+                    <StepForward />
+                    {t().continueLabel}
+                  </button>
+                </Show>
+
+                <Show when={canExit()} fallback={<div />} keyed>
+                  <button class="btn items-center" disabled={busy()} onClick={exitScreen}>
+                    <ArrowLeft />
+                    {t().screenExit}
+                  </button>
+                </Show>
+              </div>
             </div>
           </div>
         )}

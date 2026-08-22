@@ -95,6 +95,7 @@ fn handle_scene_change(guard: &mut Option<TuiSession>) -> Result<ClassifiedScree
             screen: TuiScreen::Disconnected,
             dialog: None,
             can_exit: false,
+            can_continue: false,
         };
     }
     clear_if_disconnected(guard, &result);
