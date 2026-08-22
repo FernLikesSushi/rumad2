@@ -9,16 +9,19 @@ import { MenuScreen } from "../screens/MenuScreen";
 import { LoginScreen } from "../screens/Login";
 import { MatriculaScreen } from "../screens/Matricula";
 import { CourseResultsScreen } from "../screens/CourseResults";
+import { ConfirmedScheduleScreen } from "../screens/ConfirmedSchedule";
 import { WeeklyScheduleScreen } from "../screens/WeeklySchedule";
 import { SearchScreen } from "../screens/SearchScreen";
 import { DisconnectedScreen } from "../screens/Disconnected";
 import { UnknownScreen } from "../screens/Unknown";
+import { ArrowLeft, StepForward } from "lucide-solid";
 
 const KINDS: TuiScreen["kind"][] = [
   "Menu",
   "Login",
   "Matricula",
   "CourseResults",
+  "ConfirmedSchedule",
   "WeeklySchedule",
   "Search",
   "Disconnected",
@@ -74,6 +77,9 @@ export function DevScreens() {
               <Match when={kind() === "CourseResults"}>
                 <CourseResultsScreen screen={mockScreens.CourseResults} busy={false} send={send} />
               </Match>
+              <Match when={kind() === "ConfirmedSchedule"}>
+                <ConfirmedScheduleScreen screen={mockScreens.ConfirmedSchedule} busy={false} send={send} />
+              </Match>
               <Match when={kind() === "WeeklySchedule"}>
                 <WeeklyScheduleScreen screen={mockScreens.WeeklySchedule} busy={false} send={send} />
               </Match>
@@ -87,6 +93,20 @@ export function DevScreens() {
                 <UnknownScreen screen={mockScreens.Unknown} busy={false} send={send} />
               </Match>
             </Switch>
+
+            <div class="flex flex-col items-center gap-2.5 py-16">
+              <div class="flex flex-col justify-center gap-4">
+                <button class="btn btn-outline btn-primary" onClick={() => console.log("[dev] continue")}>
+                  <StepForward />
+                  {t().continueLabel}
+                </button>
+
+                <button class="btn items-center" onClick={() => console.log("[dev] exit")}>
+                  <ArrowLeft />
+                  {t().screenExit}
+                </button>
+              </div>
+            </div>
           </div>
         </Match>
       </Switch>

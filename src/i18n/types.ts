@@ -33,6 +33,10 @@ export interface Messages {
   continueLabel: string;
   screenExit: string;
   weeklyScheduleTitle: string;
+  // Short weekday labels for `WeekCalendar`, indexed by ISO 8601 weekday
+  // (Monday=1) minus one -- [Mon, Tue, Wed, Thu, Fri, Sat]. No Sunday
+  // entry since the remote's own schedules never include one.
+  weekdaysShort: [string, string, string, string, string, string];
   // Keyed by the remote's own raw label text (e.g. "HorEst",
   // "CodigoReservar") for options this app localizes despite them coming
   // from the remote (Matricula's Actions prompt) -- an open-ended lookup,
@@ -102,4 +106,6 @@ export interface Messages {
     available: string;
   };
   weeklyScheduleColumns: { period: string };
+  confirmedScheduleTitle: string;
+  confirmedScheduleColumns: { course: string; section: string; credits: string; room: string; professor: string };
 }

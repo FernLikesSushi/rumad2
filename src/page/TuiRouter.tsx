@@ -13,6 +13,7 @@ import { MenuScreen } from "../screens/MenuScreen";
 import { LoginScreen } from "../screens/Login";
 import { MatriculaScreen } from "../screens/Matricula";
 import { CourseResultsScreen } from "../screens/CourseResults";
+import { ConfirmedScheduleScreen } from "../screens/ConfirmedSchedule";
 import { WeeklyScheduleScreen } from "../screens/WeeklySchedule";
 import { SearchScreen } from "../screens/SearchScreen";
 import { DisconnectedScreen } from "../screens/Disconnected";
@@ -137,6 +138,14 @@ export function TuiRouter() {
                 />
               </Match>
 
+              <Match when={screen().kind === "ConfirmedSchedule"}>
+                <ConfirmedScheduleScreen
+                  screen={screen() as Extract<TuiScreen, { kind: "ConfirmedSchedule" }>}
+                  busy={busy()}
+                  send={send}
+                />
+              </Match>
+
               <Match when={screen().kind === "WeeklySchedule"}>
                 <WeeklyScheduleScreen
                   screen={screen() as Extract<TuiScreen, { kind: "WeeklySchedule" }>}
@@ -163,7 +172,7 @@ export function TuiRouter() {
             </Switch>
 
             <div class="flex flex-col items-center gap-2.5 py-16">
-              <div class="flex flex-coljustify-center gap-4 ">
+              <div class="flex flex-col justify-center gap-4 ">
                 <Show when={canContinue()} keyed>
                   <button class="btn btn-outline btn-primary" disabled={busy()} onClick={continueScreen}>
                     <StepForward />
