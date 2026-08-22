@@ -66,13 +66,13 @@ fn resolve_hour(hour: u32, force_pm: bool) -> u32 {
 /// Only one am/pm marker ever appears, trailing the end time, and doesn't
 /// always apply to the start time too -- e.g. "10:15- 1:05pm" (a real
 /// `horario_resultados_laboratorio.txt` row) is 10:15am-1:05pm, not
-/// 10:15pm. Resolved by comparing the raw start/end hour digits: if
-/// start > end (and neither is 12), the range crosses noon, so the start
-/// stays AM and only the end becomes PM regardless of the marker;
-/// otherwise the marker (if any) applies to both. `hour == 12` always
-/// means noon on its own since these schedules never run past midnight.
-/// Verified against every schedule string in `course_results.rs`'s and
-/// `confirmed_schedule.rs`'s real transcripts.
+/// 10:15pm, and "10:30-12:20pm" is 10:30am-12:20pm,
+/// not 10:30pm. Resolved by first resolving the end hour (the marker, if
+/// any, always applies there; `hour == 12` always means noon regardless of
+/// the marker), then applying that same marker to the start hour only if
+/// doing so keeps start <= end -- otherwise the start stays in its
+/// unmarked form. Verified against every schedule string in
+/// `course_results.rs`'s and `confirmed_schedule.rs`'s real transcripts.
 pub(super) fn parse_schedule(schedule: &str) -> Vec<Meeting> {
     let Some(captures) = schedule_pattern().captures(schedule) else {
         return Vec::new();
@@ -86,9 +86,14 @@ pub(super) fn parse_schedule(schedule: &str) -> Vec<Meeting> {
         .get(6)
         .is_some_and(|m| m.as_str().eq_ignore_ascii_case("pm"));
 
-    let crosses_noon = start_hour != 12 && end_hour != 12 && start_hour > end_hour;
-    let start_minutes = resolve_hour(start_hour, !crosses_noon && marker_pm) * 60 + start_min;
-    let end_minutes = resolve_hour(end_hour, marker_pm || crosses_noon) * 60 + end_min;
+    let end_minutes = resolve_hour(end_hour, marker_pm) * 60 + end_min;
+    let start_with_marker = resolve_hour(start_hour, marker_pm) * 60 + start_min;
+    let start_without_marker = resolve_hour(start_hour, false) * 60 + start_min;
+    let start_minutes = if marker_pm && start_with_marker <= end_minutes {
+        start_with_marker
+    } else {
+        start_without_marker
+    };
 
     days.chars()
         .filter_map(iso_weekday)
@@ -168,5 +173,26 @@ fn push_equals_option(options: &mut Vec<MenuOption>, key: &str, words: Vec<&str>
             key: key.to_string(),
             label: label.to_string(),
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn schedule_ending_at_noon_does_not_push_start_into_pm() {
+        // Regression: end_hour == 12 was excluded from the old
+        // "crosses noon" check, so the pm marker got applied to both
+        // ends and 10:30am became 10:30pm. FISI3171 section 040 on a
+        // real transcript: "LW      10:30-12:20pm".
+        let meetings = parse_schedule("LW      10:30-12:20pm");
+        assert_eq!(
+            meetings,
+            vec![
+                Meeting { day: 1, start_minutes: 10 * 60 + 30, end_minutes: 12 * 60 + 20 },
+                Meeting { day: 3, start_minutes: 10 * 60 + 30, end_minutes: 12 * 60 + 20 },
+            ]
+        );
     }
 }
