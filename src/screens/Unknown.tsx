@@ -2,7 +2,6 @@ import { createSignal, Show } from "solid-js";
 import { t } from "../i18n";
 import { devMode } from "../devMode";
 import { OptionButtons } from "../components/OptionButtons";
-import { FreeTextForm } from "../components/FreeTextForm";
 import { createKeyboardListener } from "../components/KeyboardListener";
 import type { TuiScreenComponentProps } from "../types";
 
@@ -19,8 +18,8 @@ export function UnknownScreen(props: TuiScreenComponentProps<"Unknown">) {
     }
   });
 
-  function submit(text: string) {
-    props.send({ kind: "Line", text });
+  function submit() {
+    props.send({ kind: "Line", text: freeText() });
     setFreeText("");
   }
 
@@ -31,7 +30,18 @@ export function UnknownScreen(props: TuiScreenComponentProps<"Unknown">) {
         <pre class="bg-base-200 p-3 rounded-box overflow-x-auto text-sm whitespace-pre">{props.screen.raw}</pre>
       </Show>
       <OptionButtons options={props.screen.options} busy={props.busy} onChoose={choose} menu="Unknown" />
-      <FreeTextForm value={freeText()} onInput={setFreeText} onSubmit={submit} busy={props.busy} />
+      <div class="flex justify-center">
+        <input
+          class="input"
+          placeholder={t().sendPlaceholder}
+          value={freeText()}
+          onInput={(e) => setFreeText(e.currentTarget.value)}
+          onKeyDown={(e) => e.key === "Enter" && submit()}
+        />
+        <button type="button" class="btn btn-outline btn-primary" disabled={props.busy} onClick={submit}>
+          {t().send}
+        </button>
+      </div>
     </>
   );
 }
