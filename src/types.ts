@@ -86,6 +86,18 @@ export type SendAction =
 // actually do, rather than `commands/interact.rs` deciding that for them.
 export type Send = (action: SendAction) => void;
 
+// Shared prop shape for every screen component that renders a specific
+// `TuiScreen` variant (everything `TuiRouter`'s `Switch`/`Match` dispatches
+// to except `LoginScreen`/`DisconnectedScreen`, whose kinds carry no data)
+// -- `screen` is narrowed to just that variant via `T`, so the component
+// destructures its own fields off `props.screen` instead of `TuiRouter`
+// unpacking them into separate named props.
+export type TuiScreenComponentProps<T extends TuiScreen["kind"]> = {
+  screen: Extract<TuiScreen, { kind: T }>;
+  busy: boolean;
+  send: Send;
+};
+
 export type Action =
   | { cmd: "connect"; args: { username?: string; password?: string } }
   | { cmd: "send"; args: { action: SendAction } }

@@ -1,8 +1,8 @@
 import { For } from "solid-js";
 import { t } from "../i18n";
-import type { ScheduleRow, Send } from "../types";
+import type { TuiScreenComponentProps } from "../types";
 
-export function WeeklyScheduleScreen(props: { days: string[]; rows: ScheduleRow[]; busy: boolean; send: Send }) {
+export function WeeklyScheduleScreen(props: TuiScreenComponentProps<"WeeklySchedule">) {
   // Read-only grid: nothing to select, just "Enter to continue" -- no
   // confirmed exit keystroke to offer a button for (see `RumadScreen for
   // WeeklyScheduleScreen` in the backend).
@@ -18,11 +18,11 @@ export function WeeklyScheduleScreen(props: { days: string[]; rows: ScheduleRow[
           <thead>
             <tr>
               <th>{t().weeklyScheduleColumns.period}</th>
-              <For each={props.days}>{(day) => <th>{day}</th>}</For>
+              <For each={props.screen.days}>{(day) => <th>{day}</th>}</For>
             </tr>
           </thead>
           <tbody>
-            <For each={props.rows}>
+            <For each={props.screen.rows}>
               {(row) => (
                 <tr>
                   <td>{row.period}</td>

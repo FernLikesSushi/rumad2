@@ -3,26 +3,21 @@ import { t, localizeButton } from "../i18n";
 import { OptionButtons } from "../components/OptionButtons";
 import { FreeTextForm } from "../components/FreeTextForm";
 import { CourseTable } from "../components/CourseTable";
-import type { ScheduleCourse, MatriculaMode, Send } from "../types";
+import type { TuiScreenComponentProps } from "../types";
 import { createKeyboardListener } from "../components/KeyboardListener";
 
 // Bajas/Altas/Cambio all show the same "course abbreviation, or FIN" free-
 // text prompt -- only the [Bajas]/[Altas]/[Cambio] tag differs on-screen.
 const FREE_TEXT_MODES = new Set(["Bajas", "Altas", "Cambio"]);
 
-export function MatriculaScreen(props: {
-  courses: ScheduleCourse[];
-  mode: MatriculaMode;
-  busy: boolean;
-  send: Send;
-}) {
+export function MatriculaScreen(props: TuiScreenComponentProps<"Matricula">) {
   const [freeText, setFreeText] = createSignal("");
-  
+
   // Only the "Actions" mode actually carries `options` -- Bajas/Altas/
   // Cambio don't, and the keyboard listener below reads this on every
   // keypress regardless of the current mode, so this must stay a real
   // array (not undefined) even outside "Actions".
-  const options = createMemo(() => (props.mode.kind === "Actions" ? props.mode.options : []));
+  const options = createMemo(() => (props.screen.mode.kind === "Actions" ? props.screen.mode.options : []));
 
   // Keyboard listener for menu option selection
   createKeyboardListener((key) => {
@@ -50,13 +45,13 @@ export function MatriculaScreen(props: {
   return (
     <>
       <h2>{t().matriculaTitle}</h2>
-      <CourseTable courses={props.courses} />
+      <CourseTable courses={props.screen.courses} />
 
-      <Show when={props.mode.kind === "Actions"}>
+      <Show when={props.screen.mode.kind === "Actions"}>
         <OptionButtons options={localizedActions()} busy={props.busy} onChoose={choose} hideKey />
       </Show>
 
-      <Show when={FREE_TEXT_MODES.has(props.mode.kind)}>
+      <Show when={FREE_TEXT_MODES.has(props.screen.mode.kind)}>
         <FreeTextForm value={freeText()} onInput={setFreeText} onSubmit={submit} busy={props.busy} />
       </Show>
     </>
