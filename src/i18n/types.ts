@@ -15,6 +15,7 @@ export interface Messages {
   unknownHint: string;
   sendPlaceholder: string;
   send: string;
+  login: string;
   logout: string;
   errorTitle: string;
   noticeTitle: string;

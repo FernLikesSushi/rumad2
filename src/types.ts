@@ -20,13 +20,7 @@ export type CourseSection = {
 
 export type ScheduleRow = { period: string; days: string[] };
 
-// Mirrors Rust's `MenuKind`/`SearchKind` -- which of the four numbered/
-// lettered menus, or which of the two bare free-text searches, a given
-// `Menu`/`Search` screen is. Both Rust structs share one shape across
-// every kind (see `MenuScreen`/`SearchScreen`'s own doc comments); only
-// the frontend's title/hint text differs per kind, picked by the
-// component itself rather than threaded in from the backend (same
-// tradeoff as `Login`'s fields -- fixed, known text, not scraped data).
+// Mirrors Rust's `MenuKind`/`SearchKind` 
 export type MenuKind = "MainMenu" | "MenuDespliegue" | "SelectPeriod" | "HorarioSemester";
 export type SearchKind = "HorarioCurso" | "HorarioSeccion";
 

@@ -48,7 +48,7 @@ export function MatriculaScreen(props: TuiScreenComponentProps<"Matricula">) {
       <CourseTable courses={props.screen.courses} />
 
       <Show when={props.screen.mode.kind === "Actions"}>
-        <OptionButtons options={localizedActions()} busy={props.busy} onChoose={choose} hideKey />
+        <OptionButtons options={localizedActions()} busy={props.busy} onChoose={choose} menu="Matricula" hideKey />
       </Show>
 
       <Show when={FREE_TEXT_MODES.has(props.screen.mode.kind)}>
