@@ -7,15 +7,18 @@ export type MatriculaMode =
   | { kind: "Altas" }
   | { kind: "Cambio" };
 
+export type Meeting = { day: number; startMinutes: number; endMinutes: number };
+
 export type CourseSection = {
   section: string;
   room: string;
   schedule: string;
-  credits: string;
+  credits: number;
   professor: string;
-  capacity: string;
-  used: string;
-  available: string;
+  capacity: number;
+  used: number;
+  available: number;
+  meetings: Meeting[];
 };
 
 export type ScheduleRow = { period: string; days: string[] };
