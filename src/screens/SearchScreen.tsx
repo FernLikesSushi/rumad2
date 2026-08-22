@@ -1,9 +1,9 @@
 import { createSignal } from "solid-js";
 import { t } from "../i18n";
 import { FreeTextForm } from "../components/FreeTextForm";
-import type { SearchKind, Send } from "../types";
+import type { TuiScreenComponentProps } from "../types";
 
-export function SearchScreen(props: { search: SearchKind; busy: boolean; send: Send }) {
+export function SearchScreen(props: TuiScreenComponentProps<"Search">) {
   const [text, setText] = createSignal("");
 
   function submit(text: string) {
@@ -14,7 +14,7 @@ export function SearchScreen(props: { search: SearchKind; busy: boolean; send: S
   return (
     <>
       <h2>{t().horarioMatriculaTitle}</h2>
-      <p class="text-[0.85em] opacity-75">{t().searchHints[props.search]}</p>
+      <p class="text-[0.85em] opacity-75">{t().searchHints[props.screen.search]}</p>
       <FreeTextForm value={text()} onInput={setText} onSubmit={submit} busy={props.busy} />
     </>
   );

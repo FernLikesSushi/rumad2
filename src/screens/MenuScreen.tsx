@@ -1,16 +1,16 @@
 import { createMemo } from "solid-js";
 import { t, localizeButton } from "../i18n";
 import { OptionButtons } from "../components/OptionButtons";
-import type { MenuKind, MenuOption, Send } from "../types";
+import type { TuiScreenComponentProps } from "../types";
 import { createKeyboardListener } from "../components/KeyboardListener";
 
-export function MenuScreen(props: { menu: MenuKind; options: MenuOption[]; busy: boolean; send: Send }) {
+export function MenuScreen(props: TuiScreenComponentProps<"Menu">) {
   function choose(key: string) {
     props.send({ kind: "Select", key });
   }
 
   function title() {
-    return props.menu === "HorarioSemester" ? t().horarioMatriculaTitle : t().menuTitles[props.menu];
+    return props.screen.menu === "HorarioSemester" ? t().horarioMatriculaTitle : t().menuTitles[props.screen.menu];
   }
 
   // "0" (MainMenu's "SALIR DEL SISTEMA", MenuDespliegue's "Finalizar") is
@@ -21,7 +21,7 @@ export function MenuScreen(props: { menu: MenuKind; options: MenuOption[]; busy:
   // (matches `HorarioSemester`'s compact codes; every other menu's labels
   // simply fall back to their raw text unchanged).
   const options = createMemo(() =>
-    props.options
+    props.screen.options
       .filter((option) => option.key !== "0")
       .map((option) => ({ ...option, label: localizeButton(option.label) })),
   );
