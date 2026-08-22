@@ -13,9 +13,8 @@ export function Footer({ }) {
                 <Heart class="w-6 text-green-300 h-6 fill-current " />
             </div>
             <div>
-                By a{" "}
                 <a href={url} target="_blank" rel="noopener noreferrer" class="link">
-                    software engineer who loves sushi, cake and exploding kittens.
+                    {t().footerBio}
                 </a>
             </div>
         </footer>

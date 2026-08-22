@@ -27,6 +27,7 @@ const es: Messages = {
   developerMode: "Modo desarrollador",
   settings: "Configuracion",
   madeWith: "Hecho con",
+  footerBio: "Por un ingeniero de software que ama el sushi, el bizcocho y los gatitos explosivos.",
   continueLabel: "Continuar",
   screenExit: "Salir de esta pantalla",
   weeklyScheduleTitle: "Horario de Matricula",

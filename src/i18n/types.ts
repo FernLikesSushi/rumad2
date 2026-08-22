@@ -25,6 +25,9 @@ export interface Messages {
   // icon rendered in the footer's JSX, not part of this string -- kept
   // short so the icon reads as sitting inline between the two halves.
   madeWith: string;
+  // App chrome, not remote text -- the whole "By a ..." sentence (unlike
+  // `madeWith`, there's no icon interpolated into the middle of this one).
+  footerBio: string;
   continueLabel: string;
   screenExit: string;
   weeklyScheduleTitle: string;
