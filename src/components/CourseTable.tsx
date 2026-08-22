@@ -1,6 +1,7 @@
 import { For } from "solid-js";
 import { t } from "../i18n";
 import type { ScheduleCourse } from "../types";
+import { CourseLink } from "./CourseLink";
 
 export function CourseTable(props: { courses: ScheduleCourse[] }) {
   return (
@@ -17,7 +18,7 @@ export function CourseTable(props: { courses: ScheduleCourse[] }) {
         <For each={props.courses}>
           {(c) => (
             <tr>
-              <td>{c.course}</td>
+              <td><CourseLink course={c.course} /></td>
               <td>{c.section}</td>
               <td>{c.credits}</td>
               <td>{c.status}</td>

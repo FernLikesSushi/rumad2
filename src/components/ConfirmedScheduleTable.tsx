@@ -1,6 +1,7 @@
 import { For } from "solid-js";
 import { t } from "../i18n";
 import type { ConfirmedCourse } from "../types";
+import { CourseLink } from "./CourseLink";
 
 export function ConfirmedScheduleTable(props: { courses: ConfirmedCourse[] }) {
   return (
@@ -19,7 +20,7 @@ export function ConfirmedScheduleTable(props: { courses: ConfirmedCourse[] }) {
           <For each={props.courses}>
             {(c) => (
               <tr>
-                <td>{c.course}</td>
+                <td><CourseLink course={c.course} /></td>
                 <td>{c.section}</td>
                 <td>{c.credits}</td>
                 <td>{c.room}</td>
