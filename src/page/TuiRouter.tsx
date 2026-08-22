@@ -163,15 +163,15 @@ export function TuiRouter() {
             </Switch>
 
             <div class="flex flex-col items-center gap-2.5 py-16">
-              <div class="grid grid-cols-2 grid-rows-1 justify-center gap-4 ">
-                <Show when={canContinue()} fallback={<div />} keyed>
+              <div class="flex flex-coljustify-center gap-4 ">
+                <Show when={canContinue()} keyed>
                   <button class="btn btn-outline btn-primary" disabled={busy()} onClick={continueScreen}>
                     <StepForward />
                     {t().continueLabel}
                   </button>
                 </Show>
 
-                <Show when={canExit()} fallback={<div />} keyed>
+                <Show when={canExit()} keyed>
                   <button class="btn items-center" disabled={busy()} onClick={exitScreen}>
                     <ArrowLeft />
                     {t().screenExit}

@@ -1,7 +1,6 @@
 import { createMemo, createSignal, Show } from "solid-js";
 import { t, localizeButton } from "../i18n";
 import { OptionButtons } from "../components/OptionButtons";
-import { FreeTextForm } from "../components/FreeTextForm";
 import { CourseTable } from "../components/CourseTable";
 import type { TuiScreenComponentProps } from "../types";
 import { createKeyboardListener } from "../components/KeyboardListener";
@@ -30,8 +29,8 @@ export function MatriculaScreen(props: TuiScreenComponentProps<"Matricula">) {
     props.send({ kind: "Select", key });
   }
 
-  function submit(text: string) {
-    props.send({ kind: "Line", text });
+  function submit() {
+    props.send({ kind: "Line", text: freeText() });
     setFreeText("");
   }
 
@@ -52,7 +51,18 @@ export function MatriculaScreen(props: TuiScreenComponentProps<"Matricula">) {
       </Show>
 
       <Show when={FREE_TEXT_MODES.has(props.screen.mode.kind)}>
-        <FreeTextForm value={freeText()} onInput={setFreeText} onSubmit={submit} busy={props.busy} />
+        <div class="flex justify-center">
+          <input
+            class="input"
+            placeholder={t().sendPlaceholder}
+            value={freeText()}
+            onInput={(e) => setFreeText(e.currentTarget.value)}
+            onKeyDown={(e) => e.key === "Enter" && submit()}
+          />
+          <button type="button" class="btn btn-outline btn-primary" disabled={props.busy} onClick={submit}>
+            {t().send}
+          </button>
+        </div>
       </Show>
     </>
   );
