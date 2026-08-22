@@ -57,6 +57,9 @@ function mulberry32(seed: number) {
     };
 }
 
+// Only cycle through a sample of the pool rather than all of it.
+const SAMPLE_FRACTION = 0.1;
+
 function shuffleQuotes() {
     // seeded by day of the year, so the order is stable all day but
     // reshuffles day to day
@@ -68,7 +71,8 @@ function shuffleQuotes() {
         [quotes[i], quotes[j]] = [quotes[j], quotes[i]];
     }
 
-    return quotes;
+    const sampleSize = Math.max(1, Math.round(quotes.length * SAMPLE_FRACTION));
+    return quotes.slice(0, sampleSize);
 }
 
 export const shuffledQuotes = shuffleQuotes();
