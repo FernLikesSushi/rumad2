@@ -3,6 +3,7 @@ import { HashRouter, Route } from "@solidjs/router";
 import { Heart } from "lucide-solid";
 import { Connect } from "./page/Connect";
 import { TuiRouter } from "./page/TuiRouter";
+import { DevScreens } from "./page/DevScreens";
 import { t } from "./i18n";
 import "./App.css";
 
@@ -29,6 +30,7 @@ function App() {
     >
       <Route path="/" component={Connect} />
       <Route path="/session" component={TuiRouter} />
+      <Route path="/dev" component={DevScreens} />
     </HashRouter>
   );
 }

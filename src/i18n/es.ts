@@ -26,6 +26,7 @@ const es: Messages = {
   authTitle: "Autenticacion",
   developerMode: "Modo desarrollador",
   settings: "Configuracion",
+  devScreens: "Pantallas de prueba",
   madeWith: "Hecho con",
   footerBio: "Por un ingeniero de software que ama el sushi, el bizcocho y los gatitos explosivos.",
   continueLabel: "Continuar",

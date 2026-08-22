@@ -21,6 +21,7 @@ export interface Messages {
   authTitle: string;
   developerMode: string;
   settings: string;
+  devScreens: string;
   // The heart between "Made with"/"Hecho con" and "RUMAD" is a `Heart`
   // icon rendered in the footer's JSX, not part of this string -- kept
   // short so the icon reads as sitting inline between the two halves.
