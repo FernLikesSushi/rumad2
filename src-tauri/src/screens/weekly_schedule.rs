@@ -34,23 +34,25 @@ pub struct WeeklyScheduleScreen {
 impl RumadScreen for WeeklyScheduleScreen {
     /// No numbered options on this read-only grid.
     fn select(&self, _session: &mut TuiSession, _key: &str) -> anyhow::Result<()> {
-        anyhow::bail!("WeeklySchedule has no selectable options; use line(\"\") instead")
+        anyhow::bail!("WeeklySchedule has no selectable options; use continue_screen() instead")
     }
 
     /// Unlike `CourseResults`, the real capture of this screen has no
     /// visible footer/prompt line to confirm an exit keystroke against
     /// (see this module's doc comment on that transcript's capture
-    /// issues) -- left unimplemented rather than guessing. `line` (bare
-    /// Enter, inherited default) is a safe bet since every other screen in
-    /// this app accepts it to continue/redraw.
+    /// issues) -- left unimplemented rather than guessing.
     fn exit(&self, _session: &mut TuiSession) -> anyhow::Result<()> {
         anyhow::bail!(
-            "WeeklySchedule's exit keystroke isn't confirmed live; try line(\"\") instead"
+            "WeeklySchedule's exit keystroke isn't confirmed live; try continue_screen() instead"
         )
     }
 
     fn can_exit(&self) -> bool {
         false
+    }
+
+    fn can_continue(&self) -> bool {
+        true
     }
 }
 

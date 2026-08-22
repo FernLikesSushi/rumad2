@@ -36,6 +36,12 @@ pub(crate) trait RumadScreen {
         session.send_line(text)
     }
 
+    /// "Enter to continue" on a read-only screen -- default is a blank
+    /// `line`, but named so callers don't send an empty string themselves.
+    fn continue_screen(&self, session: &mut TuiSession) -> anyhow::Result<()> {
+        self.line(session, "")
+    }
+
     /// Go back/exit this screen. Defaults to "0" -- confirmed live as the
     /// consistent back/exit key across both `MainMenu` (0=SALIR DEL
     /// SISTEMA) and `MENU DESPLIEGUE` (0=Finalizar).
@@ -56,5 +62,12 @@ pub(crate) trait RumadScreen {
     /// `false`.
     fn can_exit(&self) -> bool {
         true
+    }
+
+    /// Whether `continue_screen()` actually applies here -- unlike
+    /// `can_exit`, defaults to `false` since only read-only "Enter to
+    /// continue" screens (`CourseResults`, `WeeklySchedule`) support it.
+    fn can_continue(&self) -> bool {
+        false
     }
 }

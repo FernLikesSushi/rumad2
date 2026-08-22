@@ -53,7 +53,7 @@ export type Dialog = { kind: "Notice"; message: string; raw: string } | { kind: 
 // alongside it. `canExit` mirrors `RumadScreen::can_exit` -- whether the
 // one shared exit control should render, instead of each screen component
 // deciding that for itself.
-export type ClassifiedScreen = { screen: TuiScreen; dialog: Dialog | null; canExit: boolean };
+export type ClassifiedScreen = { screen: TuiScreen; dialog: Dialog | null; canExit: boolean; canContinue: boolean };
 
 // UI state for the notice dialog component -- derived from a `Dialog`
 // (specifically `Notice`; `Processing` doesn't open this), not the same
@@ -74,7 +74,9 @@ export type SendAction =
   | { kind: "Line"; text: string }
   // A dedicated back/leave keystroke that isn't one of the screen's
   // listed options (e.g. Login's PF4).
-  | { kind: "Exit" };
+  | { kind: "Exit" }
+  // "Enter to continue" on a read-only screen (CourseResults, WeeklySchedule).
+  | { kind: "Continue" };
 
 // Mirrors `commands::interact::send` (the backend's single generic entry
 // point for `SendAction`) one-for-one: App.tsx owns the actual dispatch

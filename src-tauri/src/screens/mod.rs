@@ -218,6 +218,8 @@ pub struct ClassifiedScreen {
     /// control, instead of each screen component hardcoding its own copy
     /// of that decision.
     pub can_exit: bool,
+    /// Same idea as `can_exit`, for `RumadScreen::continue_screen()`.
+    pub can_continue: bool,
 }
 
 impl ClassifiedScreen {
@@ -251,10 +253,12 @@ pub fn classify(raw: &str) -> ClassifiedScreen {
     let collapsed: String = raw.chars().filter(|c| !c.is_whitespace()).collect();
     let screen = classify_screen(raw);
     let can_exit = screen.as_rumad_screen().is_some_and(|s| s.can_exit());
+    let can_continue = screen.as_rumad_screen().is_some_and(|s| s.can_continue());
     ClassifiedScreen {
         screen,
         dialog: detect_dialog(raw, &collapsed),
         can_exit,
+        can_continue,
     }
 }
 

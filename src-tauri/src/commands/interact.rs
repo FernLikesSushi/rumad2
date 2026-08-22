@@ -31,6 +31,7 @@ pub enum SendAction {
     Select { key: String },
     Line { text: String },
     Exit,
+    Continue,
 }
 
 #[tauri::command]
@@ -44,6 +45,7 @@ pub async fn send(app: AppHandle, action: SendAction) -> Result<ClassifiedScreen
                 SendAction::Select { key } => rumad_screen.select(session, &key),
                 SendAction::Line { text } => rumad_screen.line(session, &text),
                 SendAction::Exit => rumad_screen.exit(session),
+                SendAction::Continue => rumad_screen.continue_screen(session),
             },
             None => anyhow::bail!("current screen has no interaction"),
         }

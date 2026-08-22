@@ -3,11 +3,8 @@ import { t } from "../i18n";
 import type { TuiScreenComponentProps } from "../types";
 
 export function WeeklyScheduleScreen(props: TuiScreenComponentProps<"WeeklySchedule">) {
-  // Read-only grid: nothing to select, just "Enter to continue" -- no
-  // confirmed exit keystroke to offer a button for (see `RumadScreen for
-  // WeeklyScheduleScreen` in the backend).
   function continueScreen() {
-    props.send({ kind: "Line", text: "" });
+    props.send({ kind: "Continue" });
   }
 
   return (

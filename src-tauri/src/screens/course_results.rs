@@ -46,16 +46,20 @@ pub struct CourseResultsScreen {
 }
 
 impl RumadScreen for CourseResultsScreen {
-    /// No numbered options on this screen, just "Enter to continue" (the
-    /// `line` default already sends a bare Enter) or PF4 to leave.
+    /// No numbered options on this screen, just "Enter to continue" or
+    /// PF4 to leave.
     fn select(&self, _session: &mut TuiSession, _key: &str) -> anyhow::Result<()> {
-        anyhow::bail!("CourseResults has no selectable options; use line(\"\") or exit()")
+        anyhow::bail!("CourseResults has no selectable options; use continue_screen() or exit()")
     }
 
     /// PF4 exits this screen specifically -- confirmed live from its own
     /// footer ("< Oprima Enter o [PF4(9)=Fin] >").
     fn exit(&self, session: &mut TuiSession) -> anyhow::Result<()> {
         session.send_key(Key::F4)
+    }
+
+    fn can_continue(&self) -> bool {
+        true
     }
 }
 
