@@ -1,6 +1,7 @@
 import { createSignal } from "solid-js";
 import { t } from "../i18n";
 import type { TuiScreenComponentProps } from "../types";
+import { Send } from "lucide-solid";
 
 export function SearchScreen(props: TuiScreenComponentProps<"Search">) {
   const [text, setText] = createSignal("");
@@ -11,12 +12,12 @@ export function SearchScreen(props: TuiScreenComponentProps<"Search">) {
   }
 
   return (
-    <>
+    <div class="max-w-lg self-center flex flex-col justify-center">
       <h2>{t().horarioMatriculaTitle}</h2>
-      <p class="text-[0.85em] opacity-75">{t().searchHints[props.screen.search]}</p>
-      <div class="flex justify-center">
+      <p class="text-[0.85em] opacity-75 text-center">{t().searchHints[props.screen.search]}</p>
+      <div class="flex flex-col justify-center gap-4">
         <input
-          class="input"
+          class="input w-full"
           placeholder={t().sendPlaceholder}
           value={text()}
           onInput={(e) => setText(e.currentTarget.value)}
@@ -24,8 +25,9 @@ export function SearchScreen(props: TuiScreenComponentProps<"Search">) {
         />
         <button type="button" class="btn btn-outline btn-primary" disabled={props.busy} onClick={submit}>
           {t().send}
+          <Send />
         </button>
       </div>
-    </>
+    </div>
   );
 }
