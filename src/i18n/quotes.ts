@@ -34,7 +34,8 @@ export const randomQuotes = [
     "The quick brown fox jumps over the lazy dog.",
     "My rainbow beautiful special cow without scoliosis.",
     "You've got a friend in me.", // Toy Story
-    "You never know. You hope for the best and make do with what you get." // Nick Fury
+    "You never know. You hope for the best and make do with what you get.", // Nick Fury,
+    "Vamos pa' la playa, pa' curarte el alma; Cierra la pantalla, abre la Medalla", // - Calma - Pedro Capo
 ];
 
 function dayOfYear(date: Date): number {
