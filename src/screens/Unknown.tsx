@@ -30,7 +30,7 @@ export function UnknownScreen(props: TuiScreenComponentProps<"Unknown">) {
       <Show when={devMode()}>
         <pre class="bg-base-200 p-3 rounded-box overflow-x-auto text-sm whitespace-pre">{props.screen.raw}</pre>
       </Show>
-      <OptionButtons options={props.screen.options} busy={props.busy} onChoose={choose} />
+      <OptionButtons options={props.screen.options} busy={props.busy} onChoose={choose} menu="Unknown" />
       <FreeTextForm value={freeText()} onInput={setFreeText} onSubmit={submit} busy={props.busy} />
     </>
   );

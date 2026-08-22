@@ -36,7 +36,7 @@ export function MenuScreen(props: TuiScreenComponentProps<"Menu">) {
   return (
     <>
       <h2>{title()}</h2>
-      <OptionButtons options={options()} busy={props.busy} onChoose={choose} />
+      <OptionButtons options={options()} busy={props.busy} onChoose={choose} menu={props.screen.menu} />
     </>
   );
 }

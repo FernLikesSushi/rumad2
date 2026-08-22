@@ -19,6 +19,7 @@ const es: Messages = {
   reconnect: "Reconectar",
   unknownHint: "Pantalla sin reconocer todavia:",
   sendPlaceholder: "Enviar texto...",
+  login: "Autenticar",
   send: "Enviar",
   logout: "Salir",
   errorTitle: "Error",
@@ -28,7 +29,8 @@ const es: Messages = {
   settings: "Configuracion",
   devScreens: "Pantallas de prueba",
   madeWith: "Hecho con",
-  footerBio: "Por un ingeniero de software que ama el sushi, el bizcocho y los gatitos explosivos.",
+  footerBio:
+    "Por un ingeniero de software que ama el sushi, el bizcocho y los gatitos explosivos.",
   continueLabel: "Continuar",
   screenExit: "Salir de esta pantalla",
   weeklyScheduleTitle: "Horario de Matricula",
@@ -74,7 +76,12 @@ const es: Messages = {
   },
   processingTitle: "Programa en Proceso",
   matriculaTitle: "M A T R I C U L A",
-  matriculaColumns: { course: "Curso", section: "Seccion", credits: "Cr.", status: "Grado" },
+  matriculaColumns: {
+    course: "Curso",
+    section: "Seccion",
+    credits: "Cr.",
+    status: "Grado",
+  },
   courseResultsColumns: {
     section: "Sec.",
     room: "Salon",

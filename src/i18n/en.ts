@@ -15,6 +15,7 @@ const en: Messages = {
   reconnect: "Reconnect",
   unknownHint: "Screen not recognized yet:",
   sendPlaceholder: "Send text...",
+  login: "Log in",
   send: "Send",
   logout: "Log out",
   errorTitle: "Error",
@@ -24,7 +25,8 @@ const en: Messages = {
   settings: "Settings",
   devScreens: "Dev screens",
   madeWith: "Made with",
-  footerBio: "By a software engineer who loves sushi, cake and exploding kittens.",
+  footerBio:
+    "By a software engineer who loves sushi, cake and exploding kittens.",
   continueLabel: "Continue",
   screenExit: "Leave this screen",
   weeklyScheduleTitle: "Class Schedule",
@@ -56,19 +58,23 @@ const en: Messages = {
   // `classifies_menu_despliegue`/`classifies_select_period` tests check
   // against.
   menuLabels: {
-    "***>>>  LEE tu Correo Electronico en ->  outlook.com": "***>>>  CHECK your Email at ->  outlook.com",
+    "***>>>  LEE tu Correo Electronico en ->  outlook.com":
+      "***>>>  CHECK your Email at ->  outlook.com",
     "Seleccion de Secciones  (Matricula)": "Section Selection (Registration)",
     "Modificar Codigo de Acceso Permanente": "Change Permanent Access Code",
     "Informacion Correo Electronico": "Email Information",
     "Ver otra informacion": "View Other Information",
     "Seleccion de Modalidad P/D/F": "Select P/D/F Grading Mode",
     "SALIR DEL SISTEMA": "EXIT SYSTEM",
-    "Evaluacion certificacion de Ayuda Economica": "Financial Aid Certification Evaluation",
+    "Evaluacion certificacion de Ayuda Economica":
+      "Financial Aid Certification Evaluation",
     Curriculo: "Curriculum",
     "Evaluo de facturacion de matricula": "Tuition Billing Estimate",
     Matricula: "Registration",
-    "Turno de seleccion de cursos/secciones o Examenes finales": "Course/Section Selection Time Slot or Final Exams",
-    "Horario de cursos disponibles en Matricula": "Available Course Schedule in Registration",
+    "Turno de seleccion de cursos/secciones o Examenes finales":
+      "Course/Section Selection Time Slot or Final Exams",
+    "Horario de cursos disponibles en Matricula":
+      "Available Course Schedule in Registration",
     "Titulo de cursos disponibles en Horario": "Course Title List in Schedule",
     "Horario de matricula grafico": "Graphical Registration Schedule",
     "Evaluo de matricula e indicadores": "Registration Estimate and Indicators",
@@ -97,7 +103,12 @@ const en: Messages = {
   },
   processingTitle: "Still processing...",
   matriculaTitle: "E N R O L L M E N T",
-  matriculaColumns: { course: "Course", section: "Section", credits: "Cr.", status: "Grade" },
+  matriculaColumns: {
+    course: "Course",
+    section: "Section",
+    credits: "Cr.",
+    status: "Grade",
+  },
   courseResultsColumns: {
     section: "Sec.",
     room: "Room",

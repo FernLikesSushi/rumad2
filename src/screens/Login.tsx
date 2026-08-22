@@ -1,5 +1,6 @@
 import { createSignal, For } from "solid-js";
 import { t } from "../i18n";
+import { LogIn } from "lucide-solid";
 
 // Hardcoded rather than read from the backend's `fields` -- the remote's
 // own labels for this specific form arrive mangled over the wire (see
@@ -70,8 +71,9 @@ export function LoginScreen(props: {
           onInput={(e) => setBirthDate(e.currentTarget.value)}
         />
         <div class="flex justify-center">
-          <button type="submit" class="btn btn-outline btn-primary" disabled={props.busy}>
-            {t().send}
+          <button type="submit" class="btn btn-outline btn-primary gap-2" disabled={props.busy}>
+            {t().login}
+            <LogIn />
           </button>
         </div>
       </form>
