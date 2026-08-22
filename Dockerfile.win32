@@ -1,0 +1,64 @@
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+# No TTY in a Docker build -- tells pnpm to auto-confirm prompts (e.g.
+# pruning node_modules before `tauri build` re-checks deps) instead of
+# aborting with ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY.
+ENV CI=true
+
+# System dependencies + Windows cross-compilation tools
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    curl \
+    wget \
+    file \
+    build-essential \
+    pkg-config \
+    libssl-dev \
+    mingw-w64 \
+    nsis \
+    && rm -rf /var/lib/apt/lists/*
+
+# Node.js 22
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get update \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+
+# Rust
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal
+
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Windows GNU target -- not MSVC/cargo-xwin: openssl-sys's vendored build
+# (`ssh2`'s "vendored-openssl" feature) can't cross-compile OpenSSL for
+# windows-msvc from Linux at all, since its VC-WIN64A Configure step needs
+# a Windows-flavored perl producing backslash paths. The mingw64 Configure
+# target this uses instead builds via an ordinary Unix Makefile, so a
+# regular Linux perl + the mingw-w64 toolchain (installed above) works.
+RUN rustup target add x86_64-pc-windows-gnu
+
+WORKDIR /app
+
+RUN npm install -g pnpm
+
+# Copy dependency manifests first for better Docker caching
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile
+
+# Copy the rest of the application
+COPY . .
+
+# Build the Windows app
+# No `--` here: tauri's CLI treats `--` as marking the start of raw args
+# forwarded straight to cargo, so `--target` needs to be parsed as tauri's
+# own flag instead (confirmed live -- with `--` present, cargo itself
+# rejected it as an unknown argument). No `--runner` needed either: the
+# gnu target links via the mingw-w64 `x86_64-w64-mingw32-gcc` linker
+# configured in src-tauri/.cargo/config.toml, not a special runner binary.
+RUN pnpm run tauri build \
+    --target x86_64-pc-windows-gnu
+
+# Artifacts are inside:
+# /app/src-tauri/target/x86_64-pc-windows-gnu/release/bundle/nsis/

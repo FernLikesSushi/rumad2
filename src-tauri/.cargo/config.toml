@@ -1,0 +1,6 @@
+# Cross-compiling to Windows from Linux via mingw-w64 needs the mingw gcc
+# explicitly as the linker -- cargo's default for this target otherwise
+# resolves to the host's own (non-cross) gcc.
+[target.x86_64-pc-windows-gnu]
+linker = "x86_64-w64-mingw32-gcc"
+ar = "x86_64-w64-mingw32-gcc-ar"
