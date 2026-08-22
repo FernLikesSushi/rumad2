@@ -1,8 +1,8 @@
 import { createSignal, For, Match, Switch } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { t } from "../i18n";
-import { devMode } from "../devMode";
-import { mockScreens } from "../devScreens";
+import { devMode } from "../data/devMode";
+import { mockScreens } from "../data/devScreens";
 import type { TuiScreen, Send } from "../types";
 import { Header } from "../components/Header";
 import { MenuScreen } from "../screens/MenuScreen";

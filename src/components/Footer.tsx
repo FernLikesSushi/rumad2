@@ -1,6 +1,6 @@
 import { Heart } from "lucide-solid";
 import { t } from "../i18n";
-import { devMode } from "../devMode";
+import { devMode } from "../data/devMode";
 
 export function Footer({ }) {
     // easter egg :)
