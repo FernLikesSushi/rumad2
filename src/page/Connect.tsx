@@ -1,4 +1,4 @@
-import { createSignal } from "solid-js";
+import { createSignal, onCleanup, Show } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { t } from "../i18n";
 import { runAction } from "../api";
@@ -8,6 +8,10 @@ import { loadUsername, password } from "../username";
 import { PawPrint } from "lucide-solid";
 import { FadingText } from "../components/FadingText";
 import { shuffledQuotes } from "../i18n/quotes";
+import { createKeyboardListener } from "../components/KeyboardListener";
+
+const LOKI_CODE = "loki";
+const LOKI_TOAST_MS = 3000;
 
 // The pre-connection page: owns the initial `connect` call and its own
 // local busy/error state -- there's no TUI session yet for anything else
@@ -19,6 +23,26 @@ export function Connect() {
   const navigate = useNavigate();
   const [busy, setBusy] = createSignal(false);
   const { dialog: dialog, show: showDialog, close: closeDialog } = createDialog();
+
+  const [lokiMode, setLokiMode] = createSignal(false);
+  const [showLokiToast, setShowLokiToast] = createSignal(false);
+
+  let typedBuffer = "";
+  let toastTimeout: ReturnType<typeof setTimeout>;
+
+  // Easter egg: typing "loki" anywhere on this screen enables Loki mode.
+  createKeyboardListener((key) => {
+    if (key.length !== 1) return;
+    typedBuffer = (typedBuffer + key.toLowerCase()).slice(-LOKI_CODE.length);
+    if (typedBuffer !== LOKI_CODE) return;
+
+    setLokiMode(lokiMode => !lokiMode);
+    setShowLokiToast(lokiMode());
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => setShowLokiToast(false), LOKI_TOAST_MS);
+  });
+
+  onCleanup(() => clearTimeout(toastTimeout));
 
   async function connect(username: string, password: string) {
     setBusy(true);
@@ -48,7 +72,19 @@ export function Connect() {
     <>
       <Header />
       <NoticeDialog dialog={dialog()} onClose={closeDialog} />
+
+      <Show when={showLokiToast()}>
+        <div class="toast toast-top toast-end z-50">
+          <div class="alert alert-success">
+            <span>Loki mode enabled.</span>
+          </div>
+        </div>
+      </Show>
+
       <div class="flex flex-col items-center justify-center gap-4 flex-1">
+        <Show when={lokiMode()}>
+          <div class="badge badge-secondary">Loki Mode</div>
+        </Show>
         <h2 class="font-semibold text-center">A friendly face to what you've already known.</h2>
         <h3 class="text-center">A fresh coat of paint on a rusty old machine.</h3>
         <h3 class="text-center">With a touch of modernity and a dash of nostalgia.</h3>
