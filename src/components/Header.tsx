@@ -1,4 +1,4 @@
-import { LogOut } from "lucide-solid";
+import { Dog, LogOut } from "lucide-solid";
 import { SettingsButton } from "./SettingsButton";
 import { t } from "../i18n";
 import { Show } from "solid-js";
@@ -14,7 +14,9 @@ export function Header(props: { disconnect?: () => Promise<void>; }) {
                 </button>
             </Show>
         </div>
-        <h1 class="text-center justify-self-center text-xl">{t().title}</h1>
+        <h1 class="text-center justify-self-center text-xl">
+            {t().title}
+        </h1>
         <div class="justify-self-end">
             <SettingsButton />
         </div>

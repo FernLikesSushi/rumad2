@@ -6,6 +6,8 @@ import { NoticeDialog, createDialog } from "../components/NoticeDialog";
 import { Header } from "../components/Header";
 import { loadUsername, password } from "../username";
 import { PawPrint } from "lucide-solid";
+import { FadingText } from "../components/FadingText";
+import { shuffledQuotes } from "../i18n/quotes";
 
 // The pre-connection page: owns the initial `connect` call and its own
 // local busy/error state -- there's no TUI session yet for anything else
@@ -40,10 +42,20 @@ export function Connect() {
     connect(loadUsername(), password());
   }
 
+
+
   return (
     <>
       <Header />
       <NoticeDialog dialog={dialog()} onClose={closeDialog} />
+      <div class="flex flex-col items-center justify-center gap-4 flex-1">
+        <h2 class="font-semibold text-center">A friendly face to what you've already known.</h2>
+        <h3 class="text-center">A fresh coat of paint on a rusty old machine.</h3>
+        <h3 class="text-center">With a touch of modernity and a dash of nostalgia.</h3>
+        <h2>
+          <FadingText texts={shuffledQuotes} class="text-center" />
+        </h2>
+      </div>
       <div class="flex flex-col items-center justify-center gap-4 flex-1">
         <button type="submit" class="btn btn-outline btn-primary max-w-md" disabled={busy()} onClick={submit}>
           {busy() ? t().connecting : t().connect}
