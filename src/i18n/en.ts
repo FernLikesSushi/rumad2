@@ -22,6 +22,7 @@ const en: Messages = {
   authTitle: "Authentication",
   developerMode: "Developer mode",
   settings: "Settings",
+  devScreens: "Dev screens",
   madeWith: "Made with",
   footerBio: "By a software engineer who loves sushi, cake and exploding kittens.",
   continueLabel: "Continue",

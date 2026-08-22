@@ -1,5 +1,6 @@
 import { PawPrint } from "lucide-solid";
-import { createEffect, createSignal, Signal } from "solid-js";
+import { createEffect, createSignal, Show, Signal } from "solid-js";
+import { useNavigate } from "@solidjs/router";
 import { locale, setLocale, t } from "../i18n";
 import { loadUsername, password, saveUsername, setPassword } from "../username";
 import { devMode, setDevMode } from "../devMode";
@@ -7,14 +8,14 @@ import { Toggle } from "./Toggle";
 import { ToggleButton } from "./ToggleButton";
 
 export function Settings() {
-
+    const navigate = useNavigate();
     const [username, setUsername] = createSignal(loadUsername());
 
 
     createEffect(() => {
         saveUsername(username());
     });
-    
+
     function submit(e: Event) {
         e.preventDefault();
     }
@@ -44,6 +45,14 @@ export function Settings() {
 
         <div class="divider w-full" />
 
-        <Toggle label={t().developerMode} checked={devMode()} onChange={setDevMode} />
+        <div class="flex flex-col gap-2.5 items-center gap-4">
+            <Toggle label={t().developerMode} checked={devMode()} onChange={setDevMode} />
+
+            <Show when={devMode()}>
+                <button type="button" class="btn btn-outline btn-sm" onClick={() => navigate("/dev")}>
+                    {t().devScreens}
+                </button>
+            </Show>
+        </div>
     </form>
 }
