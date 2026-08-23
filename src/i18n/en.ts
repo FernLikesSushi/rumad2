@@ -92,6 +92,8 @@ const en: Messages = {
     ssnLast4: { label: "Social Security (last 4)", hint: "e.g. 1234" },
     birthDate: { label: "Date of Birth", hint: "e.g. MMDDYYYY" },
   },
+  loginPrivacyNotice:
+    "This data is not stored or transmitted anywhere except to the official TUI backend, and is only used to log in and fetch your schedule.",
   menuTitles: {
     MainMenu: "MAIN MENU",
     MenuDespliegue: "OTHER INFORMATION",

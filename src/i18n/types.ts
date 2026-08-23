@@ -69,6 +69,10 @@ export interface Messages {
     ssnLast4: { label: string; hint: string };
     birthDate: { label: string; hint: string };
   };
+  // App-authored disclaimer shown under the login form -- not remote text,
+  // so unlike the TUI's own labels it goes through `t()` like any other
+  // app chrome.
+  loginPrivacyNotice: string;
   // Screen titles and table column headers are hardcoded directly in
   // each screen component (like `Login`'s fields) rather than parsed off
   // the remote -- they're fixed, always-the-same structural labels for a
