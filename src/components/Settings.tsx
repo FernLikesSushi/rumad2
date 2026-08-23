@@ -45,14 +45,8 @@ export function Settings() {
 
         <div class="divider w-full" />
 
-        <div class="flex flex-col gap-2.5 items-center gap-4">
+        <div class="flex flex-col items-center gap-4">
             <Toggle label={t().developerMode} checked={devMode()} onChange={setDevMode} />
-
-            <Show when={devMode()}>
-                <button type="button" class="btn btn-outline btn-sm" onClick={() => navigate("/dev")}>
-                    {t().devScreens}
-                </button>
-            </Show>
         </div>
     </form>
 }

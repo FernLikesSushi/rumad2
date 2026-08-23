@@ -23,6 +23,12 @@ export interface Messages {
   developerMode: string;
   settings: string;
   devScreens: string;
+  // Side drawer nav (`Drawer.tsx`) -- app chrome, not remote text.
+  navConnect: string;
+  navClassEditor: string;
+  navMap: string;
+  openMenu: string;
+  closeMenu: string;
   // The heart between "Made with"/"Hecho con" and "RUMAD" is a `Heart`
   // icon rendered in the footer's JSX, not part of this string -- kept
   // short so the icon reads as sitting inline between the two halves.
@@ -82,7 +88,11 @@ export interface Messages {
   // structs those merge into, `MenuScreen`/`SearchScreen`) rather than
   // four/two separate named keys, so the catalog can't drift out of sync
   // with the merged type the way four independent keys could.
-  menuTitles: { MainMenu: string; MenuDespliegue: string; SelectPeriod: string };
+  menuTitles: {
+    MainMenu: string;
+    MenuDespliegue: string;
+    SelectPeriod: string;
+  };
   // `HorarioSemester` (one of the four `MenuKind`s) and both `SearchKind`s
   // share this one title -- the real remote header ("* HORARIO DE
   // MATRICULA *") is identical across all three, since they're three
@@ -98,7 +108,12 @@ export interface Messages {
   // carries no data either -- see that variant's Rust doc comment.
   processingTitle: string;
   matriculaTitle: string;
-  matriculaColumns: { course: string; section: string; credits: string; status: string };
+  matriculaColumns: {
+    course: string;
+    section: string;
+    credits: string;
+    status: string;
+  };
   courseResultsColumns: {
     section: string;
     room: string;
@@ -111,5 +126,11 @@ export interface Messages {
   };
   weeklyScheduleColumns: { period: string };
   confirmedScheduleTitle: string;
-  confirmedScheduleColumns: { course: string; section: string; credits: string; room: string; professor: string };
+  confirmedScheduleColumns: {
+    course: string;
+    section: string;
+    credits: string;
+    room: string;
+    professor: string;
+  };
 }

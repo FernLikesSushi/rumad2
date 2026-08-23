@@ -29,6 +29,7 @@ pub fn run() {
             commands::get_screen,
             commands::interact::send,
             commands::login::login,
+            commands::is_connected,
             commands::disconnect,
         ])
         .run(tauri::generate_context!())

@@ -80,6 +80,23 @@ pub async fn get_screen(app: AppHandle) -> Result<ClassifiedScreen, String> {
     act(app, |session| session.refresh()).await
 }
 
+/// Whether a TUI session is currently live -- the frontend uses this to
+/// decide where a "go back to the app" link should point (`/` vs
+/// `/session`) without tracking connection state itself; `AppState` is the
+/// real source of truth for that, not anything the frontend derives on its
+/// own from e.g. the current route.
+#[tauri::command]
+pub async fn is_connected(app: AppHandle) -> Result<bool, String> {
+    log_invoked("is_connected()");
+    tauri::async_runtime::spawn_blocking(move || {
+        let state = app.state::<AppState>();
+        let guard = state.0.lock().map_err(|_| "session lock poisoned")?;
+        Ok(guard.is_some())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// Log out of the remote menu and drop the session.
 #[tauri::command]
 pub async fn disconnect(app: AppHandle) -> Result<(), String> {

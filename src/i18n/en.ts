@@ -24,6 +24,11 @@ const en: Messages = {
   developerMode: "Developer mode",
   settings: "Settings",
   devScreens: "Dev screens",
+  navConnect: "Home",
+  navClassEditor: "Class Editor",
+  navMap: "Map",
+  openMenu: "Open menu",
+  closeMenu: "Close menu",
   madeWith: "Made with",
   footerBio:
     "By a software engineer who loves sushi, cake and exploding kittens.",
@@ -124,7 +129,13 @@ const en: Messages = {
   },
   weeklyScheduleColumns: { period: "Period" },
   confirmedScheduleTitle: "Confirmed Schedule",
-  confirmedScheduleColumns: { course: "Course", section: "Section", credits: "Cr.", room: "Room", professor: "Professor" },
+  confirmedScheduleColumns: {
+    course: "Course",
+    section: "Section",
+    credits: "Cr.",
+    room: "Room",
+    professor: "Professor",
+  },
 };
 
 export default en;
