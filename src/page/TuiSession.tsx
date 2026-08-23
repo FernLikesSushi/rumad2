@@ -1,12 +1,10 @@
-import { SettingsButton } from './../components/SettingsButton'
-import { createSignal, createResource, createMemo, createEffect, onMount, onCleanup, Match, Switch, Show } from "solid-js";
+import { SettingsButton } from '../components/SettingsButton'
+import { Match, Switch, Show, onMount } from "solid-js";
 import { useNavigate } from "@solidjs/router";
-import { listen } from "@tauri-apps/api/event";
 import { t } from "../i18n";
-import { runAction } from "../screens/api";
 import { devMode, setDevMode } from "../data/devMode";
-import type { TuiScreen, ClassifiedScreen, Action, Send } from "../types";
-import { NoticeDialog, createDialog } from "../components/NoticeDialog";
+import type { TuiScreen } from "../types";
+import { ensureStarted, screen, busy, canExit, canContinue, send, exitScreen, continueScreen, login, disconnect as disconnectSession } from "../data/tui";
 import { Spinner } from "../components/Spinner";
 import { Toggle } from "../components/Toggle";
 import { MenuScreen } from "../screens/MenuScreen";
@@ -21,75 +19,21 @@ import { UnknownScreen } from "../screens/Unknown";
 import { ArrowLeft, LogOut, Settings, StepForward } from "lucide-solid";
 import { Header } from '../components/Header';
 
-// Owns the TUI session's state once connected -- the send/login/disconnect
-// resource, the notice dialog, the busy spinner, and dispatch to the
-// right screen component.
-export function TuiRouter() {
+// Renders whatever's in `data/tui.ts` and dispatches to the right screen
+// component -- the session state itself lives there now (module-level, not
+// owned by this component) so it survives navigating away from "/session"
+// and back instead of being torn down and refetched.
+export function TuiSession() {
   const navigate = useNavigate();
-  const { dialog: dialogBox, show: showDialog, close: closeDialog } = createDialog();
 
-  const [action, setAction] = createSignal<Action>({ cmd: "get_screen", args: {} });
-  const [response, { mutate }] = createResource(action, runAction);
-
-  // `Dialog::Processing` counts as busy too. Must check response.error
-  // before response() -- a resolved rejection otherwise throws uncaught
-  // inside this memo.
-  const busy = createMemo(() => {
-    if (response.loading) return true;
-    if (response.error) return false;
-    return response()?.dialog?.kind === "Processing";
-  });
-
-  // Same response.error-before-response() rule as `busy` -- a rejected
-  // command (e.g. a restricted MainMenu option) throws here otherwise.
-  const screen = createMemo<TuiScreen | undefined>((prev) => {
-    if (response.loading || response.error) return prev;
-    return response()?.screen ?? prev;
-  });
-
-  const canExit = createMemo<boolean>((prev) => {
-    if (response.loading || response.error) return prev;
-    return response()?.canExit ?? prev;
-  }, false);
-
-  const canContinue = createMemo<boolean>((prev) => {
-    if (response.loading || response.error) return prev;
-    return response()?.canContinue ?? prev;
-  }, false);
-
-  createEffect(() => {
-    if (response.loading) return;
-    const err = response.error;
-    if (err) {
-      showDialog({ title: t().errorTitle, message: String(err) });
-      return;
-    }
-    const result = response();
-    if (result?.dialog?.kind === "Notice") {
-      showDialog({ title: t().noticeTitle, message: result.dialog.message });
-    }
-  });
-
-  const send: Send = (sendAction) => setAction({ cmd: "send", args: { action: sendAction } });
-
-  function exitScreen() {
-    send({ kind: "Exit" });
-  }
-
-  function continueScreen() {
-    send({ kind: "Continue" });
-  }
-
-  function login(idNumber: string, accessCode: string, ssnLast4: string, birthDate: string) {
-    setAction({ cmd: "login", args: { idNumber, accessCode, ssnLast4, birthDate } });
-  }
+  onMount(() => ensureStarted());
 
   function goToConnect() {
     navigate("/", { replace: true });
   }
 
   async function disconnect() {
-    await runAction({ cmd: "disconnect", args: {} });
+    await disconnectSession();
     goToConnect();
   }
 
@@ -97,18 +41,9 @@ export function TuiRouter() {
     goToConnect();
   }
 
-  // Backend polls in the background for screens that redraw a second time
-  // on their own (`Dialog::Processing`) and pushes this event when done.
-  onMount(() => {
-    const unlisten = listen<ClassifiedScreen>("screen-changed", (event) => mutate(event.payload));
-    onCleanup(() => void unlisten.then((f) => f()));
-  });
-
   return (
     <>
       <Header disconnect={disconnect} />
-
-      <NoticeDialog dialog={dialogBox()} onClose={closeDialog} />
 
       <Show when={screen()}>
         {(screen) => (

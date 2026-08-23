@@ -1,9 +1,10 @@
 import { Footer } from './components/Footer';
 import { Drawer } from './components/Drawer';
+import { TuiDialogHandler } from './components/TuiDialogHandler';
 import { HashRouter, Route } from "@solidjs/router";
 import { Heart } from "lucide-solid";
 import { Connect } from "./page/Connect";
-import { TuiRouter } from "./page/TuiRouter";
+import { TuiSession } from "./page/TuiSession";
 import { DevScreens } from "./page/DevScreens";
 import { Map } from "./page/Map";
 import { ClassPreview } from "./page/ClassPreview";
@@ -26,6 +27,7 @@ function App() {
         // is briefly the only child). Each page centers its own content area
         // independently instead (see Connect's button wrapper's own `flex-1`).
         <Drawer>
+          <TuiDialogHandler />
           <main class="flex flex-col justify-start text-center px-4 py-4 min-h-screen">
             {props.children}
             <Footer />
@@ -34,7 +36,7 @@ function App() {
       )}
     >
       <Route path="/" component={Connect} />
-      <Route path="/session" component={TuiRouter} />
+      <Route path="/session" component={TuiSession} />
       <Route path="/map" component={Map} />
       <Route path="/class-preview" component={ClassPreview} />
       <Route path="/dev" component={DevScreens} />

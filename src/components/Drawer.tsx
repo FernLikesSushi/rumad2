@@ -1,9 +1,9 @@
 import { For, JSX } from "solid-js";
-import { A, useLocation } from "@solidjs/router";
+import { A } from "@solidjs/router";
 import { Calendar, Code, Map, Menu, PlugZap, Unplug } from "lucide-solid";
 import { t } from "../i18n";
 import { devMode } from "../data/devMode";
-import { useConnected } from "../data/connection";
+import { connected } from "../data/tui";
 
 const DRAWER_ID = "app-drawer";
 const ICON_CLASS = "my-1.5 inline-block size-4";
@@ -44,9 +44,6 @@ function items(connected: boolean): NavItem[] {
 // `is-drawer-open`/`is-drawer-close` variants driven by the checkbox --
 // no signal needed. https://daisyui.com/components/drawer/#responsive-collapsible-icon-only-drawer-sidebar-using-is-drawer-close-and-is-drawer-open
 export function Drawer(props: { children: JSX.Element }) {
-    const location = useLocation();
-    const connected = useConnected(() => location.pathname);
-
     return (
         <div class="drawer lg:drawer-open">
             <input id={DRAWER_ID} type="checkbox" class="drawer-toggle" />
@@ -63,7 +60,7 @@ export function Drawer(props: { children: JSX.Element }) {
                 <label for={DRAWER_ID} aria-label={t().closeMenu} class="drawer-overlay" />
                 <div class="flex min-h-full flex-col items-start bg-base-200 is-drawer-close:w-14 is-drawer-open:w-64">
                     <ul class="menu w-full grow">
-                        <For each={items(connected() ?? false)}>
+                        <For each={items(connected())}>
                             {(item) => (
                                 <li>
                                     <A

@@ -1,28 +1,24 @@
-import { createSignal, onCleanup, Show } from "solid-js";
+import { createEffect, createSignal, onCleanup, Show } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { t } from "../i18n";
-import { runAction } from "../screens/api";
-import { NoticeDialog, createDialog } from "../components/NoticeDialog";
 import { Header } from "../components/Header";
 import { loadUsername, password } from "../data/username";
 import { PawPrint } from "lucide-solid";
 import { FadingText } from "../components/FadingText";
 import { shuffledQuotes } from "../data/quotes";
 import { createKeyboardListener } from "../components/KeyboardListener";
+import { busy, connected, connect as connectSession } from "../data/tui";
 
 const LOKI_CODE = "loki";
 const LOKI_TOAST_MS = 3000;
 
-// The pre-connection page: owns the initial `connect` call and its own
-// local busy/error state -- there's no TUI session yet for anything else
-// to track. Once `connect` actually succeeds, this just navigates to
-// "/session" and is done; it doesn't carry the resolved screen along --
-// `TuiRouter` fetches its own starting state (`get_screen`) the moment it
-// mounts rather than being handed it here.
+// The pre-connection page: kicks off `connect` through `data/tui.ts`'s
+// shared resource, same as every other session action -- errors surface
+// via the global `TuiDialogHandler` on their own, and a successful connect
+// flips `connected()` to true, so this just reacts to that to navigate
+// instead of awaiting the call itself.
 export function Connect() {
   const navigate = useNavigate();
-  const [busy, setBusy] = createSignal(false);
-  const { dialog: dialog, show: showDialog, close: closeDialog } = createDialog();
 
   const [lokiMode, setLokiMode] = createSignal(false);
   const [showLokiToast, setShowLokiToast] = createSignal(false);
@@ -44,34 +40,18 @@ export function Connect() {
 
   onCleanup(() => clearTimeout(toastTimeout));
 
-  async function connect(username: string, password: string) {
-    setBusy(true);
-    try {
-      const result = await runAction({
-        cmd: "connect",
-        args: { username: username || undefined, password: password || undefined },
-      });
-      // "connect" always resolves to a real screen, never null (only
-      // "disconnect" does -- see `runAction`).
-      if (result) navigate("/session");
-    } catch (err) {
-      showDialog({ title: t().errorTitle, message: String(err) });
-    } finally {
-      setBusy(false);
-    }
-  }
+  createEffect(() => {
+    if (connected()) navigate("/session");
+  });
 
   function submit(e: Event) {
     e.preventDefault();
-    connect(loadUsername(), password());
+    connectSession(loadUsername(), password());
   }
-
-
 
   return (
     <>
       <Header />
-      <NoticeDialog dialog={dialog()} onClose={closeDialog} />
 
       <Show when={showLokiToast()}>
         <div class="toast toast-top toast-end z-50">
