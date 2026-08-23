@@ -76,18 +76,18 @@ export function Connect() {
       <Show when={showLokiToast()}>
         <div class="toast toast-top toast-end z-50">
           <div class="alert alert-success">
-            <span>Loki mode enabled.</span>
+            <span>{t().lokiModeToast}</span>
           </div>
         </div>
       </Show>
 
       <div class="flex flex-col items-center justify-center gap-4 flex-1">
         <Show when={lokiMode()}>
-          <div class="badge badge-secondary">Loki Mode</div>
+          <div class="badge badge-secondary">{t().lokiModeBadge}</div>
         </Show>
-        <h2 class="font-semibold text-center">A friendly face to what you've already known.</h2>
-        <h3 class="text-center">A fresh coat of paint on a rusty old machine.</h3>
-        <h3 class="text-center">With a touch of modernity and a dash of nostalgia.</h3>
+        <h2 class="font-semibold text-center">{t().connectTagline1}</h2>
+        <h3 class="text-center">{t().connectTagline2}</h3>
+        <h3 class="text-center">{t().connectTagline3}</h3>
         <h2>
           <FadingText texts={shuffledQuotes} class="text-center" />
         </h2>
