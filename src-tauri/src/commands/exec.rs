@@ -13,8 +13,11 @@ use crate::ssh::session::TuiSession;
 
 /// Event name the frontend listens for (`@tauri-apps/api/event`'s
 /// `listen`) to redraw itself when `spawn_screen_watcher` sees a change --
-/// see that function's doc comment.
-const SCREEN_CHANGED_EVENT: &str = "screen-changed";
+/// see that function's doc comment. `pub(super)` so `mod.rs`'s `disconnect`
+/// command can emit it too, for the same reason `handle_scene_change`
+/// constructs `Disconnected` here: one event, whether the session ends
+/// because the backend saw EOF or because the user explicitly logged out.
+pub(super) const SCREEN_CHANGED_EVENT: &str = "screen-changed";
 
 /// If the screen signals a graceful end of session (`Disconnected` --
 /// `handle_scene_change` below has already confirmed the SSH channel

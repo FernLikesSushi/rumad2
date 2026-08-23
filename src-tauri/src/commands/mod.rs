@@ -1,5 +1,5 @@
 use std::sync::Mutex;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 
 mod exec;
 
@@ -10,10 +10,10 @@ mod exec;
 pub mod interact;
 pub mod login;
 
-use exec::{act, blocking, finish, log_invoked, log_screen, spawn_screen_watcher};
+use exec::{act, blocking, finish, log_invoked, log_screen, spawn_screen_watcher, SCREEN_CHANGED_EVENT};
 
 use crate::config;
-use crate::screens::{self, ClassifiedScreen};
+use crate::screens::{self, ClassifiedScreen, TuiScreen};
 use crate::ssh::session::TuiSession;
 
 /// Holds the one live TUI session for this app instance, if connected.
@@ -97,11 +97,17 @@ pub async fn is_connected(app: AppHandle) -> Result<bool, String> {
     .map_err(|e| e.to_string())?
 }
 
-/// Log out of the remote menu and drop the session.
+/// Log out of the remote menu and drop the session. Emits
+/// `SCREEN_CHANGED_EVENT` itself (`spawn_screen_watcher` only sees the
+/// channel it's polling go away, not this) so the frontend's one
+/// `screen-changed` listener is the single place that reacts to a session
+/// ending, regardless of whether that was this explicit logout or the
+/// backend's own EOF detection.
 #[tauri::command]
 pub async fn disconnect(app: AppHandle) -> Result<(), String> {
     log_invoked("disconnect()");
-    tauri::async_runtime::spawn_blocking(move || {
+    let emit_app = app.clone();
+    tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
         let state = app.state::<AppState>();
         let mut guard = state.0.lock().map_err(|_| "session lock poisoned")?;
         if let Some(session) = guard.take() {
@@ -110,5 +116,16 @@ pub async fn disconnect(app: AppHandle) -> Result<(), String> {
         Ok(())
     })
     .await
-    .map_err(|e| e.to_string())?
+    .map_err(|e| e.to_string())??;
+
+    let _ = emit_app.emit(
+        SCREEN_CHANGED_EVENT,
+        &ClassifiedScreen {
+            screen: TuiScreen::Disconnected,
+            dialog: None,
+            can_exit: false,
+            can_continue: false,
+        },
+    );
+    Ok(())
 }
