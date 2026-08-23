@@ -51,32 +51,40 @@ export function LoginScreen(props: {
   return (
     <>
       <h2>{t().authTitle}</h2>
-      <form class="flex flex-col gap-2.5 max-w-lg mx-auto text-left" onSubmit={submit}>
-        <For each={textFields()}>
-          {(field) => (
-            <input
-              class="input"
-              type={field.masked ? "password" : "text"}
-              placeholder={`${field.label} (${field.hint})`}
-              value={values()[field.key] ?? ""}
-              onInput={(e) => change(field.key, e.currentTarget.value)}
-            />
-          )}
-        </For>
-        <input
-          type="date"
-          class="input"
-          aria-label={t().loginFields.birthDate.label}
-          value={birthDate()}
-          onInput={(e) => setBirthDate(e.currentTarget.value)}
-        />
-        <div class="flex justify-center">
-          <button type="submit" class="btn btn-outline btn-primary gap-2" disabled={props.busy}>
-            {t().login}
-            <LogIn />
-          </button>
-        </div>
-      </form>
+      <div class="flex flex-col items-center">
+        <form
+          class="flex flex-col md:grid md:grid-cols-2 gap-2.5 max-w-lg md:max-w-2xl items-center md:items-stretch text-center"
+          onSubmit={submit}
+        >
+          <For each={textFields()}>
+            {(field) => (
+              <input
+                class="input md:w-full"
+                type={field.masked ? "password" : "text"}
+                placeholder={`${field.label} (${field.hint})`}
+                value={values()[field.key] ?? ""}
+                onInput={(e) => change(field.key, e.currentTarget.value)}
+              />
+            )}
+          </For>
+          <input
+            type="date"
+            class="input md:w-full"
+            aria-label={t().loginFields.birthDate.label}
+            value={birthDate()}
+            onInput={(e) => setBirthDate(e.currentTarget.value)}
+          />
+          <div class="flex justify-center md:col-span-2 text">
+            <p class="text-sm text-muted-foreground">{t().loginPrivacyNotice}</p>
+          </div>
+          <div class="flex justify-center md:col-span-2">
+            <button type="submit" class="btn btn-outline btn-primary gap-2" disabled={props.busy}>
+              {t().login}
+              <LogIn />
+            </button>
+          </div>
+        </form>
+      </div>
     </>
   );
 }

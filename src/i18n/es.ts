@@ -65,6 +65,8 @@ const es: Messages = {
     ssnLast4: { label: "Seguro Social (últimos 4)", hint: "Ej. 1234" },
     birthDate: { label: "Fecha de Nacimiento", hint: "Ej. MMDDAAAA" },
   },
+  loginPrivacyNotice:
+    "Estos datos no se almacenan ni se transmiten a ningun otro lugar salvo el backend oficial del TUI, y solo se usan para autenticar y obtener tu horario.",
   menuTitles: {
     MainMenu: "MENU PRINCIPAL",
     MenuDespliegue: "MENU DESPLIEGUE",
