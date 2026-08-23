@@ -1,6 +1,7 @@
 import { For } from "solid-js";
 import { t } from "../i18n";
 import type { CourseSection } from "../types";
+import { RoomLink } from "./RoomLink";
 
 export function CourseResultsTable(props: { sections: CourseSection[] }) {
   return (
@@ -23,7 +24,7 @@ export function CourseResultsTable(props: { sections: CourseSection[] }) {
             {(s) => (
               <tr>
                 <td>{s.section}</td>
-                <td>{s.room}</td>
+                <td><RoomLink room={s.room} /></td>
                 <td>{s.schedule}</td>
                 <td>{s.credits}</td>
                 <td>{s.professor}</td>
