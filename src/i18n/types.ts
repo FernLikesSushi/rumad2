@@ -9,6 +9,13 @@ export interface Messages {
   passwordPlaceholder: string;
   connect: string;
   connecting: string;
+  // Connect screen's marketing taglines -- app chrome, not remote text.
+  connectTagline1: string;
+  connectTagline2: string;
+  connectTagline3: string;
+  // Easter egg (`Connect.tsx`, typing "loki") -- app chrome.
+  lokiModeBadge: string;
+  lokiModeToast: string;
   disconnectedTitle: string;
   disconnectedHint: string;
   reconnect: string;
