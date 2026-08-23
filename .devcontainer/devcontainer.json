@@ -1,0 +1,27 @@
+{
+  "name": "rumad-2",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "features": {
+    "ghcr.io/devcontainers/features/rust:1": {},
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "22"
+    }
+  },
+  // Invoked via `bash` explicitly rather than relying on the script's own
+  // exec bit, which isn't reliably preserved when this repo is cloned on
+  // a Windows host filesystem.
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "forwardPorts": [1420],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "rust-lang.rust-analyzer",
+        "tauri-apps.tauri-vscode",
+        "vadimcn.vscode-lldb",
+        "bradlc.vscode-tailwindcss",
+        "solidjs-community.solid-snippets"
+      ]
+    }
+  },
+  "remoteUser": "vscode"
+}
