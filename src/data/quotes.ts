@@ -8,7 +8,7 @@ export const randomQuotes = [
     "https://www.youtube.com/watch?v=dQw4w9WgXcQ", // - Rick Astley
     "If failure is for breakfast, then what's for dinner?",
     "Be-better in stereo!", // Liv & Maddie
-    "100 x 40!",
+    "100 x 35!",
     "Tux cats are so handsome.",
     "Quizas no fue coincidencia encontrarme contigo.", // Colgando en tus manos - Carlos Baute & Marta Sánchez
     "I am Groot.", // Guardians of the Galaxy
