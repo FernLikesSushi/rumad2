@@ -11,7 +11,7 @@
     "serve": "vite preview",
     "tauri": "tauri"
   },
-  "license": "MIT",
+  "license": "LGPL-3.0-or-later",
   "dependencies": {
     "@solidjs/router": "^1.0.0",
     "@tailwindcss/vite": "^4.3.3",
