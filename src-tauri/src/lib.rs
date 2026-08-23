@@ -3,16 +3,22 @@
 //! standalone RUMAD-scraping library underneath it (`ssh` to connect and
 //! drive a session, `screens` to classify its raw VT100 text into typed
 //! data). The two are independent -- nothing in `screens`/`ssh`/`config`
-//! depends on Tauri, so a caller that only wants the scraping can depend on
-//! this crate and use those modules directly without pulling in a GUI.
+//! depends on Tauri, and the `tauri` feature (on by default, gating
+//! `commands`/`run()` plus the `tauri`/`tauri-plugin-opener`/`tauri-build`
+//! dependencies themselves) makes that actually enforced rather than just
+//! true by convention: a caller that only wants the scraping depends on
+//! this crate with `default-features = false` and pulls in none of Tauri.
 
+#[cfg(feature = "tauri")]
 mod commands;
 pub mod config;
 pub mod screens;
 pub mod ssh;
 
+#[cfg(feature = "tauri")]
 use commands::AppState;
 
+#[cfg(feature = "tauri")]
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()

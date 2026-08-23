@@ -16,15 +16,24 @@ name = "rumad_2_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2", features = [] }
+tauri-build = { version = "2", features = [], optional = true }
 
 [dependencies]
-tauri = { version = "2", features = [] }
-tauri-plugin-opener = "2"
+tauri = { version = "2", features = [], optional = true }
+tauri-plugin-opener = { version = "2", optional = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 anyhow = "1"
 ssh2 = { version = "0.9", features = ["vendored-openssl"] }
 vt100 = "0.16"
 regex = "1"
+
+[features]
+default = ["tauri"]
+# The `commands`/`run()` Tauri glue, on by default so the app itself (and
+# `cargo build`/the VS Code launch config) need no changes. A consumer that
+# only wants the scraping library (`screens`/`ssh`/`config`) depends on
+# this crate with `default-features = false` instead, which pulls in none
+# of tauri/tauri-plugin-opener/tauri-build.
+tauri = ["dep:tauri", "dep:tauri-plugin-opener", "dep:tauri-build"]
 
