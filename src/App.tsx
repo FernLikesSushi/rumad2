@@ -1,6 +1,7 @@
-import { Footer } from './components/Footer';
-import { Drawer } from './components/Drawer';
-import { TuiDialogHandler } from './components/TuiDialogHandler';
+import { Footer } from "./components/Footer";
+import { Drawer } from "./components/Drawer";
+import { BottomNav } from "./components/BottomNav";
+import { TuiDialogHandler } from "./components/TuiDialogHandler";
 import { HashRouter, Route } from "@solidjs/router";
 import { Heart } from "lucide-solid";
 import { Connect } from "./page/Connect";
@@ -28,10 +29,14 @@ function App() {
         // independently instead (see Connect's button wrapper's own `flex-1`).
         <Drawer>
           <TuiDialogHandler />
-          <main class="flex flex-col justify-start text-center px-4 py-4 min-h-screen">
+          {/* `max-sm:pb-[...]` clears BottomNav's fixed dock bar below `sm`
+              -- `4rem` matches daisyUI's default `.dock` height, plus the
+              safe-area inset so it also clears the home-indicator area on
+              notched phones. */}
+          <main class="flex flex-col justify-start text-center px-4 py-4 min-h-dvh max-sm:pb-[calc(4rem+env(safe-area-inset-bottom))]">
             {props.children}
-            <Footer />
           </main>
+          <BottomNav />
         </Drawer>
       )}
     >

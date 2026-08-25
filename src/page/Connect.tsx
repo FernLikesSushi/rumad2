@@ -8,6 +8,7 @@ import { FadingText } from "../components/FadingText";
 import { shuffledQuotes } from "../data/quotes";
 import { createKeyboardListener } from "../components/KeyboardListener";
 import { busy, connected, connect as connectSession } from "../data/tui";
+import { Footer } from "../components/Footer";
 
 const LOKI_CODE = "loki";
 const LOKI_TOAST_MS = 3000;
@@ -32,7 +33,7 @@ export function Connect() {
     typedBuffer = (typedBuffer + key.toLowerCase()).slice(-LOKI_CODE.length);
     if (typedBuffer !== LOKI_CODE) return;
 
-    setLokiMode(lokiMode => !lokiMode);
+    setLokiMode((lokiMode) => !lokiMode);
     setShowLokiToast(lokiMode());
     clearTimeout(toastTimeout);
     toastTimeout = setTimeout(() => setShowLokiToast(false), LOKI_TOAST_MS);
@@ -61,23 +62,29 @@ export function Connect() {
         </div>
       </Show>
 
-      <div class="flex flex-col items-center justify-center gap-4 flex-1">
+      <div class="flex flex-col items-center justify-center gap-2 sm:gap-4 flex-1 min-h-0">
         <Show when={lokiMode()}>
           <div class="badge badge-secondary">{t().lokiModeBadge}</div>
         </Show>
-        <h2 class="font-semibold text-center">{t().connectTagline1}</h2>
-        <h3 class="text-center">{t().connectTagline2}</h3>
-        <h3 class="text-center">{t().connectTagline3}</h3>
-        <h2>
+        <h2 class="font-semibold text-center max-sm:my-1">{t().connectTagline1}</h2>
+        <h3 class="text-center max-sm:my-1">{t().connectTagline2}</h3>
+        <h3 class="text-center max-sm:my-1">{t().connectTagline3}</h3>
+        <h2 class="max-sm:my-1">
           <FadingText texts={shuffledQuotes} class="text-center" />
         </h2>
       </div>
-      <div class="flex flex-col items-center justify-center gap-4 flex-1">
-        <button type="submit" class="btn btn-outline btn-primary max-w-md" disabled={busy()} onClick={submit}>
+      <div class="flex flex-col items-center justify-center gap-2 sm:gap-4 flex-1 min-h-0">
+        <button
+          type="submit"
+          class="btn btn-outline btn-primary max-w-md"
+          disabled={busy()}
+          onClick={submit}
+        >
           {busy() ? t().connecting : t().connect}
           <PawPrint />
         </button>
       </div>
+      <Footer />
     </>
   );
 }

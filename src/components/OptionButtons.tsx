@@ -16,15 +16,19 @@ export function OptionButtons(props: {
   hideKey?: boolean;
 }) {
   return (
-    <div class="sm:flex sm:flex-col md:grid md:grid-cols-2 gap-2">
+    <div class="flex flex-col md:grid md:grid-cols-2 gap-4">
       <For each={props.options}>
         {(option) => (
-          <button class="btn justify-start gap-2" disabled={props.busy} onClick={() => props.onChoose(option.key)}>
+          <button
+            class="btn justify-start gap-2 max-sm:h-auto max-sm:min-h-10 max-sm:py-2"
+            disabled={props.busy}
+            onClick={() => props.onChoose(option.key)}
+          >
             <Show when={!props.hideKey}>
-              <span class="text-xs opacity-60 shrink-0">{option.key}</span>
+              <span class="text-md md:text-xs opacity-60 shrink-0">{option.key}</span>
             </Show>
             {iconFor(props.menu, option.key)}
-            <span>{option.label}</span>
+            <span class="text-[1.15rem] md:text-md text-left min-w-0">{option.label}</span>
           </button>
         )}
       </For>
