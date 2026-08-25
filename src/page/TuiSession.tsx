@@ -106,23 +106,25 @@ export function TuiSession() {
               </Match>
             </Switch>
 
-            <div class="flex flex-col items-center gap-2.5 py-16">
-              <div class="flex flex-col justify-center gap-4 ">
-                <Show when={canContinue()} keyed>
-                  <button class="btn btn-outline btn-primary" disabled={busy()} onClick={continueScreen}>
-                    <StepForward />
-                    {t().continueLabel}
-                  </button>
-                </Show>
+            <Show when={canContinue() || canExit()}>
+              <div class="flex flex-col items-center gap-2.5 py-16">
+                <div class="flex flex-col justify-center gap-4 ">
+                  <Show when={canContinue()} keyed>
+                    <button class="btn btn-outline btn-primary" disabled={busy()} onClick={continueScreen}>
+                      <StepForward />
+                      {t().continueLabel}
+                    </button>
+                  </Show>
 
-                <Show when={canExit()} keyed>
-                  <button class="btn items-center" disabled={busy()} onClick={exitScreen}>
-                    <ArrowLeft />
-                    {t().screenExit}
-                  </button>
-                </Show>
+                  <Show when={canExit()} keyed>
+                    <button class="btn items-center" disabled={busy()} onClick={exitScreen}>
+                      <ArrowLeft />
+                      {t().screenExit}
+                    </button>
+                  </Show>
+                </div>
               </div>
-            </div>
+            </Show>
           </div>
         )}
       </Show>
