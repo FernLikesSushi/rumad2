@@ -27,17 +27,17 @@ function App() {
         // (e.g. TuiRouter before its first `get_screen` resolves, when Header
         // is briefly the only child). Each page centers its own content area
         // independently instead (see Connect's button wrapper's own `flex-1`).
-        <Drawer>
-          <TuiDialogHandler />
-          {/* `max-sm:pb-[...]` clears BottomNav's fixed dock bar below `sm`
-              -- `4rem` matches daisyUI's default `.dock` height, plus the
-              safe-area inset so it also clears the home-indicator area on
-              notched phones. */}
-          <main class="flex flex-col justify-start text-center px-4 py-4 max-sm:pb-[calc(4rem+env(safe-area-inset-bottom))]">
+        // `main` is the one real height anchor (`min-h-screen`) -- `Drawer`
+        // lives inside it and fills it via `flex-1` instead of asserting
+        // its own viewport-relative height, so the two can't stack and add
+        // on top of each other the way two independent `dvh`/`vh` claims did.
+        <main class="flex flex-col justify-start text-center px-4 py-4 min-h-screen max-sm:pb-[calc(4rem+env(safe-area-inset-bottom))]">
+          <Drawer>
+            <TuiDialogHandler />
             {props.children}
-          </main>
+          </Drawer>
           <BottomNav />
-        </Drawer>
+        </main>
       )}
     >
       <Route path="/" component={Connect} />
