@@ -7,7 +7,7 @@ export function Footer({ }) {
     const url = devMode() ? import.meta.env.VITE_GITHUB_LINK_DEV : import.meta.env.VITE_GITHUB_LINK_PUBLIC;
 
     return (
-        <footer class="mt-auto pt-2 sm:pt-4 flex flex-col items-center gap-1 text-xs opacity-60">
+        <footer class="pt-2 sm:pt-4 flex flex-col items-center gap-1 text-xs opacity-60 text-center">
             <div class="flex items-center gap-1">
                 {t().madeWith}
                 <Heart class="w-6 text-green-300 h-6 fill-current " />
