@@ -15,6 +15,7 @@
 		98A29280D43BA5893E888D69 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E8CB15082405C108B7879C6A /* QuartzCore.framework */; };
 		98C4797FF01CE690DDD16142 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2D5D4EE24E6D815EAF43B787 /* UIKit.framework */; };
 		9DAA0D72AE8C5E11ED097526 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9B1696DED41AB66B8EECD4B3 /* CoreGraphics.framework */; };
+		141F2802B65962187B30038F /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 10CBB1F6DEAA721E4C66B36D /* libz.tbd */; };
 		B659F88920C24ABAC868EB5B /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = BD3BB47D9C9CC07F56DAD8B8 /* LaunchScreen.storyboard */; };
 		BA7A38D3048E4F7C203E7049 /* libapp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB99751959ECE2377D02CF4B /* libapp.a */; };
 		C9D9E7571191AAA128ED83AC /* assets in Resources */ = {isa = PBXBuildFile; fileRef = 1C7338ED2A0B8E6EF604E535 /* assets */; };
@@ -42,6 +43,7 @@
 		9270D3E0748579B9EDC93411 /* interact.rs */ = {isa = PBXFileReference; path = interact.rs; sourceTree = "<group>"; };
 		98199E87930EB42F6F038240 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
 		9B1696DED41AB66B8EECD4B3 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+		10CBB1F6DEAA721E4C66B36D /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
 		AD623EBFD740A61528A6228B /* exec.rs */ = {isa = PBXFileReference; path = exec.rs; sourceTree = "<group>"; };
 		B53F935432BCABB08370D381 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
 		B5BFDE283BA185D43F4E1C76 /* main.rs */ = {isa = PBXFileReference; path = main.rs; sourceTree = "<group>"; };
@@ -67,6 +69,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				BA7A38D3048E4F7C203E7049 /* libapp.a in Frameworks */,
+				141F2802B65962187B30038F /* libz.tbd in Frameworks */,
 				9DAA0D72AE8C5E11ED097526 /* CoreGraphics.framework in Frameworks */,
 				5A4842426BEF4797A4570EB5 /* Metal.framework in Frameworks */,
 				4CA3D64C5117179E3BB9557F /* MetalKit.framework in Frameworks */,
@@ -186,6 +189,7 @@
 			children = (
 				9B1696DED41AB66B8EECD4B3 /* CoreGraphics.framework */,
 				EB99751959ECE2377D02CF4B /* libapp.a */,
+				10CBB1F6DEAA721E4C66B36D /* libz.tbd */,
 				7EC20BC94E7B28FE90BDE3C6 /* Metal.framework */,
 				4B38CE958E8DD114C0182E5C /* MetalKit.framework */,
 				E8CB15082405C108B7879C6A /* QuartzCore.framework */,
