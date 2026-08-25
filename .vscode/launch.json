@@ -11,8 +11,7 @@
       "cargo": {
         "args": [
           "build",
-          "--manifest-path=./src-tauri/Cargo.toml",
-          "--no-default-features"
+          "--manifest-path=./src-tauri/Cargo.toml"
         ]
       },
       // task for the `beforeDevCommand` if used, must be configured in `.vscode/tasks.json`
