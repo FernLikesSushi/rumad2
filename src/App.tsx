@@ -33,7 +33,7 @@ function App() {
               -- `4rem` matches daisyUI's default `.dock` height, plus the
               safe-area inset so it also clears the home-indicator area on
               notched phones. */}
-          <main class="flex flex-col justify-start text-center px-4 py-4 min-h-dvh max-sm:pb-[calc(4rem+env(safe-area-inset-bottom))]">
+          <main class="flex flex-col justify-start text-center px-4 py-4 max-sm:pb-[calc(4rem+env(safe-area-inset-bottom))]">
             {props.children}
           </main>
           <BottomNav />
