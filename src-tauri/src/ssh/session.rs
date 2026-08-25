@@ -164,16 +164,29 @@ impl TuiSession {
         }
     }
 
-    /// Drain incoming output until the remote goes quiet for `quiet_for`,
-    /// or `overall` elapses. Stands in for "wait until the next screen has
-    /// finished rendering" without needing to know what that screen is --
-    /// the app doesn't follow a fixed script, so it can't wait for a
-    /// specific expected pattern
+    /// Drain incoming output until the remote goes quiet for `quiet_for`
+    /// with the cursor visible, or `overall` elapses. Stands in for "wait
+    /// until the next screen has finished rendering" without needing to
+    /// know what that screen is -- the app doesn't follow a fixed script,
+    /// so it can't wait for a specific expected pattern.
+    ///
+    /// A byte-silence gap alone isn't reliable on its own: a redraw can
+    /// legitimately pause mid-draw (server-side latency) for longer than
+    /// `quiet_for`, which would otherwise make this return before the
+    /// screen is actually finished. Full-screen VT100 apps -- OpenVMS
+    /// SMG$-based ones included -- near-universally hide the cursor
+    /// (DECTCEM, `ESC[?25l`) while repainting and show it again
+    /// (`ESC[?25h`) only once done and parked at the next input field, so
+    /// `hide_cursor()` doubles as a real "still mid-draw" signal: a quiet
+    /// gap while it's still hidden doesn't count toward `quiet_for`. If the
+    /// remote never toggles it at all, `hide_cursor()` just stays `false`
+    /// throughout and this behaves exactly like the old silence-only check
+    /// -- `overall` is still the hard cap either way.
     fn settle(&mut self, quiet_for: Duration, overall: Duration) -> Result<()> {
         let deadline = Instant::now() + overall;
         let mut quiet_since: Option<Instant> = None;
         loop {
-            if self.pump_once()? {
+            if self.pump_once()? || self.parser.screen().hide_cursor() {
                 quiet_since = None;
             } else {
                 let start = *quiet_since.get_or_insert_with(Instant::now);
