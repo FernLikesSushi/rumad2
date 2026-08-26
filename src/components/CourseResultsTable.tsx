@@ -2,8 +2,28 @@ import { For } from "solid-js";
 import { t } from "../i18n";
 import type { CourseSection } from "../types";
 import { RoomLink } from "./RoomLink";
+import { addCourseToProfile, classEditorState, selectedProfile } from "../data/classEditor";
+import { Plus } from "lucide-solid";
 
-export function CourseResultsTable(props: { sections: CourseSection[] }) {
+// `courseCode` is a prop, not part of `CourseSection` -- needed to build
+// the `Course` the "add" button saves into the selected `ClassProfile`,
+// same reason `CourseResultsScreen` carries it alongside `sections` itself.
+export function CourseResultsTable(props: {
+  courseCode: string;
+  sections: CourseSection[];
+}) {
+  function addToProfile(section: CourseSection) {
+    addCourseToProfile(classEditorState().selectedProfileName, {
+      courseCode: props.courseCode,
+      section: section.section,
+      room: section.room,
+      schedule: section.schedule,
+      credits: section.credits,
+      professor: section.professor,
+      meetings: section.meetings,
+    });
+  }
+
   return (
     <div class="overflow-x-auto max-w-full">
       <table class="table table-zebra">
@@ -17,6 +37,7 @@ export function CourseResultsTable(props: { sections: CourseSection[] }) {
             <th>{t().courseResultsColumns.capacity}</th>
             <th>{t().courseResultsColumns.used}</th>
             <th>{t().courseResultsColumns.available}</th>
+            <th />
           </tr>
         </thead>
         <tbody>
@@ -24,13 +45,31 @@ export function CourseResultsTable(props: { sections: CourseSection[] }) {
             {(s) => (
               <tr>
                 <td>{s.section}</td>
-                <td><RoomLink room={s.room} /></td>
+                <td>
+                  <RoomLink room={s.room} />
+                </td>
                 <td>{s.schedule}</td>
                 <td>{s.credits}</td>
                 <td>{s.professor}</td>
                 <td>{s.capacity}</td>
                 <td>{s.used}</td>
                 <td>{s.available}</td>
+                <td>
+                  <div
+                    class="tooltip"
+                    // disable tooltip if selectedProfile is valid
+                    data-tip={selectedProfile() ? undefined : t().addToClassProfileDisabledHint}
+                  >
+                    <button
+                      class="btn btn-square btn-sm"
+                      aria-label={t().addToClassProfile}
+                      disabled={!selectedProfile()}
+                      onClick={() => addToProfile(s)}
+                    >
+                      <Plus class="size-4" />
+                    </button>
+                  </div>
+                </td>
               </tr>
             )}
           </For>

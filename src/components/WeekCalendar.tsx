@@ -1,11 +1,15 @@
-import { createMemo, For } from "solid-js";
+import { createMemo, For, Show } from "solid-js";
 import { t } from "../i18n";
 import type { Meeting } from "../types";
+import { X } from "lucide-solid";
 
 // What `WeekCalendar` actually plots -- decoupled from `CourseSection`/
 // `ConfirmedCourse` so it can render either (or anything else with
 // meetings) without depending on one specific screen's data shape.
-export type CalendarEvent = { label: string; meetings: Meeting[] };
+// `onRemove` is optional: only `ClassPreview`'s calendar view sets it, so
+// every meeting box gets a remove control only there, not on the
+// read-only `ConfirmedSchedule`/`CourseResults` calendars.
+export type CalendarEvent = { label: string; meetings: Meeting[]; onRemove?: () => void };
 
 
 const PX_PER_HOUR = 48;
@@ -59,7 +63,7 @@ function TimeGutter(props: { hours: number[]; bounds: Bounds }) {
 }
 
 // One positioned, colored box for a single event meeting.
-function MeetingBox(props: { label: string; meeting: Meeting; bounds: Bounds; color: string }) {
+function MeetingBox(props: { label: string; meeting: Meeting; bounds: Bounds; color: string; onRemove?: () => void }) {
   return (
     <div
       class={`absolute left-0.5 right-0.5 rounded-md border px-1 py-0.5 text-[0.65rem] leading-tight overflow-hidden ${props.color}`}
@@ -68,7 +72,19 @@ function MeetingBox(props: { label: string; meeting: Meeting; bounds: Bounds; co
         height: `${heightFor(props.meeting.endMinutes - props.meeting.startMinutes)}px`,
       }}
     >
-      <div class="font-semibold truncate text-md">{props.label}</div>
+      {/* Remove button */}
+      <Show when={props.onRemove}>
+        {(onRemove) => (
+          <button
+            class="absolute top-0.5 right-0.5 opacity-70 hover:opacity-100"
+            aria-label={t().removeFromClassProfile}
+            onClick={onRemove()}
+          >
+            <X class="size-3" />
+          </button>
+        )}
+      </Show>
+      <div class="font-semibold truncate text-md pr-3">{props.label}</div>
       <div class="truncate text-md">
         {formatTime(props.meeting.startMinutes)}-{formatTime(props.meeting.endMinutes)}
       </div>
@@ -101,6 +117,7 @@ function DayColumn(props: { day: number; hours: number[]; bounds: Bounds; events
                   // cycle through a small palette of colors for each event,
                   // so overlapping/conflicting events are visually distinct
                   color={EVENT_COLORS[i() % EVENT_COLORS.length]}
+                  onRemove={event.onRemove}
                 />
               )}
             </For>

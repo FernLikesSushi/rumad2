@@ -2,6 +2,7 @@ import { Footer } from "./components/Footer";
 import { Drawer } from "./components/Drawer";
 import { BottomNav } from "./components/BottomNav";
 import { TuiDialogHandler } from "./components/TuiDialogHandler";
+import { Toast } from "./components/Toast";
 import { HashRouter, Route } from "@solidjs/router";
 import { Heart } from "lucide-solid";
 import { Connect } from "./page/Connect";
@@ -34,6 +35,7 @@ function App() {
         <main class="flex flex-col justify-start text-center px-4 py-4 min-h-screen max-sm:pb-[calc(4rem+env(safe-area-inset-bottom))]">
           <Drawer>
             <TuiDialogHandler />
+            <Toast />
             {props.children}
           </Drawer>
           <BottomNav />
