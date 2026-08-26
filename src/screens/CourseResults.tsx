@@ -21,7 +21,7 @@ export function CourseResultsScreen(
         {props.screen.courseTitle}
       </h2>
 
-      <CourseResultsTable sections={props.screen.sections} />
+      <CourseResultsTable courseCode={props.screen.courseCode} sections={props.screen.sections} />
       <WeekCalendar events={events()} />
     </>
   );

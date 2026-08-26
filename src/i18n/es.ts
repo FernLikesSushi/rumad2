@@ -116,6 +116,29 @@ const es: Messages = {
     room: "Salón",
     professor: "Profesor",
   },
+  newProfileDialog: {
+    title: "Nuevo perfil de clases",
+    namePlaceholder: "Nombre del perfil",
+    create: "Crear",
+    cancel: "Cancelar",
+    duplicateError: "Ya existe un perfil con ese nombre.",
+  },
+  classPreviewPicker: "Selecciona una clase",
+  classPreviewView: { table: "Tabla", calendar: "Calendario" },
+  classPreviewEmpty: "Selecciona o crea un perfil para ver sus cursos.",
+  classProfileColumns: {
+    course: "Curso",
+    section: "Sección",
+    room: "Salón",
+    schedule: "Períodos",
+    credits: "Cr.",
+    professor: "Profesor",
+  },
+  addToClassProfile: "Añadir al perfil de clases",
+  addToClassProfileDisabledHint: "Selecciona un perfil de clases primero",
+  removeFromClassProfile: "Quitar del perfil de clases",
+  courseAddedToast: "Curso añadido al perfil de clases.",
+  courseRemovedToast: "Curso removido del perfil de clases.",
 };
 
 export default es;

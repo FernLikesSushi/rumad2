@@ -140,4 +140,45 @@ export interface Messages {
     room: string;
     professor: string;
   };
+  // `ClassPreview`'s "+" button -- prompts for the name a new,
+  // empty `ClassProfile` is saved under in `data/classEditor.ts`'s
+  // persistent store.
+  newProfileDialog: {
+    title: string;
+    namePlaceholder: string;
+    create: string;
+    cancel: string;
+    duplicateError: string;
+  };
+  classPreviewPicker: string;
+  // `ClassPreview`'s segmented control, switching its selected profile's
+  // courses between `ClassProfileTable` and `WeekCalendar`.
+  classPreviewView: { table: string; calendar: string };
+  classPreviewEmpty: string;
+  // `ClassProfileTable`'s columns -- `data/classEditor.ts`'s own `Course`
+  // (user-authored profile entries), not the live-scraped `CourseSection`
+  // `courseResultsColumns` covers, so no capacity/used/available here.
+  classProfileColumns: {
+    course: string;
+    section: string;
+    room: string;
+    schedule: string;
+    credits: string;
+    professor: string;
+  };
+  // `CourseResultsTable`'s per-row "add to class profile" button --
+  // `addToClassProfile` is the button's own aria-label, shown as the
+  // tooltip too when enabled; `addToClassProfileDisabledHint` replaces it
+  // while no profile is selected in `data/classEditor.ts`'s store.
+  addToClassProfile: string;
+  addToClassProfileDisabledHint: string;
+  // `ClassProfileTable`'s remove-row button and `WeekCalendar`'s
+  // per-event remove control (only rendered when a `CalendarEvent`
+  // carries `onRemove`, which `ClassPreview`'s calendar view sets).
+  removeFromClassProfile: string;
+  // `data/classEditor.ts`'s `classEditorToast` -- shown globally
+  // (see `ClassEditorToast.tsx`) after `addCourseToProfile`/
+  // `removeCourseFromProfile` actually change something.
+  courseAddedToast: string;
+  courseRemovedToast: string;
 }
