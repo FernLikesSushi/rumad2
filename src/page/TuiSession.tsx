@@ -106,6 +106,10 @@ export function TuiSession() {
               </Match>
             </Switch>
 
+            <div class="flex justify-center py-4" classList={{ invisible: !busy() }}>
+              <Spinner />
+            </div>
+
             <Show when={canContinue() || canExit()}>
               <div class="flex flex-col items-center gap-2.5 py-16">
                 <div class="flex flex-col justify-center gap-4 ">
@@ -127,12 +131,6 @@ export function TuiSession() {
             </Show>
           </div>
         )}
-      </Show>
-
-      <Show when={busy()}>
-        <div class="mt-4 text-center">
-          <Spinner />
-        </div>
       </Show>
     </>
   );
