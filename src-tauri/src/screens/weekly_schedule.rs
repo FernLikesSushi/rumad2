@@ -9,6 +9,7 @@
 //! into a course/section pair -- interpreting it further would mean
 //! guessing at values not confirmed live.
 
+use async_trait::async_trait;
 use serde::Serialize;
 
 use super::RumadScreen;
@@ -31,9 +32,10 @@ pub struct WeeklyScheduleScreen {
     pub rows: Vec<ScheduleRow>,
 }
 
+#[async_trait]
 impl RumadScreen for WeeklyScheduleScreen {
     /// No numbered options on this read-only grid.
-    fn select(&self, _session: &mut TuiSession, _key: &str) -> anyhow::Result<()> {
+    async fn select(&self, _session: &mut TuiSession, _key: &str) -> anyhow::Result<()> {
         anyhow::bail!("WeeklySchedule has no selectable options; use continue_screen() instead")
     }
 
@@ -41,7 +43,7 @@ impl RumadScreen for WeeklyScheduleScreen {
     /// visible footer/prompt line to confirm an exit keystroke against
     /// (see this module's doc comment on that transcript's capture
     /// issues) -- left unimplemented rather than guessing.
-    fn exit(&self, _session: &mut TuiSession) -> anyhow::Result<()> {
+    async fn exit(&self, _session: &mut TuiSession) -> anyhow::Result<()> {
         anyhow::bail!(
             "WeeklySchedule's exit keystroke isn't confirmed live; try continue_screen() instead"
         )

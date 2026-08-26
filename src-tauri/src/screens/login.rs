@@ -3,6 +3,7 @@
 //! Secciones" -- separate from and unrelated to the SSH login, which every
 //! student shares (`estudiante@...`).
 
+use async_trait::async_trait;
 use serde::Serialize;
 
 use super::RumadScreen;
@@ -47,7 +48,7 @@ impl LoginScreen {
     /// This is specific to `Login`'s fields, not `send_text` in general
     /// (also used for single-keystroke menu selections, where stripping
     /// isn't needed).
-    pub fn login(
+    pub async fn login(
         &self,
         session: &mut TuiSession,
         id_number: &str,
@@ -56,7 +57,7 @@ impl LoginScreen {
         birth_date: &str,
     ) -> anyhow::Result<()> {
         for field in Self::sanitize(id_number, access_code, ssn_last4, birth_date) {
-            session.send_text(&field)?;
+            session.send_text(&field).await?;
         }
         Ok(())
     }
@@ -72,20 +73,21 @@ impl LoginScreen {
     }
 }
 
+#[async_trait]
 impl RumadScreen for LoginScreen {
-    fn select(&self, _session: &mut TuiSession, _key: &str) -> anyhow::Result<()> {
+    async fn select(&self, _session: &mut TuiSession, _key: &str) -> anyhow::Result<()> {
         anyhow::bail!("Login has no single-keystroke selection; use LoginScreen::login")
     }
 
-    fn line(&self, _session: &mut TuiSession, _text: &str) -> anyhow::Result<()> {
+    async fn line(&self, _session: &mut TuiSession, _text: &str) -> anyhow::Result<()> {
         anyhow::bail!("Login has no free-text prompt; use LoginScreen::login")
     }
 
     /// PF4 exits the `Login` form specifically -- confirmed live from its
     /// footer ("PF4=(9)"), unlike the "0" every other screen's `exit()`
     /// sends.
-    fn exit(&self, session: &mut TuiSession) -> anyhow::Result<()> {
-        session.send_key(Key::F4)
+    async fn exit(&self, session: &mut TuiSession) -> anyhow::Result<()> {
+        session.send_key(Key::F4).await
     }
 }
 

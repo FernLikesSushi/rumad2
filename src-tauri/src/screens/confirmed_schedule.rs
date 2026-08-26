@@ -5,6 +5,7 @@
 //! course code, a lookup) and `MatriculaScreen` (the interactive course
 //! list, which carries no room/schedule/professor data at all).
 
+use async_trait::async_trait;
 use regex::Regex;
 use serde::Serialize;
 use std::sync::OnceLock;
@@ -34,17 +35,18 @@ pub struct ConfirmedScheduleScreen {
     pub courses: Vec<ConfirmedCourse>,
 }
 
+#[async_trait]
 impl RumadScreen for ConfirmedScheduleScreen {
     /// Read-only report -- its own footer is just "Oprima <<Enter>> para
     /// Finalizar".
-    fn select(&self, _session: &mut TuiSession, _key: &str) -> anyhow::Result<()> {
+    async fn select(&self, _session: &mut TuiSession, _key: &str) -> anyhow::Result<()> {
         anyhow::bail!("ConfirmedSchedule has no selectable options; use continue_screen() instead")
     }
 
     /// No confirmed exit keystroke for this screen either (same situation
     /// as `WeeklyScheduleScreen`) -- left unimplemented rather than
     /// guessing.
-    fn exit(&self, _session: &mut TuiSession) -> anyhow::Result<()> {
+    async fn exit(&self, _session: &mut TuiSession) -> anyhow::Result<()> {
         anyhow::bail!(
             "ConfirmedSchedule's exit keystroke isn't confirmed live; try continue_screen() instead"
         )

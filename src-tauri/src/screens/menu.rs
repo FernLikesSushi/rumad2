@@ -9,6 +9,7 @@
 //! exits via PF4 instead of "0"), so `RumadScreen for MenuScreen` branches
 //! on `kind` for just those two methods.
 
+use async_trait::async_trait;
 use regex::Regex;
 use serde::Serialize;
 use std::sync::OnceLock;
@@ -53,15 +54,16 @@ pub struct MenuScreen {
     pub options: Vec<MenuOption>,
 }
 
+#[async_trait]
 impl RumadScreen for MenuScreen {
     /// `MainMenu`/`MenuDespliegue`/`SelectPeriod` all have a free-text
     /// prompt available (even if unused) via the default; `HorarioSemester`
     /// genuinely has none, just its four numbered/lettered options.
-    fn line(&self, session: &mut TuiSession, text: &str) -> anyhow::Result<()> {
+    async fn line(&self, session: &mut TuiSession, text: &str) -> anyhow::Result<()> {
         if self.menu == MenuKind::HorarioSemester {
             anyhow::bail!("HorarioSemester has no free-text prompt; use select()")
         }
-        session.send_line(text)
+        session.send_line(text).await
     }
 
     /// `MainMenu`/`MenuDespliegue`/`SelectPeriod` all exit via the default
@@ -75,10 +77,10 @@ impl RumadScreen for MenuScreen {
     /// comment on why this is deliberately still worth a dedicated
     /// control even for the three kinds whose exit key is also listed
     /// among `options`.
-    fn exit(&self, session: &mut TuiSession) -> anyhow::Result<()> {
+    async fn exit(&self, session: &mut TuiSession) -> anyhow::Result<()> {
         match self.menu {
-            MenuKind::HorarioSemester => session.send_key(Key::F4),
-            _ => self.select(session, "0"),
+            MenuKind::HorarioSemester => session.send_key(Key::F4).await,
+            _ => self.select(session, "0").await,
         }
     }
 }

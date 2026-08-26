@@ -6,6 +6,7 @@
 //! PF4 to exit) -- only `SearchKind` differs, which the frontend uses to
 //! pick its own hint text and title.
 
+use async_trait::async_trait;
 use serde::Serialize;
 
 use super::RumadScreen;
@@ -31,16 +32,17 @@ pub struct SearchScreen {
     pub search: SearchKind,
 }
 
+#[async_trait]
 impl RumadScreen for SearchScreen {
     /// No numbered options on either kind, just the free-text search.
-    fn select(&self, _session: &mut TuiSession, _key: &str) -> anyhow::Result<()> {
+    async fn select(&self, _session: &mut TuiSession, _key: &str) -> anyhow::Result<()> {
         anyhow::bail!("Search has no selectable options; use line()")
     }
 
     /// PF4 exits both kinds specifically -- their own footer's
     /// "[PF4=(9)Fin]" hint.
-    fn exit(&self, session: &mut TuiSession) -> anyhow::Result<()> {
-        session.send_key(Key::F4)
+    async fn exit(&self, session: &mut TuiSession) -> anyhow::Result<()> {
+        session.send_key(Key::F4).await
     }
 }
 

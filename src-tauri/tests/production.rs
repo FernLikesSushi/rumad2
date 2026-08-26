@@ -7,6 +7,11 @@
 //!
 //!   cargo test --test production -- --ignored
 //!
+//! `#[tokio::test]`, not `#[test]` -- `TuiSession`/`RumadScreen` are
+//! `async fn` (russh, this app's SSH library, is async-only), so this
+//! integration crate needs its own runtime to drive them, same as
+//! `commands::exec::act` does inside the app itself.
+//!
 //! Drives screens through `RumadScreen` (`select`/`line`/`exit`/
 //! `continue_screen`), the same trait `commands::interact::send` uses --
 //! that trait (and `TuiScreen::as_rumad_screen`) is `pub`, not
@@ -33,7 +38,7 @@ use rumad_2_lib::config;
 use rumad_2_lib::screens::{self, Dialog, MenuKind, RumadScreen, SearchKind, TuiScreen};
 use rumad_2_lib::ssh::session::TuiSession;
 
-fn connect_as_shared_account() -> TuiSession {
+async fn connect_as_shared_account() -> TuiSession {
     TuiSession::connect(
         (config::DEFAULT_HOST, config::SSH_PORT),
         config::DEFAULT_USERNAME,
@@ -41,6 +46,7 @@ fn connect_as_shared_account() -> TuiSession {
         80,
         24,
     )
+    .await
     .expect("failed to connect to the live RUMAD system")
 }
 
@@ -62,21 +68,24 @@ fn interactive(screen: &TuiScreen) -> &dyn RumadScreen {
 /// `ssh/session.rs`'s cursor-visibility fix targets, just not eliminated
 /// entirely). 20 attempts * up to `refresh()`'s own ~10s cap is a
 /// generous ceiling; every real observed case here settles in one or two.
-fn wait_until_settled(session: &mut TuiSession) -> screens::ClassifiedScreen {
+async fn wait_until_settled(session: &mut TuiSession) -> screens::ClassifiedScreen {
     let mut classified = screens::classify(&session.screen_text());
     let mut attempts = 0;
     while matches!(classified.dialog, Some(Dialog::Processing)) && attempts < 20 {
-        session.refresh().expect("failed to poll for a settled screen");
+        session
+            .refresh()
+            .await
+            .expect("failed to poll for a settled screen");
         classified = screens::classify(&session.screen_text());
         attempts += 1;
     }
     classified
 }
 
-#[test]
+#[tokio::test]
 #[ignore = "hits the real production RUMAD system over the network -- opt in with `cargo test --test production -- --ignored`"]
-fn connects_and_classifies_main_menu() {
-    let session = connect_as_shared_account();
+async fn connects_and_classifies_main_menu() {
+    let session = connect_as_shared_account().await;
     let classified = screens::classify(&session.screen_text());
 
     match &classified.screen {
@@ -84,20 +93,21 @@ fn connects_and_classifies_main_menu() {
         other => panic!("expected the shared account's MainMenu, got {other:?}"),
     }
 
-    session.close();
+    session.close().await;
 }
 
-#[test]
+#[tokio::test]
 #[ignore = "hits the real production RUMAD system over the network -- opt in with `cargo test --test production -- --ignored`"]
-fn main_menu_matricula_option_rejected_for_shared_account() {
-    let mut session = connect_as_shared_account();
+async fn main_menu_matricula_option_rejected_for_shared_account() {
+    let mut session = connect_as_shared_account().await;
     let classified = screens::classify(&session.screen_text());
 
     // "2. Seleccion de Secciones (Matricula)" -- account-specific, so the
     // shared account gets turned away rather than ever reaching the real
     // `Login` screen. See `screens/mod.rs`'s top doc comment.
     interactive(&classified.screen)
-        .select(&mut session, "6")
+        .select(&mut session, "2")
+        .await
         .expect("failed to select the Matricula option");
     let classified = screens::classify(&session.screen_text());
 
@@ -115,18 +125,19 @@ fn main_menu_matricula_option_rejected_for_shared_account() {
         "this specific rejection should be promoted to an Err by or_err()"
     );
 
-    session.close();
+    session.close().await;
 }
 
-#[test]
+#[tokio::test]
 #[ignore = "hits the real production RUMAD system over the network -- opt in with `cargo test --test production -- --ignored`"]
-fn searches_course_schedule_and_continues() {
-    let mut session = connect_as_shared_account();
+async fn searches_course_schedule_and_continues() {
+    let mut session = connect_as_shared_account().await;
     let classified = screens::classify(&session.screen_text());
 
     // MainMenu -- "5. Ver otra informacion" -> MenuDespliegue.
     interactive(&classified.screen)
         .select(&mut session, "5")
+        .await
         .expect("failed to open MenuDespliegue");
     let classified = screens::classify(&session.screen_text());
     match &classified.screen {
@@ -138,6 +149,7 @@ fn searches_course_schedule_and_continues() {
     // HorarioSemester.
     interactive(&classified.screen)
         .select(&mut session, "6")
+        .await
         .expect("failed to open Horario de cursos disponibles");
     let classified = screens::classify(&session.screen_text());
     match &classified.screen {
@@ -148,6 +160,7 @@ fn searches_course_schedule_and_continues() {
     // Pick a semester -- "1=1erVer" -> Search(HorarioCurso).
     interactive(&classified.screen)
         .select(&mut session, "1")
+        .await
         .expect("failed to pick a semester");
     let classified = screens::classify(&session.screen_text());
     match &classified.screen {
@@ -161,51 +174,50 @@ fn searches_course_schedule_and_continues() {
     // schedule data, not tied to any student's own enrollment.
     interactive(&classified.screen)
         .line(&mut session, "HIST")
+        .await
         .expect("failed to submit the course search");
-    let classified = wait_until_settled(&mut session);
+    let classified = wait_until_settled(&mut session).await;
     assert!(
         matches!(&classified.screen, TuiScreen::CourseResults(_)),
         "expected CourseResults, got {:?}",
         classified.screen
     );
-    assert!(
-        classified.can_continue,
-        "CourseResults should report can_continue"
-    );
+    assert!(classified.can_continue, "CourseResults should report can_continue");
 
     // "Enter to continue" -- confirms the keystroke is accepted rather
     // than left dangling.
     interactive(&classified.screen)
         .continue_screen(&mut session)
+        .await
         .expect("failed to send the continue keystroke");
-    let classified = wait_until_settled(&mut session);
+    let classified = wait_until_settled(&mut session).await;
     assert!(
-        matches!(
-            &classified.screen,
-            TuiScreen::CourseResults(_) | TuiScreen::Menu(_)
-        ),
+        matches!(&classified.screen, TuiScreen::CourseResults(_) | TuiScreen::Menu(_)),
         "expected to still be on a recognized screen after continuing, got {:?}",
         classified.screen
     );
 
-    session.close();
+    session.close().await;
 }
 
-#[test]
+#[tokio::test]
 #[ignore = "hits the real production RUMAD system over the network -- opt in with `cargo test --test production -- --ignored`"]
-fn course_search_rejects_nonexistent_course() {
-    let mut session = connect_as_shared_account();
+async fn course_search_rejects_nonexistent_course() {
+    let mut session = connect_as_shared_account().await;
     let classified = screens::classify(&session.screen_text());
     interactive(&classified.screen)
         .select(&mut session, "5")
+        .await
         .expect("failed to open MenuDespliegue");
     let classified = screens::classify(&session.screen_text());
     interactive(&classified.screen)
         .select(&mut session, "6")
+        .await
         .expect("failed to open Horario de cursos disponibles");
     let classified = screens::classify(&session.screen_text());
     interactive(&classified.screen)
         .select(&mut session, "1")
+        .await
         .expect("failed to pick a semester");
     let classified = screens::classify(&session.screen_text());
 
@@ -218,8 +230,9 @@ fn course_search_rejects_nonexistent_course() {
     // instead of rejecting anything.
     interactive(&classified.screen)
         .line(&mut session, "ZZZZ")
+        .await
         .expect("failed to submit the bogus course search");
-    let classified = wait_until_settled(&mut session);
+    let classified = wait_until_settled(&mut session).await;
 
     let message = match &classified.dialog {
         Some(Dialog::Notice { message, .. }) => message.clone(),
@@ -236,18 +249,20 @@ fn course_search_rejects_nonexistent_course() {
     // rather than leaving the session sitting on it.
     interactive(&classified.screen)
         .exit(&mut session)
+        .await
         .expect("failed to exit the search prompt");
 
-    session.close();
+    session.close().await;
 }
 
-#[test]
+#[tokio::test]
 #[ignore = "hits the real production RUMAD system over the network -- opt in with `cargo test --test production -- --ignored`"]
-fn exits_menu_despliegue_back_to_main_menu() {
-    let mut session = connect_as_shared_account();
+async fn exits_menu_despliegue_back_to_main_menu() {
+    let mut session = connect_as_shared_account().await;
     let classified = screens::classify(&session.screen_text());
     interactive(&classified.screen)
         .select(&mut session, "5")
+        .await
         .expect("failed to open MenuDespliegue");
     let classified = screens::classify(&session.screen_text());
 
@@ -255,6 +270,7 @@ fn exits_menu_despliegue_back_to_main_menu() {
     // `RumadScreen::exit`'s doc comment).
     interactive(&classified.screen)
         .exit(&mut session)
+        .await
         .expect("failed to exit MenuDespliegue");
     let classified = screens::classify(&session.screen_text());
     match &classified.screen {
@@ -262,12 +278,12 @@ fn exits_menu_despliegue_back_to_main_menu() {
         other => panic!("expected to be back at MainMenu, got {other:?}"),
     }
 
-    session.close();
+    session.close().await;
 }
 
-#[test]
+#[tokio::test]
 #[ignore = "hits the real production RUMAD system over the network, AND needs a real student's own SSH credentials -- opt in with `cargo test --test production -- --ignored`, with RUMAD_TEST_SSH_USER/RUMAD_TEST_SSH_PASSWORD set"]
-fn reaches_login_screen_with_real_account() {
+async fn reaches_login_screen_with_real_account() {
     let (username, password) = match (
         std::env::var("RUMAD_TEST_SSH_USER"),
         std::env::var("RUMAD_TEST_SSH_PASSWORD"),
@@ -282,18 +298,14 @@ fn reaches_login_screen_with_real_account() {
         }
     };
 
-    let mut session = TuiSession::connect(
-        (config::DEFAULT_HOST, config::SSH_PORT),
-        &username,
-        &password,
-        80,
-        24,
-    )
-    .expect("failed to connect with the provided real account");
+    let mut session = TuiSession::connect((config::DEFAULT_HOST, config::SSH_PORT), &username, &password, 80, 24)
+        .await
+        .expect("failed to connect with the provided real account");
     let classified = screens::classify(&session.screen_text());
 
     interactive(&classified.screen)
         .select(&mut session, "2")
+        .await
         .expect("failed to select the Matricula option");
     let classified = screens::classify(&session.screen_text());
     let login = match &classified.screen {
@@ -305,7 +317,7 @@ fn reaches_login_screen_with_real_account() {
     // Deliberately never calls `LoginScreen::login` -- this only confirms
     // the page is reachable and classifies correctly, not a real login
     // attempt. Back out the same way every other screen does.
-    login.exit(&mut session).expect("failed to exit Login");
+    login.exit(&mut session).await.expect("failed to exit Login");
 
-    session.close();
+    session.close().await;
 }

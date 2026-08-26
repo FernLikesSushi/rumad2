@@ -5,6 +5,7 @@
 //! actual schedule, and has no action menu, just "Enter to continue" or
 //! PF4 to leave.
 
+use async_trait::async_trait;
 use regex::Regex;
 use serde::Serialize;
 use std::sync::OnceLock;
@@ -50,17 +51,18 @@ pub struct CourseResultsScreen {
     pub sections: Vec<CourseSection>,
 }
 
+#[async_trait]
 impl RumadScreen for CourseResultsScreen {
     /// No numbered options on this screen, just "Enter to continue" or
     /// PF4 to leave.
-    fn select(&self, _session: &mut TuiSession, _key: &str) -> anyhow::Result<()> {
+    async fn select(&self, _session: &mut TuiSession, _key: &str) -> anyhow::Result<()> {
         anyhow::bail!("CourseResults has no selectable options; use continue_screen() or exit()")
     }
 
     /// PF4 exits this screen specifically -- confirmed live from its own
     /// footer ("< Oprima Enter o [PF4(9)=Fin] >").
-    fn exit(&self, session: &mut TuiSession) -> anyhow::Result<()> {
-        session.send_key(Key::F4)
+    async fn exit(&self, session: &mut TuiSession) -> anyhow::Result<()> {
+        session.send_key(Key::F4).await
     }
 
     fn can_continue(&self) -> bool {

@@ -120,6 +120,7 @@ pub struct UnknownScreen {
 /// No dedicated interaction of its own -- inherits every `RumadScreen`
 /// default (`select`/`line` for the best-effort scraped `options`, "0" to
 /// exit, `can_exit` true).
+#[async_trait::async_trait]
 impl RumadScreen for UnknownScreen {}
 
 #[derive(Debug, Clone, PartialEq, Serialize)]

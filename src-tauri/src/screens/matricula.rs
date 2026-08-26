@@ -1,6 +1,7 @@
 //! The student's course schedule (`M A T R I C U L A`) plus whichever
 //! sub-mode is currently active.
 
+use async_trait::async_trait;
 use regex::Regex;
 use serde::Serialize;
 use std::sync::OnceLock;
@@ -49,17 +50,18 @@ pub struct MatriculaScreen {
     pub mode: MatriculaMode,
 }
 
+#[async_trait]
 impl RumadScreen for MatriculaScreen {
     /// `Actions` exits via its own `S`=Salir option -- a normal `select`,
     /// same as `MenuScreen`'s "0"/"S=salir" (see that impl's `exit` doc
     /// comment for why that still counts as a real exit destination, not
     /// a bail). `Bajas`/`Altas`/`Cambio` have no such listed option --
     /// they exit via the free-text "FIN" instead.
-    fn exit(&self, session: &mut TuiSession) -> anyhow::Result<()> {
+    async fn exit(&self, session: &mut TuiSession) -> anyhow::Result<()> {
         match self.mode {
-            MatriculaMode::Actions { .. } => self.select(session, "S"),
+            MatriculaMode::Actions { .. } => self.select(session, "S").await,
             MatriculaMode::Bajas | MatriculaMode::Altas | MatriculaMode::Cambio => {
-                self.line(session, "FIN")
+                self.line(session, "FIN").await
             }
         }
     }

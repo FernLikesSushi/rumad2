@@ -1,5 +1,5 @@
-use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager};
+use tokio::sync::Mutex;
 
 mod exec;
 
@@ -10,13 +10,17 @@ mod exec;
 pub mod interact;
 pub mod login;
 
-use exec::{act, blocking, finish, log_invoked, log_screen, spawn_screen_watcher, SCREEN_CHANGED_EVENT};
+use exec::{act, finish, log_invoked, log_screen, spawn_screen_watcher, SCREEN_CHANGED_EVENT};
 
 use crate::config;
 use crate::screens::{self, ClassifiedScreen, TuiScreen};
 use crate::ssh::session::TuiSession;
 
 /// Holds the one live TUI session for this app instance, if connected.
+/// `tokio::sync::Mutex`, not `std::sync::Mutex` -- `act`/`spawn_screen_watcher`
+/// hold the lock across `.await` points (the SSH calls themselves), and a
+/// std mutex guard held across an await can stall other tasks on the same
+/// worker thread rather than just yielding.
 #[derive(Default)]
 pub struct AppState(pub Mutex<Option<TuiSession>>);
 
@@ -39,35 +43,33 @@ pub async fn connect(
             "None"
         }
     ));
-    let watcher_app = app.clone();
-    let result = blocking(move || {
-        let username = username.unwrap_or_else(|| config::DEFAULT_USERNAME.to_string());
-        let password = password.unwrap_or_else(|| config::DEFAULT_PASSWORD.to_string());
+    let username = username.unwrap_or_else(|| config::DEFAULT_USERNAME.to_string());
+    let password = password.unwrap_or_else(|| config::DEFAULT_PASSWORD.to_string());
 
-        let session = TuiSession::connect(
-            (config::DEFAULT_HOST, config::SSH_PORT),
-            &username,
-            &password,
-            80,
-            24,
-        )
-        .map_err(|e| e.to_string())?;
-        let raw = session.screen_text();
-        log_screen(&raw);
-        let result = screens::classify(&raw);
+    let session = TuiSession::connect(
+        (config::DEFAULT_HOST, config::SSH_PORT),
+        &username,
+        &password,
+        80,
+        24,
+    )
+    .await
+    .map_err(|e| e.to_string())?;
+    let raw = session.screen_text();
+    log_screen(&raw);
+    let result = screens::classify(&raw);
 
-        let state = app.state::<AppState>();
-        let mut guard = state.0.lock().map_err(|_| "session lock poisoned")?;
-        *guard = Some(session);
-        finish(&mut guard, result)
-    })
-    .await;
+    let state = app.state::<AppState>();
+    let mut guard = state.0.lock().await;
+    *guard = Some(session);
+    let result = finish(&mut guard, result);
+    drop(guard);
 
-    // Started here rather than inside the closure above: needs the
-    // session already stored in `AppState` (so its own lock attempts find
-    // it) and the resolved screen as its baseline to diff against.
+    // Started here rather than above: needs the session already stored in
+    // `AppState` (so its own lock attempts find it) and the resolved
+    // screen as its baseline to diff against.
     if let Ok(result) = &result {
-        spawn_screen_watcher(watcher_app, result.clone());
+        spawn_screen_watcher(app.clone(), result.clone());
     }
     result
 }
@@ -77,7 +79,7 @@ pub async fn connect(
 #[tauri::command]
 pub async fn get_screen(app: AppHandle) -> Result<ClassifiedScreen, String> {
     log_invoked("get_screen()");
-    act(app, |session| session.refresh()).await
+    act(app, async |session| session.refresh().await).await
 }
 
 /// Whether a TUI session is currently live -- the frontend uses this to
@@ -88,13 +90,9 @@ pub async fn get_screen(app: AppHandle) -> Result<ClassifiedScreen, String> {
 #[tauri::command]
 pub async fn is_connected(app: AppHandle) -> Result<bool, String> {
     log_invoked("is_connected()");
-    tauri::async_runtime::spawn_blocking(move || {
-        let state = app.state::<AppState>();
-        let guard = state.0.lock().map_err(|_| "session lock poisoned")?;
-        Ok(guard.is_some())
-    })
-    .await
-    .map_err(|e| e.to_string())?
+    let state = app.state::<AppState>();
+    let guard = state.0.lock().await;
+    Ok(guard.is_some())
 }
 
 /// Log out of the remote menu and drop the session. Emits
@@ -106,19 +104,14 @@ pub async fn is_connected(app: AppHandle) -> Result<bool, String> {
 #[tauri::command]
 pub async fn disconnect(app: AppHandle) -> Result<(), String> {
     log_invoked("disconnect()");
-    let emit_app = app.clone();
-    tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
-        let state = app.state::<AppState>();
-        let mut guard = state.0.lock().map_err(|_| "session lock poisoned")?;
-        if let Some(session) = guard.take() {
-            session.close();
-        }
-        Ok(())
-    })
-    .await
-    .map_err(|e| e.to_string())??;
+    let state = app.state::<AppState>();
+    let mut guard = state.0.lock().await;
+    if let Some(session) = guard.take() {
+        session.close().await;
+    }
+    drop(guard);
 
-    let _ = emit_app.emit(
+    let _ = app.emit(
         SCREEN_CHANGED_EVENT,
         &ClassifiedScreen {
             screen: TuiScreen::Disconnected,

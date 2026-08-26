@@ -1,9 +1,8 @@
-//! Execution plumbing shared by every command: running blocking SSH work
-//! off the IPC thread, sending input to the session and turning the
-//! resulting screen text into a classified `ClassifiedScreen`, and the
-//! stdout logging that mirrors both onto the terminal.
+//! Execution plumbing shared by every command: sending input to the
+//! session and turning the resulting screen text into a classified
+//! `ClassifiedScreen`, and the stdout logging that mirrors both onto the
+//! terminal.
 
-use std::thread;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager};
 
@@ -54,21 +53,6 @@ pub(super) fn log_screen(raw: &str) {
     println!("[tui] screen:\n{raw}\n[tui] --- end screen ---");
 }
 
-/// Runs `body` on Tauri's blocking thread pool and flattens the join
-/// result. Plain (non-`async fn`) commands run inline on whatever thread
-/// dispatches the IPC message -- the GTK main loop on Linux -- so a
-/// blocking SSH handshake there would freeze the entire window. Every
-/// command in `mod.rs` is `async fn` and routes its actual work through
-/// here (directly, or via `act` below).
-pub(super) async fn blocking<F>(body: F) -> Result<ClassifiedScreen, String>
-where
-    F: FnOnce() -> Result<ClassifiedScreen, String> + Send + 'static,
-{
-    tauri::async_runtime::spawn_blocking(body)
-        .await
-        .map_err(|e| e.to_string())?
-}
-
 /// Re-reads and re-classifies the current screen, applying
 /// `clear_if_disconnected`'s side effect -- the shared tail end of every
 /// foreground read (`act`) and every background tick
@@ -109,19 +93,25 @@ fn handle_scene_change(guard: &mut Option<TuiSession>) -> Result<ClassifiedScree
 /// resulting classified screen -- the shared body behind `get_screen`,
 /// `interact::send`, and `login`, which differ only in what `send` does
 /// (nothing, dispatch through the current screen's `RumadScreen` impl, or
-/// a sequence of `Login` fields).
+/// a sequence of `Login` fields). `russh`, this app's SSH library, is
+/// async-only, so `TuiSession`/`RumadScreen` are async too; Tauri's
+/// command handlers already run on its own async runtime, so an `async
+/// fn` command that `.await`s here needs no dedicated thread of its own.
+/// `AsyncFnOnce`, not a plain `FnOnce(&mut TuiSession) -> impl Future` --
+/// callers need to borrow `session` themselves (e.g. to classify the
+/// current screen and dispatch through it), and only a real async closure
+/// lets that borrow's lifetime track the argument correctly; a
+/// manually-split `Fut` generic can't express that dependency without
+/// boxing the future.
 pub(super) async fn act<F>(app: AppHandle, send: F) -> Result<ClassifiedScreen, String>
 where
-    F: FnOnce(&mut TuiSession) -> anyhow::Result<()> + Send + 'static,
+    F: AsyncFnOnce(&mut TuiSession) -> anyhow::Result<()>,
 {
-    blocking(move || {
-        let state = app.state::<AppState>();
-        let mut guard = state.0.lock().map_err(|_| "session lock poisoned")?;
-        let session = guard.as_mut().ok_or("not connected")?;
-        send(session).map_err(|e| e.to_string())?;
-        handle_scene_change(&mut guard)?.or_err()
-    })
-    .await
+    let state = app.state::<AppState>();
+    let mut guard = state.0.lock().await;
+    let session = guard.as_mut().ok_or("not connected")?;
+    send(session).await.map_err(|e| e.to_string())?;
+    handle_scene_change(&mut guard)?.or_err()
 }
 
 /// Long-lived background reader, one per connected session (started right
@@ -135,33 +125,35 @@ where
 /// Exits once the session is gone (`disconnect`, or the SSH channel
 /// actually closing -- see `handle_scene_change`). Runs independently of
 /// `act`'s own foreground reads -- both just take turns through the same
-/// `AppState` lock.
+/// `AppState` lock. A `tokio::spawn`ed task, not a plain OS thread --
+/// `TuiSession::drain_available` is async, and `tokio::time::sleep`
+/// yields the runtime between ticks instead of blocking a whole thread.
 pub(super) fn spawn_screen_watcher(app: AppHandle, mut last: ClassifiedScreen) {
-    thread::spawn(move || loop {
-        thread::sleep(Duration::from_millis(200));
+    tauri::async_runtime::spawn(async move {
+        loop {
+            tokio::time::sleep(Duration::from_millis(200)).await;
 
-        let state = app.state::<AppState>();
-        let Ok(mut guard) = state.0.lock() else {
-            return;
-        };
-        let Some(session) = guard.as_mut() else {
-            return;
-        };
-        let changed = match session.drain_available() {
-            Ok(changed) => changed,
-            Err(_) => return,
-        };
-        if !changed {
-            continue;
-        }
-        let Ok(result) = handle_scene_change(&mut guard) else {
-            return;
-        };
-        drop(guard);
+            let state = app.state::<AppState>();
+            let mut guard = state.0.lock().await;
+            let Some(session) = guard.as_mut() else {
+                return;
+            };
+            let changed = match session.drain_available().await {
+                Ok(changed) => changed,
+                Err(_) => return,
+            };
+            if !changed {
+                continue;
+            }
+            let Ok(result) = handle_scene_change(&mut guard) else {
+                return;
+            };
+            drop(guard);
 
-        if result != last {
-            let _ = app.emit(SCREEN_CHANGED_EVENT, &result);
-            last = result;
+            if result != last {
+                let _ = app.emit(SCREEN_CHANGED_EVENT, &result);
+                last = result;
+            }
         }
     });
 }
