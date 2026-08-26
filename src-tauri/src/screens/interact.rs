@@ -3,11 +3,12 @@
 //! models (pick a numbered/lettered option; submit a terminated line of
 //! free text); `Login` deviates on entry (its own `login` method, see that
 //! type's doc comment) but still exits the same way every other screen
-//! does, via `exit()`. `commands::interact`'s `send` command is the single
-//! place any of this actually gets invoked from -- it re-classifies the
-//! current screen and dispatches through `TuiScreen::as_rumad_screen` (in
-//! `mod.rs`, alongside `TuiScreen`'s other methods) rather than any command
-//! sending raw session input directly.
+//! does, via `exit()`. `commands::interact`'s `send` command is the one
+//! place any of this gets invoked from inside the app itself -- it
+//! re-classifies the current screen and dispatches through
+//! `TuiScreen::as_rumad_screen` (in `mod.rs`, alongside `TuiScreen`'s
+//! other methods) rather than any command sending raw session input
+//! directly.
 //!
 //! This file only owns the trait itself -- each screen type's own `impl
 //! RumadScreen` lives alongside that screen's struct in its own submodule
@@ -27,7 +28,7 @@ use crate::ssh::session::TuiSession;
 /// `LoginScreen::login`) still implement this trait for `exit()`,
 /// overriding `select`/`line`'s defaults if they don't support that shape
 /// of interaction at all.
-pub(crate) trait RumadScreen {
+pub trait RumadScreen {
     fn select(&self, session: &mut TuiSession, key: &str) -> anyhow::Result<()> {
         session.send_text(key)
     }

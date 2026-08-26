@@ -91,7 +91,7 @@ use serde::Serialize;
 // anything with e.g. `CourseResultsScreen.sections`.
 pub use confirmed_schedule::{ConfirmedCourse, ConfirmedScheduleScreen};
 pub use course_results::{CourseResultsScreen, CourseSection};
-pub(crate) use interact::RumadScreen;
+pub use interact::RumadScreen;
 pub use login::{LoginField, LoginScreen};
 pub use matricula::{MatriculaMode, MatriculaScreen, ScheduleCourse};
 pub use menu::{MenuKind, MenuScreen};
@@ -175,8 +175,9 @@ pub enum TuiScreen {
 
 impl TuiScreen {
     /// This screen's `RumadScreen` impl, or `None` for `Disconnected` --
-    /// no live session left to send anything to.
-    pub(super) fn as_rumad_screen(&self) -> Option<&dyn RumadScreen> {
+    /// no live session left to send anything to. `pub`, same reason as
+    /// the `RumadScreen` re-export above.
+    pub fn as_rumad_screen(&self) -> Option<&dyn RumadScreen> {
         match self {
             TuiScreen::Menu(s) => Some(s),
             TuiScreen::Login(s) => Some(s),
