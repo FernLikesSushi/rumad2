@@ -4,17 +4,23 @@ import { WeekCalendar } from "../components/WeekCalendar";
 import { CourseLink } from "../components/CourseLink";
 import type { TuiScreenComponentProps } from "../types";
 
-export function CourseResultsScreen(props: TuiScreenComponentProps<"CourseResults">) {
+export function CourseResultsScreen(
+  props: TuiScreenComponentProps<"CourseResults">,
+) {
   const events = createMemo(() =>
     props.screen.sections.map((s) => ({
       label: `${s.section} - ${s.professor}`,
       meetings: s.meetings,
-    })));
+    })),
+  );
 
   return (
     <>
-      <h2><CourseLink course={props.screen.courseCode} /></h2>
-      <p class="text-[0.85em] opacity-75">{props.screen.courseTitle}</p>
+      <h2>
+        <CourseLink course={props.screen.courseCode} /> -{" "}
+        {props.screen.courseTitle}
+      </h2>
+
       <CourseResultsTable sections={props.screen.sections} />
       <WeekCalendar events={events()} />
     </>
