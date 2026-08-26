@@ -19,12 +19,14 @@ pub async fn login(
     log_invoked(&format!(
         "login(id_number={id_number:?}, access_code=<redacted>, ssn_last4=<redacted>, birth_date={birth_date:?})"
     ));
-    act(app, move |session| {
+    act(app, async move |session| {
         let raw = session.screen_text();
         let TuiScreen::Login(login_screen) = screens::classify(&raw).screen else {
             anyhow::bail!("not on the Login screen");
         };
-        login_screen.login(session, &id_number, &access_code, &ssn_last4, &birth_date)
+        login_screen
+            .login(session, &id_number, &access_code, &ssn_last4, &birth_date)
+            .await
     })
     .await
 }

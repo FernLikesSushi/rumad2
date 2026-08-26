@@ -24,9 +24,19 @@ tauri-plugin-opener = { version = "2", optional = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 anyhow = "1"
-ssh2 = { version = "0.9", features = ["vendored-openssl"] }
 vt100 = "0.16"
 regex = "1"
+russh = "0.63.1"
+# Required unconditionally (not gated behind the `tauri` feature): `russh`
+# is itself async-only, so `ssh`/`screens` -- the standalone scraping
+# library, independent of Tauri (see `lib.rs`'s doc comment) -- need a
+# runtime and `async fn` in the `RumadScreen` trait object regardless of
+# whether the `tauri` feature/app is involved at all.
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "time", "net", "macros", "sync"] }
+async-trait = "0.1"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
 
 [features]
 default = ["tauri"]

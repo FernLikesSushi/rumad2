@@ -37,15 +37,15 @@ pub enum SendAction {
 #[tauri::command]
 pub async fn send(app: AppHandle, action: SendAction) -> Result<ClassifiedScreen, String> {
     log_invoked(&format!("send({action:?})"));
-    act(app, move |session| {
+    act(app, async move |session| {
         let raw = session.screen_text();
         let screen = screens::classify(&raw).screen;
         match screen.as_rumad_screen() {
             Some(rumad_screen) => match action {
-                SendAction::Select { key } => rumad_screen.select(session, &key),
-                SendAction::Line { text } => rumad_screen.line(session, &text),
-                SendAction::Exit => rumad_screen.exit(session),
-                SendAction::Continue => rumad_screen.continue_screen(session),
+                SendAction::Select { key } => rumad_screen.select(session, &key).await,
+                SendAction::Line { text } => rumad_screen.line(session, &text).await,
+                SendAction::Exit => rumad_screen.exit(session).await,
+                SendAction::Continue => rumad_screen.continue_screen(session).await,
             },
             None => anyhow::bail!("current screen has no interaction"),
         }
