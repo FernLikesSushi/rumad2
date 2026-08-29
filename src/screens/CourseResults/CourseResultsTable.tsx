@@ -6,8 +6,7 @@ import { addCourseToProfile, classEditorState, selectedProfile } from "../../dat
 import { Plus } from "lucide-solid";
 
 // `courseCode` is a prop, not part of `CourseSection` -- needed to build
-// the `Course` the "add" button saves into the selected `ClassProfile`,
-// same reason `CourseResultsScreen` carries it alongside `sections` itself.
+// the `Course` the "add" button saves into the selected `ClassProfile`.
 export function CourseResultsTable(props: {
   courseCode: string;
   sections: CourseSection[];

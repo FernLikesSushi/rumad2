@@ -3,13 +3,10 @@ import { t } from "../i18n";
 import { LogIn } from "lucide-solid";
 
 // Hardcoded rather than read from the backend's `fields` -- the remote's
-// own labels for this specific form arrive mangled over the wire (see
-// `LoginField`'s doc comment on the Rust side, which hardcodes the same
-// text for the same reason), and the field set/order is fixed regardless.
-// Unlike other remote-mirroring text, this is safe to localize since it's
-// a fixed, known set rather than open-ended scraped content -- see
-// `Messages.loginFields`'s doc comment. `birth_date` is handled separately
-// below (a date picker, not a text input), so it's excluded here.
+// own labels arrive mangled over the wire (see `LoginField`'s Rust-side
+// doc comment), but the field set/order is fixed, so it's safe to
+// hardcode and localize here. `birth_date` is a date picker, not a text
+// input, so it's handled separately below and excluded here.
 function textFields() {
   const messages = t().loginFields;
   return [
@@ -19,16 +16,16 @@ function textFields() {
   ];
 }
 
-// The remote expects this field as 8 digits with no separators
-// (MMDDAAAA, per `LoginField`'s own "Ej. MMDDAAAA" hint on the Rust
-// side) -- a native date picker is friendlier than asking the user to
-// type that format themselves, so this converts the picker's ISO
-// "YYYY-MM-DD" value at submit time instead.
+// The remote expects this field as 8 digits, MMDDAAAA -- converts the
+// date picker's ISO "YYYY-MM-DD" value at submit time instead of asking
+// the user to type that format themselves.
 function toRemoteFormat(isoDate: string): string {
   const [year, month, day] = isoDate.split("-");
   return `${month}${day}${year}`;
 }
 
+/** The login form -- see `textFields` above for why its fields are
+ * hardcoded rather than scraped from the backend. */
 export function LoginScreen(props: {
   login: (idNumber: string, accessCode: string, ssnLast4: string, birthDate: string) => void;
   busy: boolean;

@@ -5,6 +5,8 @@ import { OptionButtons } from "../components/OptionButtons";
 import { createKeyboardListener } from "../components/KeyboardListener";
 import type { TuiScreenComponentProps } from "./api";
 
+/** Fallback for any remote screen not yet modeled as its own `TuiScreen`
+ * variant -- raw text plus best-effort scraped options, kept navigable. */
 export function UnknownScreen(props: TuiScreenComponentProps<"Unknown">) {
   const [freeText, setFreeText] = createSignal("");
 
