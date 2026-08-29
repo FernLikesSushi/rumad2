@@ -10,6 +10,16 @@
         android:label="@string/app_name"
         android:theme="@style/Theme.rumad_2"
         android:usesCleartextTraffic="${usesCleartextTraffic}">
+        <!-- Maps SDK for Android key -- reuses the web embed's own
+             `VITE_GOOGLE_MAPS_API_KEY` (repo root `.env`, gitignored),
+             read at build time in `app/build.gradle.kts` and injected
+             here via the `MAPS_API_KEY` manifest placeholder. See that
+             file's comment for the restriction-type tradeoff of sharing
+             one key across the iframe embed and this native SDK. -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${MAPS_API_KEY}" />
+
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
             android:launchMode="singleTask"

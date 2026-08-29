@@ -13,11 +13,31 @@ val tauriProperties = Properties().apply {
     }
 }
 
+// Reuses the same key as the web embed (`VITE_GOOGLE_MAPS_API_KEY` in the
+// repo root `.env`, gitignored) rather than a separate Android-only key --
+// simpler to manage, at the cost of the key's "Application restriction"
+// having to stay off (or cover only one of the two use cases): a single
+// key can't be *both* HTTP-referrer-restricted (for the iframe embed) and
+// Android-app-restricted (for this native SDK) at once. `API restriction`
+// (scoping the key to just Maps Embed + Maps SDK for Android) plus a
+// Cloud Console budget alert is the real protection here instead.
+val dotenv = Properties().apply {
+    // repo root: gen/android -> gen -> src-tauri -> root
+    val envFile = rootProject.file("../../../.env")
+    if (envFile.exists()) {
+        envFile.inputStream().use { load(it) }
+    }
+}
+val mapsApiKey: String = dotenv.getProperty("VITE_GOOGLE_MAPS_API_KEY")
+    ?: System.getenv("VITE_GOOGLE_MAPS_API_KEY")
+    ?: ""
+
 android {
     compileSdk = 36
     namespace = "me.fern.rumad2"
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
         applicationId = "me.fern.rumad2"
         minSdk = 24
         targetSdk = 36
