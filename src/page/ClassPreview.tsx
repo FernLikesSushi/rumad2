@@ -77,20 +77,22 @@ export function ClassPreview() {
               </div>
 
               {/* Table or calendar */}
-              <Switch>
-                <Match when={view() === "table"}>
-                  <ClassProfileTable courses={profile().courses} onRemove={removeCourse} />
-                </Match>
-                <Match when={view() === "calendar"}>
-                  <WeekCalendar
-                    events={profile().courses.map((c) => ({
-                      label: `${c.courseCode} ${c.section}`,
-                      meetings: c.meetings,
-                      onRemove: () => removeCourse(c),
-                    }))}
-                  />
-                </Match>
-              </Switch>
+              <div class="w-full min-w-3xs px-12">
+                <Switch>
+                  <Match when={view() === "table"}>
+                    <ClassProfileTable courses={profile().courses} onRemove={removeCourse} />
+                  </Match>
+                  <Match when={view() === "calendar"}>
+                    <WeekCalendar
+                      events={profile().courses.map((c) => ({
+                        label: `${c.courseCode} ${c.section}`,
+                        meetings: c.meetings,
+                        onRemove: () => removeCourse(c),
+                      }))}
+                    />
+                  </Match>
+                </Switch>
+              </div>
             </>
           )}
         </Show>
