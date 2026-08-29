@@ -110,7 +110,10 @@ export const RoomCodes: Record<string, RoomData> = {
     "RA": { name: "Alfredo Ramírez de Arellano y Rosell" },
     "S": { name: "Luis Stefani (Ingeniería)" },
     "SA": { name: "Sánchez Hall (ROTC)" },
-    "SH": { name: "Efraín Sánchez Hidalgo (Economía y PPMES)" },
+    "SH": {
+        name: "Efraín Sánchez Hidalgo (Economía y PPMES)",
+        location: { lat: 18.211705141192773, lng: -67.14033669830644 },
+    },
     "T": { name: "Terrats (Pagaduría y Finanzas)" },
     "TA": { name: "Taller de Artes Gráficas" },
 };
