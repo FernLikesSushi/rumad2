@@ -1,7 +1,7 @@
 import { t } from "../i18n";
 import { ConfirmedScheduleTable } from "../components/ConfirmedScheduleTable";
 import { WeekCalendar } from "../components/WeekCalendar";
-import type { TuiScreenComponentProps } from "../types";
+import type { TuiScreenComponentProps } from "./api";
 
 export function ConfirmedScheduleScreen(props: TuiScreenComponentProps<"ConfirmedSchedule">) {
   const events = () =>

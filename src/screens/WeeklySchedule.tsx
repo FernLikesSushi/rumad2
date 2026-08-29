@@ -1,6 +1,6 @@
 import { t } from "../i18n";
 import { ScheduleTable } from "../components/ScheduleTable";
-import type { TuiScreenComponentProps } from "../types";
+import type { TuiScreenComponentProps } from "./api";
 
 export function WeeklyScheduleScreen(props: TuiScreenComponentProps<"WeeklySchedule">) {
   return (

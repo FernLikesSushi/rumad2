@@ -1,6 +1,6 @@
 import { createSignal } from "solid-js";
 import { t } from "../i18n";
-import type { TuiScreenComponentProps } from "../types";
+import type { TuiScreenComponentProps } from "./api";
 import { Send } from "lucide-solid";
 
 export function SearchScreen(props: TuiScreenComponentProps<"Search">) {

@@ -1,4 +1,4 @@
-import type { TuiScreen } from "../types";
+import type { TuiScreen } from "./tui";
 
 // Fabricated, not scraped -- realistic shapes for visually checking each
 // screen component without a live SSH session.

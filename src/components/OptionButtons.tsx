@@ -1,5 +1,5 @@
 import { For, Show } from "solid-js";
-import type { MenuOption } from "../types";
+import type { MenuOption } from "../data/tui";
 import { iconFor, type IconMenu } from "../data/menuIcons";
 
 export function OptionButtons(props: {

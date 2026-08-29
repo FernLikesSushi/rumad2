@@ -2,7 +2,7 @@ import { createMemo } from "solid-js";
 import { CourseResultsTable } from "../components/CourseResultsTable";
 import { WeekCalendar } from "../components/WeekCalendar";
 import { CourseLink } from "../components/CourseLink";
-import type { TuiScreenComponentProps } from "../types";
+import type { TuiScreenComponentProps } from "./api";
 
 export function CourseResultsScreen(
   props: TuiScreenComponentProps<"CourseResults">,
