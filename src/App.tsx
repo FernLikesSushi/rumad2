@@ -44,7 +44,7 @@ function App() {
     >
       <Route path="/" component={Connect} />
       <Route path="/session" component={TuiSession} />
-      <Route path="/map" component={Map} />
+      <Route path="/map/:roomCode?" component={Map} />
       <Route path="/class-preview" component={ClassPreview} />
       <Route path="/dev" component={DevScreens} />
     </HashRouter>
