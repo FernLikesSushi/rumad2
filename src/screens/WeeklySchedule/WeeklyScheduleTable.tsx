@@ -2,7 +2,7 @@ import { For } from "solid-js";
 import { t } from "../../i18n";
 import type { ScheduleRow } from "../../data/tui";
 
-export function ScheduleTable(props: { days: string[]; rows: ScheduleRow[] }) {
+export function WeeklyScheduleTable(props: { days: string[]; rows: ScheduleRow[] }) {
   return (
     <div class="overflow-x-auto max-w-full">
       <table class="table table-zebra">

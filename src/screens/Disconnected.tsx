@@ -1,5 +1,6 @@
 import { t } from "../i18n";
 
+/** Shown once the SSH channel has actually closed -- prompts to reconnect. */
 export function DisconnectedScreen(props: { busy: boolean; onReconnect: () => void }) {
   return (
     <>

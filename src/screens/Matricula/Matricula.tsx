@@ -1,7 +1,7 @@
 import { createMemo, createSignal, Show } from "solid-js";
 import { t, localizeButton } from "../../i18n";
 import { OptionButtons } from "../../components/OptionButtons";
-import { CourseTable } from "./CourseTable";
+import { MatriculaCourseTable } from "./MatriculaCourseTable";
 import type { TuiScreenComponentProps } from "../api";
 import { createKeyboardListener } from "../../components/KeyboardListener";
 
@@ -9,16 +9,15 @@ import { createKeyboardListener } from "../../components/KeyboardListener";
 // text prompt -- only the [Bajas]/[Altas]/[Cambio] tag differs on-screen.
 const FREE_TEXT_MODES = new Set(["Bajas", "Altas", "Cambio"]);
 
+/** The student's schedule screen: course list plus whichever sub-mode
+ * (Actions, Bajas, Altas, Cambio) is currently active. */
 export function MatriculaScreen(props: TuiScreenComponentProps<"Matricula">) {
   const [freeText, setFreeText] = createSignal("");
 
-  // Only the "Actions" mode actually carries `options` -- Bajas/Altas/
-  // Cambio don't, and the keyboard listener below reads this on every
-  // keypress regardless of the current mode, so this must stay a real
-  // array (not undefined) even outside "Actions".
+  // Only "Actions" carries `options` -- stays a real array outside it so
+  // the keyboard listener below always has something to check against.
   const options = createMemo(() => (props.screen.mode.kind === "Actions" ? props.screen.mode.options : []));
 
-  // Keyboard listener for menu option selection
   createKeyboardListener((key) => {
     if (options().some((option) => option.key === key)) {
       choose(key);
@@ -34,9 +33,8 @@ export function MatriculaScreen(props: TuiScreenComponentProps<"Matricula">) {
     setFreeText("");
   }
 
-  // Actions' labels are the remote's own raw text (e.g. "HorEst",
-  // "CodigoReservar") -- localize via `localizeButton`, falling back to
-  // the raw label for anything not listed there.
+  // Actions' labels are the remote's own raw text (e.g. "HorEst") --
+  // localize via `localizeButton`, raw label as fallback.
   function localizedActions() {
     return options().map((option) => ({ ...option, label: localizeButton(option.label) }));
   }
@@ -44,7 +42,7 @@ export function MatriculaScreen(props: TuiScreenComponentProps<"Matricula">) {
   return (
     <>
       <h2>{t().matriculaTitle}</h2>
-      <CourseTable courses={props.screen.courses} />
+      <MatriculaCourseTable courses={props.screen.courses} />
 
       <Show when={props.screen.mode.kind === "Actions"}>
         <OptionButtons options={localizedActions()} busy={props.busy} onChoose={choose} menu="Matricula" hideKey />

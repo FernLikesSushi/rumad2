@@ -3,7 +3,7 @@ import { t } from "../../i18n";
 import type { ScheduleCourse } from "../../data/tui";
 import { CourseLink } from "../../components/CourseLink";
 
-export function CourseTable(props: { courses: ScheduleCourse[] }) {
+export function MatriculaCourseTable(props: { courses: ScheduleCourse[] }) {
   return (
     <table class="table table-zebra">
       <thead>

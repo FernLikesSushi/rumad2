@@ -4,6 +4,8 @@ import { WeekCalendar } from "../../components/WeekCalendar";
 import { CourseLink } from "../../components/CourseLink";
 import type { TuiScreenComponentProps } from "../api";
 
+/** Read-only search results for one course code: every open section, plus
+ * a calendar view of them. */
 export function CourseResultsScreen(
   props: TuiScreenComponentProps<"CourseResults">,
 ) {

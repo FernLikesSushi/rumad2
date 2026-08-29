@@ -3,6 +3,7 @@ import { t } from "../i18n";
 import type { TuiScreenComponentProps } from "./api";
 import { Send } from "lucide-solid";
 
+/** Free-text course-code search prompt (HorarioCurso/HorarioSeccion). */
 export function SearchScreen(props: TuiScreenComponentProps<"Search">) {
   const [text, setText] = createSignal("");
 
