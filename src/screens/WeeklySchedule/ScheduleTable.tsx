@@ -1,6 +1,6 @@
 import { For } from "solid-js";
-import { t } from "../i18n";
-import type { ScheduleRow } from "../data/tui";
+import { t } from "../../i18n";
+import type { ScheduleRow } from "../../data/tui";
 
 export function ScheduleTable(props: { days: string[]; rows: ScheduleRow[] }) {
   return (

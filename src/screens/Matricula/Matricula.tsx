@@ -1,9 +1,9 @@
 import { createMemo, createSignal, Show } from "solid-js";
-import { t, localizeButton } from "../i18n";
-import { OptionButtons } from "../components/OptionButtons";
-import { CourseTable } from "../components/CourseTable";
-import type { TuiScreenComponentProps } from "./api";
-import { createKeyboardListener } from "../components/KeyboardListener";
+import { t, localizeButton } from "../../i18n";
+import { OptionButtons } from "../../components/OptionButtons";
+import { CourseTable } from "./CourseTable";
+import type { TuiScreenComponentProps } from "../api";
+import { createKeyboardListener } from "../../components/KeyboardListener";
 
 // Bajas/Altas/Cambio all show the same "course abbreviation, or FIN" free-
 // text prompt -- only the [Bajas]/[Altas]/[Cambio] tag differs on-screen.

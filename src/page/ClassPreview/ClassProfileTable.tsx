@@ -1,8 +1,8 @@
 import { For } from "solid-js";
-import { t } from "../i18n";
-import type { Course } from "../data/classEditor";
-import { CourseLink } from "./CourseLink";
-import { RoomLink } from "./RoomLink";
+import { t } from "../../i18n";
+import type { Course } from "../../data/classEditor";
+import { CourseLink } from "../../components/CourseLink";
+import { RoomLink } from "../../components/RoomLink";
 import { Trash2 } from "lucide-solid";
 
 export function ClassProfileTable(props: { courses: Course[]; onRemove: (course: Course) => void }) {
