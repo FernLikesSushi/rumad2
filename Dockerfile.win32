@@ -80,3 +80,9 @@ RUN pnpm run tauri build \
 # unused builder-stage layers never become part of it.
 FROM scratch AS export
 COPY --from=builder /app/src-tauri/target/x86_64-pc-windows-gnu/release/bundle/nsis /nsis
+# `scratch` has no filesystem of its own, so there's nothing here `CMD`
+# could actually exec -- but `docker create` still requires *some*
+# command be set on the image (confirmed live: "no command specified"
+# otherwise), even though `cross_win32.sh` only ever `cp`s out of the
+# container and never starts it.
+CMD ["/nsis"]
