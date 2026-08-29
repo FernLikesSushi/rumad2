@@ -1,4 +1,4 @@
-FROM ubuntu:24.04
+FROM ubuntu:24.04 AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 # No TTY in a Docker build -- tells pnpm to auto-confirm prompts (e.g.
@@ -7,6 +7,10 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV CI=true
 
 # System dependencies + Windows cross-compilation tools
+# `nasm`: aws-lc-sys (pulled in transitively via rustls's aws-lc-rs
+# crypto provider) builds its Windows-target assembly routines with NASM
+# specifically -- other targets use perlasm/gas instead, which is why
+# this only shows up cross-compiling for `x86_64-pc-windows-gnu`.
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     curl \
@@ -17,6 +21,7 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     mingw-w64 \
     nsis \
+    nasm \
     && rm -rf /var/lib/apt/lists/*
 
 # Node.js 22
@@ -47,7 +52,13 @@ RUN npm install -g pnpm
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
-# Copy the rest of the application
+# Copy the rest of the application. Relies on `.dockerignore` at the repo
+# root to keep `node_modules`/`dist`/`src-tauri/target`/`.git`/Android
+# Gradle build dirs out of the build context -- without it, whatever's
+# accumulated locally from other builds gets copied in wholesale (this is
+# what made the image balloon past 10GB: a debug `cargo`/`gradle` target
+# dir alone routinely runs multiple GB, and none of it is even used by
+# this Windows cross-build).
 COPY . .
 
 # Build the Windows app
@@ -60,5 +71,12 @@ COPY . .
 RUN pnpm run tauri build \
     --target x86_64-pc-windows-gnu
 
-# Artifacts are inside:
-# /app/src-tauri/target/x86_64-pc-windows-gnu/release/bundle/nsis/
+# The builder stage above (Rust/Node toolchains, mingw-w64, the full
+# `target/` dir with every intermediate object file) is where all the
+# multi-GB weight actually lives. None of it is needed after the build,
+# so only the final NSIS installer gets copied into this stage -- what
+# `docker build` tags as the image (what `cross_win32.sh` runs `docker
+# create`/`docker cp` against) ends up a few MB instead of 10GB+, since
+# unused builder-stage layers never become part of it.
+FROM scratch AS export
+COPY --from=builder /app/src-tauri/target/x86_64-pc-windows-gnu/release/bundle/nsis /nsis
