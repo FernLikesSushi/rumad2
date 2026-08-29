@@ -1,8 +1,8 @@
 import { For } from "solid-js";
-import { t } from "../i18n";
-import type { ConfirmedCourse } from "../data/tui";
-import { CourseLink } from "./CourseLink";
-import { RoomLink } from "./RoomLink";
+import { t } from "../../i18n";
+import type { ConfirmedCourse } from "../../data/tui";
+import { CourseLink } from "../../components/CourseLink";
+import { RoomLink } from "../../components/RoomLink";
 
 export function ConfirmedScheduleTable(props: { courses: ConfirmedCourse[] }) {
   return (

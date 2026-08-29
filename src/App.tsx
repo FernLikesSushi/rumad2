@@ -9,7 +9,7 @@ import { Connect } from "./page/Connect";
 import { TuiSession } from "./page/TuiSession";
 import { DevScreens } from "./page/DevScreens";
 import { Map } from "./page/Map";
-import { ClassPreview } from "./page/ClassPreview";
+import { ClassPreview } from "./page/ClassPreview/ClassPreview";
 import { t } from "./i18n";
 import "./App.css";
 

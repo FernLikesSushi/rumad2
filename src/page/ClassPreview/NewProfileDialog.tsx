@@ -1,5 +1,5 @@
 import { createSignal, Show } from "solid-js";
-import { t } from "../i18n";
+import { t } from "../../i18n";
 
 // `ClassPreview`'s "+" button opens this to name a new `ClassProfile`
 // before it's saved -- same `modal`/`modal-box` overlay as `NoticeDialog`,

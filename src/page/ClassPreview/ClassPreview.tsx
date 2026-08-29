@@ -1,8 +1,8 @@
 import { createSignal, For, Match, Show, Switch } from "solid-js";
-import { Header } from "../components/Header";
-import { NewProfileDialog } from "../components/NewProfileDialog";
-import { ClassProfileTable } from "../components/ClassProfileTable";
-import { WeekCalendar } from "../components/WeekCalendar";
+import { Header } from "../../components/Header";
+import { NewProfileDialog } from "./NewProfileDialog";
+import { ClassProfileTable } from "./ClassProfileTable";
+import { WeekCalendar } from "../../components/WeekCalendar";
 import {
   classEditorState,
   removeCourseFromProfile,
@@ -10,8 +10,8 @@ import {
   selectClassProfile,
   selectedProfile,
   type Course,
-} from "../data/classEditor";
-import { t } from "../i18n";
+} from "../../data/classEditor";
+import { t } from "../../i18n";
 import { Calendar, Plus, Table } from "lucide-solid";
 
 type View = "table" | "calendar";
