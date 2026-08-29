@@ -3,7 +3,7 @@ import { t } from "../i18n";
 import { devMode } from "../data/devMode";
 import { OptionButtons } from "../components/OptionButtons";
 import { createKeyboardListener } from "../components/KeyboardListener";
-import type { TuiScreenComponentProps } from "../types";
+import type { TuiScreenComponentProps } from "./api";
 
 export function UnknownScreen(props: TuiScreenComponentProps<"Unknown">) {
   const [freeText, setFreeText] = createSignal("");

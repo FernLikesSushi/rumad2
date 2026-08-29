@@ -3,7 +3,7 @@ import { useNavigate } from "@solidjs/router";
 import { t } from "../i18n";
 import { devMode } from "../data/devMode";
 import { mockScreens } from "../data/devScreens";
-import type { TuiScreen, Send } from "../types";
+import type { TuiScreen, Send } from "../data/tui";
 import { Header } from "../components/Header";
 import { MenuScreen } from "../screens/MenuScreen";
 import { LoginScreen } from "../screens/Login";

@@ -1,6 +1,6 @@
 import { createMemo, For, Show } from "solid-js";
 import { t } from "../i18n";
-import type { Meeting } from "../types";
+import type { Meeting } from "../data/tui";
 import { X } from "lucide-solid";
 
 // What `WeekCalendar` actually plots -- decoupled from `CourseSection`/

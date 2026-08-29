@@ -1,6 +1,6 @@
 import { For } from "solid-js";
 import { t } from "../i18n";
-import type { CourseSection } from "../types";
+import type { CourseSection } from "../data/tui";
 import { RoomLink } from "./RoomLink";
 import { addCourseToProfile, classEditorState, selectedProfile } from "../data/classEditor";
 import { Plus } from "lucide-solid";

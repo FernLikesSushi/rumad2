@@ -1,5 +1,5 @@
 import { createMemo, createSignal } from "solid-js";
-import { CourseSection, Meeting } from "../types";
+import { CourseSection, Meeting } from "./tui";
 import { t } from "../i18n";
 import { showToast } from "./toast";
 

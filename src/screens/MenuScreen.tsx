@@ -1,7 +1,7 @@
 import { createMemo } from "solid-js";
 import { t, localizeButton } from "../i18n";
 import { OptionButtons } from "../components/OptionButtons";
-import type { TuiScreenComponentProps } from "../types";
+import type { TuiScreenComponentProps } from "./api";
 import { createKeyboardListener } from "../components/KeyboardListener";
 
 export function MenuScreen(props: TuiScreenComponentProps<"Menu">) {

@@ -1,6 +1,6 @@
 import { For } from "solid-js";
 import { t } from "../i18n";
-import type { ScheduleCourse } from "../types";
+import type { ScheduleCourse } from "../data/tui";
 import { CourseLink } from "./CourseLink";
 
 export function CourseTable(props: { courses: ScheduleCourse[] }) {

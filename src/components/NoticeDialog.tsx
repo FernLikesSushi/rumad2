@@ -1,6 +1,10 @@
 import { createSignal, Show } from "solid-js";
 import { t } from "../i18n";
-import type { DialogBox } from "../types";
+
+// UI state for the notice dialog below -- derived from a `Dialog`
+// (specifically `Notice`; `Processing` doesn't open this), not the same
+// thing as one.
+type DialogBox = { title: string; message: string };
 
 // Owns the show/dismiss state a `<NoticeDialog>` needs -- `TuiRouter` and
 // `Connect` each open one the same way (an error dialog on a rejected

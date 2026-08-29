@@ -1,6 +1,6 @@
 import { For } from "solid-js";
 import { t } from "../i18n";
-import type { ConfirmedCourse } from "../types";
+import type { ConfirmedCourse } from "../data/tui";
 import { CourseLink } from "./CourseLink";
 import { RoomLink } from "./RoomLink";
 
