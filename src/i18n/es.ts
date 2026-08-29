@@ -139,6 +139,7 @@ const es: Messages = {
   removeFromClassProfile: "Quitar del perfil de clases",
   courseAddedToast: "Curso añadido al perfil de clases.",
   courseRemovedToast: "Curso removido del perfil de clases.",
+  openInMaps: { google: "Abrir en Google Maps", apple: "Abrir en Apple Maps", waze: "Abrir en Waze" },
 };
 
 export default es;

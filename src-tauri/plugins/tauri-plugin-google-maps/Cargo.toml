@@ -9,6 +9,15 @@ license = "LGPL-3.0-or-later"
 # this crate.
 links = "tauri-plugin-google-maps"
 
+# Matches the actual split in src/mobile.rs (Android) vs src/desktop.rs
+# (everything else, all `Error::Unsupported`) -- not aspirational.
+[package.metadata.platforms.support]
+windows = { level = "none", notes = "" }
+linux = { level = "none", notes = "" }
+macos = { level = "none", notes = "" }
+android = { level = "full", notes = "" }
+ios = { level = "none", notes = "Not implemented -- see the crate's own description." }
+
 [dependencies]
 tauri = { version = "2" }
 serde = { version = "1", features = ["derive"] }
