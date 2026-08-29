@@ -8,3 +8,8 @@ import { platform } from "@tauri-apps/plugin-os";
 export function isAndroid(): boolean {
   return platform() === "android";
 }
+
+export function isMobile(): boolean {
+  const p = platform();
+  return p === "android" || p === "ios";
+}

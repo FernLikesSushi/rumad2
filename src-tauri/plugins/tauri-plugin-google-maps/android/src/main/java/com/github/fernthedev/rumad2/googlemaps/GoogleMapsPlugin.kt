@@ -16,9 +16,27 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 
-// Field names/casing match the `#[serde(rename_all = "camelCase")]`
-// structs in the Rust plugin's `models.rs` one-for-one -- Tauri's Android
-// arg parser maps JSON keys onto these by name.
+// This is what `PluginHandle::run_mobile_plugin("createMap", payload)` on
+// the Rust side (this plugin crate's `src/mobile.rs`) is actually calling
+// *into*: Tauri's Android runtime finds the plugin class named in
+// `register_android_plugin`
+// (`GoogleMapsPlugin`, the class below), looks for a method on it
+// annotated `@Command` whose *name* matches the string passed to
+// `run_mobile_plugin` ("createMap" -> `fun createMap`), and calls it with
+// the deserialized JSON payload wrapped in an `Invoke` object. Nothing
+// here is triggered by anything Android itself calls automatically
+// (aside from the lifecycle overrides near the bottom) -- it's purely a
+// response to a Rust-side call.
+
+// `@InvokeArg` classes are how Tauri deserializes a command's JSON
+// payload into a real Kotlin object -- roughly like `serde::Deserialize`
+// on the Rust side, but reflection-based: it matches JSON keys to `var`
+// property names, so these have to be plain mutable fields with default
+// values (not a Kotlin data class' constructor params) for the parser to
+// populate them after construction. Field names/casing match the
+// `#[serde(rename_all = "camelCase")]` structs in the Rust plugin's
+// `models.rs` one-for-one; there's no compiler check tying the two
+// together, only convention.
 
 @InvokeArg
 class FrameArgs {
@@ -28,6 +46,11 @@ class FrameArgs {
     var height: Double = 0.0
 }
 
+// Not `FrameArgs` plus extra fields via inheritance -- kept as a flat,
+// separate class instead, since it's not certain the `@InvokeArg`
+// reflection-based parser would pick up inherited properties correctly,
+// and the duplication (x/y/width/height repeated) is cheap compared to
+// debugging that if it silently didn't.
 @InvokeArg
 class CreateMapArgs {
     var x: Double = 0.0
@@ -65,9 +88,22 @@ class SetMarkerArgs {
  * Rust `GoogleMaps<R>` handle's methods (`../../src/mobile.rs`) one-for-
  * one -- each just runs the equivalent `GoogleMap`/`MapView` call on the
  * UI thread, since none of the Maps SDK APIs are safe to touch off it.
+ *
+ * `@TauriPlugin` + extending `Plugin(activity)` is what makes this a
+ * plugin Tauri's Android runtime actually knows about, rather than just
+ * an ordinary Kotlin class -- `Plugin` is the base class that wires up
+ * command dispatch (see `@Command` below) and forwards Activity
+ * lifecycle events (`onResume`/`onPause`/`onDestroy`, also below) to
+ * whatever this subclass overrides.
  */
 @TauriPlugin
 class GoogleMapsPlugin(private val activity: Activity) : Plugin(activity) {
+    // The plugin class is created once and lives for the app's lifetime
+    // (Tauri owns exactly one instance, same as `mobile.rs`'s
+    // `PluginHandle` on the Rust side only ever pointing at this one
+    // instance) -- so these fields are where "is there currently a map,
+    // and which one" actually lives, not local state some command
+    // handler owns temporarily.
     private var mapView: MapView? = null
     private var googleMap: GoogleMap? = null
     private var marker: Marker? = null
@@ -90,10 +126,26 @@ class GoogleMapsPlugin(private val activity: Activity) : Plugin(activity) {
         return params
     }
 
+    // `@Command` is what makes a method callable from the Rust side at
+    // all -- Tauri's plugin runtime scans this class for methods with
+    // this annotation and dispatches to whichever one's name matches the
+    // string `run_mobile_plugin` was called with (see the big comment at
+    // the top of this file). The method name itself ("createMap") is
+    // that link -- nothing else associates this function with the Rust
+    // `create_map` command.
     @Command
     fun createMap(invoke: Invoke) {
+        // `Invoke` wraps the raw call: `parseArgs` deserializes its JSON
+        // payload into the `@InvokeArg` class given, and later on this
+        // same `invoke` is how the result (or an error, via
+        // `invoke.reject(...)`, not used here) gets sent back to
+        // whichever Rust `run_mobile_plugin` call is waiting on it.
         val args = invoke.parseArgs(CreateMapArgs::class.java)
 
+        // Every Maps SDK / View call in this file happens inside
+        // `runOnUiThread` -- Tauri plugin commands can run on a
+        // background thread, but Android Views (and the Maps SDK
+        // specifically) are only safe to touch from the main/UI thread.
         activity.runOnUiThread {
             disposeInternal()
 
@@ -105,6 +157,12 @@ class GoogleMapsPlugin(private val activity: Activity) : Plugin(activity) {
             val root = activity.window.decorView.findViewById<ViewGroup>(android.R.id.content)
             root.addView(view, frameToLayoutParams(args.x, args.y, args.width, args.height))
 
+            // `getMapAsync` -- the `MapView` itself isn't a usable
+            // `GoogleMap` yet the instant it's constructed; this callback
+            // fires once the SDK's actually ready, which is also the
+            // earliest point camera/marker calls are safe to make (see
+            // `moveCamera`/`placeMarker`'s own null-check-and-queue logic
+            // below for what happens if one arrives before this fires).
             view.getMapAsync(OnMapReadyCallback { map ->
                 googleMap = map
                 map.uiSettings.isZoomControlsEnabled = true
@@ -125,10 +183,15 @@ class GoogleMapsPlugin(private val activity: Activity) : Plugin(activity) {
             })
         }
 
-        // Fire-and-forget from the JS side's perspective: this resolves
-        // once the work is *posted* to the UI thread, not once the map
-        // has actually finished (re)rendering -- matches `updateFrame`
-        // being driven by best-effort resize/scroll events anyway.
+        // `invoke.resolve()` is what makes the Rust-side
+        // `run_mobile_plugin(...)` call actually return `Ok(())` -- until
+        // this is called, that Rust call just blocks waiting. Called
+        // here immediately, not inside the `runOnUiThread` block above,
+        // so this is fire-and-forget from the JS side's perspective: it
+        // resolves once the work is *posted* to the UI thread, not once
+        // the map has actually finished (re)rendering -- matches
+        // `updateFrame` being driven by best-effort resize/scroll events
+        // anyway.
         invoke.resolve()
     }
 
@@ -164,6 +227,10 @@ class GoogleMapsPlugin(private val activity: Activity) : Plugin(activity) {
         activity.runOnUiThread { disposeInternal() }
         invoke.resolve()
     }
+
+    // Plain private helpers below -- not `@Command`-annotated, so Tauri
+    // has no idea these exist; they're only reachable from the methods
+    // above (and each other).
 
     private fun moveCamera(position: LatLng, zoom: Float) {
         val map = googleMap
@@ -206,10 +273,14 @@ class GoogleMapsPlugin(private val activity: Activity) : Plugin(activity) {
         mapView = null
     }
 
-    // Forwarded from the Activity's own lifecycle -- `MapView` needs
-    // these to pause/resume its internal `GLSurfaceView` rendering along
-    // with the rest of the app instead of leaking a live GL context or
-    // rendering while backgrounded.
+    // Forwarded from the Activity's own lifecycle -- these three
+    // `override fun`s aren't called by anything in this file; Tauri's
+    // `Plugin` base class hooks into the Activity's real lifecycle
+    // callbacks and calls these automatically (e.g. when the user
+    // backgrounds the app). `MapView` needs `onResume`/`onPause`/
+    // `onDestroy` forwarded to it to pause/resume its internal
+    // `GLSurfaceView` rendering along with the rest of the app, instead
+    // of leaking a live GL context or rendering while backgrounded.
     override fun onResume() {
         super.onResume()
         mapView?.onResume()

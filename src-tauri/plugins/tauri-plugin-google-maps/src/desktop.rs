@@ -1,9 +1,22 @@
+// The non-Android half of the split described in `lib.rs` (covers
+// desktop AND iOS -- see `#[cfg(not(target_os = "android"))]` at the
+// `mod` declaration in lib.rs, not a `#[cfg(desktop)]`). There's no
+// native map view to talk to on either, so this exists purely so the
+// crate *compiles* everywhere and every command fails the same
+// predictable way (`Error::Unsupported`) instead of the whole crate
+// refusing to build on non-Android targets.
 use serde::de::DeserializeOwned;
 use tauri::{plugin::PluginApi, AppHandle, Runtime};
 
 use crate::models::*;
 use crate::Result;
 
+// Mirrors `mobile::init`'s signature exactly (same function name, same
+// params, same return type) -- that symmetry is what lets `lib.rs`'s
+// `setup()` closure call `mobile::init(app, api)` or `desktop::init(app,
+// api)` behind a `#[cfg(...)]` without the rest of the file needing to
+// change. `api` (the mobile-plugin registration handle) goes unused here
+// since there's no Kotlin/Swift class to register against.
 pub fn init<R: Runtime, C: DeserializeOwned>(
     app: &AppHandle<R>,
     _api: PluginApi<R, C>,
@@ -16,6 +29,11 @@ pub fn init<R: Runtime, C: DeserializeOwned>(
 /// the frontend falls back to `GoogleMapWeb`'s iframe embed there instead.
 pub struct GoogleMaps<R: Runtime>(#[allow(dead_code)] AppHandle<R>);
 
+// Every method below just returns the same error -- there's nothing
+// platform-specific to *do* here, this only exists so calling
+// `app.google_maps().create_map(...)` (see `commands.rs`) type-checks
+// and behaves predictably regardless of which module (`mobile`/
+// `desktop`) actually got compiled in.
 impl<R: Runtime> GoogleMaps<R> {
     pub fn create_map(&self, _payload: CreateMapArgs) -> Result<()> {
         Err(crate::Error::Unsupported)

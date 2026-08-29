@@ -4,7 +4,28 @@ import { createMemo, Show } from "solid-js";
 import { RoomCodes } from "../data/roomMap";
 import { GoogleMap } from "../components/geo/GoogleMapWeb";
 import { GoogleMapNative } from "../components/geo/GoogleMapNative";
-import { isAndroid } from "../data/platform";
+import { isAndroid, isMobile } from "../data/platform";
+import { openUrl } from "@tauri-apps/plugin-opener";
+import { t } from "../i18n";
+
+// Universal links -- each opens the platform's own app if it's installed
+// (that's what `openUrl` hands off to on mobile), falling back to that
+// app's own web view otherwise. Not custom URL schemes (`comgooglemaps:`/
+// `waze:`) since those 404 outright when the app isn't installed instead
+// of falling back to anything.
+//
+// Default to walking directions -- this is campus navigation between
+// buildings, not a drive -- via each app's *directions* endpoint rather
+// than just dropping a pin. Waze has no walking mode at all (it's a
+// driving-only navigation app), so there's nothing to set there.
+function externalMapsUrls(lat: number, lng: number, label: string) {
+  const query = encodeURIComponent(label);
+  return {
+    google: `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`,
+    apple: `https://maps.apple.com/?daddr=${lat},${lng}&dirflg=w&q=${query}`,
+    waze: `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`,
+  };
+}
 
 export function Map() {
   const params = useParams<{ roomCode?: string }>();
@@ -26,11 +47,31 @@ export function Map() {
           </p>}
         </Show>
         <Show when={center()} fallback={<p>No location available</p>}>
-          {center => <div class="w-full flex-1 min-h-0 p-4">
-            {isAndroid()
-              ? <GoogleMapNative lat={center().lat} lng={center().lng} zoom={19.5} title={roomInfo()?.name} />
-              : <GoogleMap lat={center().lat} lng={center().lng} zoom={19.5} />}
-          </div>
+          {center => <>
+            <div class="w-full flex-1 min-h-0 p-4">
+              {isAndroid()
+                ? <GoogleMapNative lat={center().lat} lng={center().lng} zoom={19.5} title={roomInfo()?.name} />
+                : <GoogleMap lat={center().lat} lng={center().lng} zoom={19.5} />}
+            </div>
+            <Show when={isMobile()}>
+              {(() => {
+                const urls = () => externalMapsUrls(center().lat, center().lng, roomInfo()?.name ?? params.roomCode ?? "");
+                return (
+                  <div class="flex gap-2 flex-wrap justify-center pb-4">
+                    <button class="btn btn-sm" onClick={() => openUrl(urls().google)}>
+                      {t().openInMaps.google}
+                    </button>
+                    <button class="btn btn-sm" onClick={() => openUrl(urls().apple)}>
+                      {t().openInMaps.apple}
+                    </button>
+                    <button class="btn btn-sm" onClick={() => openUrl(urls().waze)}>
+                      {t().openInMaps.waze}
+                    </button>
+                  </div>
+                );
+              })()}
+            </Show>
+          </>
           }
         </Show>
       </div>

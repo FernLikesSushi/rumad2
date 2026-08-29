@@ -181,4 +181,8 @@ export interface Messages {
   // `removeCourseFromProfile` actually change something.
   courseAddedToast: string;
   courseRemovedToast: string;
+  // `Map.tsx`'s "open externally" row -- mobile-only (`isMobile()`),
+  // launches the platform's map app via `@tauri-apps/plugin-opener`'s
+  // `openUrl` rather than anything rendered in-app.
+  openInMaps: { google: string; apple: string; waze: string };
 }
