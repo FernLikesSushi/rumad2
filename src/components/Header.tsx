@@ -12,13 +12,20 @@ export function Header(props: { disconnect?: () => Promise<void>; }) {
             <label
                 for={DRAWER_ID}
                 aria-label={t().openMenu}
-                class="btn btn-ghost btn-circle hidden sm:inline-flex lg:hidden"
+                class="btn btn-ghost btn-circle hidden sm:inline-flex lg:hidden tooltip tooltip-bottom"
+                data-tip={t().openMenu}
             >
                 <Menu />
             </label>
 
             <Show when={props.disconnect !== undefined}>
-                <button type="button" class="btn btn-ghost btn-circle" aria-label={t().logout} onClick={disconnect}>
+                <button
+                    type="button"
+                    class="btn btn-ghost btn-circle tooltip tooltip-bottom"
+                    aria-label={t().logout}
+                    data-tip={t().logout}
+                    onClick={disconnect}
+                >
                     <LogOut />
                 </button>
             </Show>

@@ -76,8 +76,9 @@ function MeetingBox(props: { label: string; meeting: Meeting; bounds: Bounds; co
       <Show when={props.onRemove}>
         {(onRemove) => (
           <button
-            class="absolute top-0.5 right-0.5 opacity-70 hover:opacity-100"
+            class="absolute top-0.5 right-0.5 opacity-70 hover:opacity-100 tooltip tooltip-left"
             aria-label={t().removeFromClassProfile}
+            data-tip={t().removeFromClassProfile}
             onClick={onRemove()}
           >
             <X class="size-3" />
