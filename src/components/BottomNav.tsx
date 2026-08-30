@@ -8,7 +8,12 @@ import { navItems } from "../data/navItems";
 // hamburger/overlay, `lg`+ keeps its permanent sidebar; all three share
 // the same `navItems()` list. `dock` is `position: fixed` at the bottom,
 // so callers need their own bottom padding below `sm` to keep content
-// from sitting underneath it (see `App.tsx`).
+// from sitting underneath it (see `App.tsx`). `dock` already pads itself
+// by `env(safe-area-inset-bottom)` (extra height + padding-bottom) to
+// keep its icons clear of the iOS/Android home-indicator gesture zone
+// while its background still fills to the physical edge -- that only
+// takes effect with `viewport-fit=cover` set on the page's viewport meta
+// (index.html), since `env(safe-area-inset-*)` is otherwise always 0.
 export function BottomNav() {
     return (
         <div class="dock sm:hidden">

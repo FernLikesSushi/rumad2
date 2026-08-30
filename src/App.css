@@ -17,7 +17,7 @@
    else inherits from the built-in theme unchanged). */
 @plugin "daisyui/theme" {
   name: "emerald";
-  --color-primary: #50c878;
+  --color-primary: rgba(0, 121, 43, 1);
 }
 
 @plugin "daisyui/theme" {
@@ -80,6 +80,17 @@
     margin-block: 0.83em;
     text-align: center;
   }
+}
+
+/* `dock`'s own `padding-bottom: env(safe-area-inset-bottom)` covers
+   iOS's home indicator, but Android's system WebView doesn't map the
+   gesture nav bar to that env() var (only display-cutout insets are
+   exposed that way), so the dock still sits flush under it there.
+   Plain extra padding as a floor, unlayered so it beats `.dock`'s own
+   layered rule regardless of source order (see the `h1`/`h2` comment
+   above for why that's how ties resolve here). */
+.dock {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 }
 
 /* Promotes buttons to their own GPU compositing layer so WebKitGTK

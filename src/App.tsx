@@ -32,7 +32,7 @@ function App() {
         // lives inside it and fills it via `flex-1` instead of asserting
         // its own viewport-relative height, so the two can't stack and add
         // on top of each other the way two independent `dvh`/`vh` claims did.
-        <main class="flex flex-col justify-start text-center px-4 py-4 min-h-screen max-sm:pb-[calc(4rem+env(safe-area-inset-bottom))]">
+        <main class="flex flex-col justify-start text-center px-4 py-4 min-h-screen max-sm:pb-[calc(4rem+env(safe-area-inset-bottom))] max-sm:pt-[env(safe-area-inset-top)]">
           <Drawer>
             <TuiDialogHandler />
             <Toast />

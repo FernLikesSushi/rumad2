@@ -23,13 +23,23 @@
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
+    "@csstools/postcss-oklab-function": "^5.0.9",
     "@tauri-apps/cli": "^2",
     "daisyui": "^5.7.18",
+    "postcss": "^8.5.26",
     "typescript": "~5.6.2",
     "vite": "^6.0.3",
     "vite-plugin-solid": "^2.11.0"
   },
   "volta": {
     "node": "22.23.2"
-  }
+  },
+  "browserslist": [
+    "Chrome >= 109",
+    "ChromeAndroid >= 109",
+    "Edge >= 109",
+    "Safari >= 15",
+    "iOS >= 15",
+    "Firefox >= 100"
+  ]
 }
