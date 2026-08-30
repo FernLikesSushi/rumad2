@@ -3722,6 +3722,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "objc2",
  "regex",
  "russh",
  "serde",

@@ -40,6 +40,18 @@ async-trait = "0.1"
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }
 
+# `objc2` is already pulled in transitively (by `wry`/`tao`) at the same
+# 0.6.x this pins -- listed directly here only so `lib.rs`'s iOS-only
+# `setup` hook can send it Objective-C messages (`UIScrollView.bounces`/
+# `.alwaysBounceVertical`) against the raw `WKWebView*` Tauri hands back
+# from `Webview::with_webview`, to get the native rubber-band overscroll
+# iOS apps have by default -- WKWebView's own scroll view already
+# bounces once there's overflow, but doesn't `alwaysBounceVertical`, so
+# a screen whose content exactly fills the viewport (no overflow to
+# bounce against) reads as inert/non-native, unlike a real iOS app.
+[target.'cfg(target_os = "ios")'.dependencies]
+objc2 = "0.6"
+
 [features]
 default = ["tauri"]
 # The `commands`/`run()` Tauri glue, on by default so the app itself (and
