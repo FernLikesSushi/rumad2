@@ -8,7 +8,13 @@ export function SettingsButton({ }) {
 
     return (
         <>
-            <button type="button" class="btn btn-ghost btn-circle" aria-label={t().settings} onClick={() => setOpen(true)}>
+            <button
+                type="button"
+                class="btn btn-ghost btn-circle tooltip tooltip-bottom"
+                aria-label={t().settings}
+                data-tip={t().settings}
+                onClick={() => setOpen(true)}
+            >
                 <SettingsIcon />
             </button>
 
@@ -22,8 +28,9 @@ export function SettingsButton({ }) {
                     >
                         <button
                             type="button"
-                            class="btn btn-sm btn-circle btn-ghost absolute left-2 top-2"
+                            class="btn btn-sm btn-circle btn-ghost absolute left-2 top-2 tooltip tooltip-right"
                             aria-label={t().close}
+                            data-tip={t().close}
                             onClick={() => setOpen(false)}
                         >
                             <X />

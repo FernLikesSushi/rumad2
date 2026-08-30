@@ -33,7 +33,7 @@ export function ClassPreview() {
   return (
     <>
       <Header />
-      <div class="flex flex-col items-center justify-center gap-4">
+      <div class="flex flex-col items-center justify-center gap-4 min-w-0">
         {/* Profile selector */}
         <div class="flex flex-row items-center gap-4 w-64">
           <select
@@ -48,7 +48,12 @@ export function ClassPreview() {
               {(name) => <option value={name}>{name}</option>}
             </For>
           </select>
-          <button class="btn btn-square" onClick={() => setIsCreating(true)}>
+          <button
+            class="btn btn-square tooltip"
+            aria-label={t().newProfileDialog.title}
+            data-tip={t().newProfileDialog.title}
+            onClick={() => setIsCreating(true)}
+          >
             <Plus />
           </button>
         </div>
@@ -77,7 +82,7 @@ export function ClassPreview() {
               </div>
 
               {/* Table or calendar */}
-              <div class="w-full min-w-3xs px-12">
+              <div class="w-full min-w-0 px-2 sm:px-6 md:px-12">
                 <Switch>
                   <Match when={view() === "table"}>
                     <ClassProfileTable courses={profile().courses} onRemove={removeCourse} />
