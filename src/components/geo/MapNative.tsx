@@ -17,7 +17,21 @@ export function MapViewNative(props: { lat: number; lng: number; zoom?: number; 
   let placeholder: HTMLDivElement | undefined;
   let created = false;
 
+  // The native view is a sibling Android/iOS view added on top of the
+  // *whole* webview, not a DOM node -- no HTML z-index or DOM order can
+  // put anything above it. Every modal in this codebase renders as a
+  // `.modal.modal-open` element (`NoticeDialog`, `SettingsButton`,
+  // `RoomCodeTableModal`, ...), so instead of threading "is a modal
+  // open" through every caller, shrink the native view to nothing
+  // whenever one exists anywhere in the document and restore it once
+  // none remain -- that reads as the map going invisible under the
+  // modal rather than drawing over it.
+  function anyModalOpen() {
+    return document.querySelector(".modal.modal-open") !== null;
+  }
+
   function frame() {
+    if (anyModalOpen()) return { x: 0, y: 0, width: 0, height: 0 };
     const rect = placeholder!.getBoundingClientRect();
     return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
   }
@@ -39,8 +53,12 @@ export function MapViewNative(props: { lat: number; lng: number; zoom?: number; 
     window.addEventListener("scroll", updateFrame, true);
     window.addEventListener("resize", updateFrame);
 
+    const modalObserver = new MutationObserver(() => void updateFrame());
+    modalObserver.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
+
     onCleanup(() => {
       resizeObserver.disconnect();
+      modalObserver.disconnect();
       window.removeEventListener("scroll", updateFrame, true);
       window.removeEventListener("resize", updateFrame);
       created = false;
