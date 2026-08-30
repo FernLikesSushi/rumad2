@@ -15,24 +15,24 @@
   "dependencies": {
     "@solidjs/router": "^1.0.0",
     "@tailwindcss/vite": "^4.3.3",
-    "@tauri-apps/api": "^2",
-    "@tauri-apps/plugin-opener": "^2",
-    "@tauri-apps/plugin-os": "^2",
-    "lucide-solid": "^1.32.0",
-    "solid-js": "^1.9.3",
+    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/plugin-opener": "^2.5.4",
+    "@tauri-apps/plugin-os": "^2.3.2",
+    "lucide-solid": "^1.37.0",
+    "solid-js": "^1.9.15",
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
     "@csstools/postcss-oklab-function": "^5.0.9",
-    "@tauri-apps/cli": "^2",
-    "daisyui": "^5.7.18",
+    "@tauri-apps/cli": "^2.11.4",
+    "daisyui": "^5.7.22",
     "postcss": "^8.5.26",
-    "typescript": "~5.6.2",
-    "vite": "^6.0.3",
-    "vite-plugin-solid": "^2.11.0"
+    "typescript": "~5.6.3",
+    "vite": "^6.4.3",
+    "vite-plugin-solid": "^2.11.14"
   },
   "volta": {
-    "node": "22.23.2"
+    "node": "24.20.0"
   },
   "browserslist": [
     "Chrome >= 109",
