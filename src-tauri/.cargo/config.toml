@@ -4,3 +4,19 @@
 [target.x86_64-pc-windows-gnu]
 linker = "x86_64-w64-mingw32-gcc"
 ar = "x86_64-w64-mingw32-gcc-ar"
+
+# Google requires 16KB memory page alignment for native libraries in new
+# Android app submissions. NDK 28+ generates this by default, but our NDK
+# is a preview build that doesn't, hence the explicit linker flag -- see
+# https://tauri.app/develop/plugins/develop-mobile/#android-16kb-memory-pages
+[target.aarch64-linux-android]
+rustflags = ["-C", "link-arg=-Wl,-z,max-page-size=16384"]
+
+[target.armv7-linux-androideabi]
+rustflags = ["-C", "link-arg=-Wl,-z,max-page-size=16384"]
+
+[target.i686-linux-android]
+rustflags = ["-C", "link-arg=-Wl,-z,max-page-size=16384"]
+
+[target.x86_64-linux-android]
+rustflags = ["-C", "link-arg=-Wl,-z,max-page-size=16384"]
