@@ -1,13 +1,22 @@
-import oklabFunction from "@csstools/postcss-oklab-function";
+import postcssPresetEnv from "postcss-preset-env";
 
-// daisyUI's theme colors are all authored as oklch()/oklab(). Android's
-// system WebView doesn't support those below Chromium 111 (confirmed
-// Chromium 109 on-emulator), so any un-downleveled color there is an
-// invalid custom property and the whole UI falls back to browser
-// defaults. This converts every oklch()/oklab() value -- including
-// inside custom properties, which is what daisyUI's theme vars are --
-// to legacy rgb() at build time instead of hand-maintaining hex
-// approximations of daisyUI's palette.
+// Tailwind/daisyUI's generated CSS uses modern color syntax throughout --
+// not just oklch()/oklab() (daisyUI's theme vars) but also color-mix()
+// (Tailwind's own opacity/mix utilities, daisyUI's depth-shadow effects).
+// Both need Chromium 111+; this project's declared floor (package.json's
+// `browserslist`) is Chromium 109 (confirmed on-emulator), so anything
+// left un-downleveled is invalid CSS there and silently drops. Rather
+// than hand-picking which color functions to convert, `postcss-preset-env`
+// reads that same browserslist and polyfills whatever it says needs it --
+// stays correct if the target list or Tailwind/daisyUI's output changes.
 export default {
-  plugins: [oklabFunction({ preserve: false })],
+  plugins: [postcssPresetEnv({
+    stage: 1,
+    features: {
+      'nesting-rules': true,
+      'custom-properties': true,
+      'custom-media-queries': true,
+      'color-mix': true
+    }
+  })],
 };
