@@ -157,8 +157,8 @@ function RoomCodeTableModal(props: {
               content overflows, so a normal vertical scrollbar is what
               you get. `max-h` caps it well short of the viewport on
               mobile (single column, so otherwise the full ~50-room list
-              pushes the modal to nearly full-screen height). */}
-          <div class="overflow-y-auto max-h-[80vh] sm:max-h-96 mt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6">
+              pushes the modal to nearly fullscreen height). */}
+          <div class="overflow-y-auto max-h-[70vh] sm:max-h-96 mt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6">
             <For each={Object.entries(RoomCodes)}>
               {([code, room]) => (
                 <a
