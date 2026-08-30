@@ -1,7 +1,7 @@
 "$schema" = "schemas/schema.json"
 
 [default]
-description = "Default permissions for the google-maps plugin, allowing all its commands."
+description = "Default permissions for the native-map plugin, allowing all its commands."
 permissions = [
     "allow-create-map",
     "allow-update-frame",

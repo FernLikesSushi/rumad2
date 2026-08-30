@@ -1,4 +1,4 @@
-package me.fern.rumad2.googlemaps
+package me.fern.rumad2.nativemap
 
 import android.app.Activity
 import android.view.ViewGroup
@@ -20,7 +20,7 @@ import com.google.android.gms.maps.model.MarkerOptions
 // the Rust side (this plugin crate's `src/mobile.rs`) is actually calling
 // *into*: Tauri's Android runtime finds the plugin class named in
 // `register_android_plugin`
-// (`GoogleMapsPlugin`, the class below), looks for a method on it
+// (`NativeMapPlugin`, the class below), looks for a method on it
 // annotated `@Command` whose *name* matches the string passed to
 // `run_mobile_plugin` ("createMap" -> `fun createMap`), and calls it with
 // the deserialized JSON payload wrapped in an `Invoke` object. Nothing
@@ -85,7 +85,7 @@ class SetMarkerArgs {
  * placeholder from the JS side (`update_frame`, called on resize/scroll).
  *
  * `createMap`/`updateFrame`/`setCamera`/`setMarker`/`dispose` mirror the
- * Rust `GoogleMaps<R>` handle's methods (`../../src/mobile.rs`) one-for-
+ * Rust `NativeMap<R>` handle's methods (`../../src/mobile.rs`) one-for-
  * one -- each just runs the equivalent `GoogleMap`/`MapView` call on the
  * UI thread, since none of the Maps SDK APIs are safe to touch off it.
  *
@@ -97,7 +97,7 @@ class SetMarkerArgs {
  * whatever this subclass overrides.
  */
 @TauriPlugin
-class GoogleMapsPlugin(private val activity: Activity) : Plugin(activity) {
+class NativeMapPlugin(private val activity: Activity) : Plugin(activity) {
     // The plugin class is created once and lives for the app's lifetime
     // (Tauri owns exactly one instance, same as `mobile.rs`'s
     // `PluginHandle` on the Rust side only ever pointing at this one

@@ -355,10 +355,10 @@
           "markdownDescription": "Denies the update_frame command without any pre-configured scope."
         },
         {
-          "description": "Default permissions for the google-maps plugin, allowing all its commands.\n#### This default permission set includes:\n\n- `allow-create-map`\n- `allow-update-frame`\n- `allow-set-camera`\n- `allow-set-marker`\n- `allow-dispose`",
+          "description": "Default permissions for the native-map plugin, allowing all its commands.\n#### This default permission set includes:\n\n- `allow-create-map`\n- `allow-update-frame`\n- `allow-set-camera`\n- `allow-set-marker`\n- `allow-dispose`",
           "type": "string",
           "const": "default",
-          "markdownDescription": "Default permissions for the google-maps plugin, allowing all its commands.\n#### This default permission set includes:\n\n- `allow-create-map`\n- `allow-update-frame`\n- `allow-set-camera`\n- `allow-set-marker`\n- `allow-dispose`"
+          "markdownDescription": "Default permissions for the native-map plugin, allowing all its commands.\n#### This default permission set includes:\n\n- `allow-create-map`\n- `allow-update-frame`\n- `allow-set-camera`\n- `allow-set-marker`\n- `allow-dispose`"
         }
       ]
     }

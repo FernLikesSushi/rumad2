@@ -24,7 +24,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_os::init())
-        .plugin(tauri_plugin_google_maps::init())
+        .plugin(tauri_plugin_native_map::init())
         .manage(AppState::default())
         .invoke_handler(tauri::generate_handler![
             commands::connect,
