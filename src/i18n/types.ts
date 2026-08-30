@@ -185,4 +185,12 @@ export interface Messages {
   // launches the platform's map app via `@tauri-apps/plugin-opener`'s
   // `openUrl` rather than anything rendered in-app.
   openInMaps: { google: string; apple: string; waze: string };
+  // `Map.tsx`'s room code input -- typing a value and submitting navigates
+  // to `/map/{roomCode}`, driving the same `useParams` the route itself does.
+  roomCodePlaceholder: string;
+  // `Map.tsx`'s room code table modal -- button label to open it and the
+  // modal's own title. Each row is a link to `/map/{roomCode}`, same as
+  // the input above.
+  roomCodeListButton: string;
+  roomCodeListTitle: string;
 }

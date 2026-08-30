@@ -140,6 +140,9 @@ const es: Messages = {
   courseAddedToast: "Curso añadido al perfil de clases.",
   courseRemovedToast: "Curso removido del perfil de clases.",
   openInMaps: { google: "Abrir en Google Maps", apple: "Abrir en Apple Maps", waze: "Abrir en Waze" },
+  roomCodePlaceholder: "Codigo de salon (ej. S200)",
+  roomCodeListButton: "Ver todos los edificios",
+  roomCodeListTitle: "Codigos de edificios",
 };
 
 export default es;
