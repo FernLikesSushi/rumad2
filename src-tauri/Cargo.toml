@@ -49,3 +49,10 @@ default = ["tauri"]
 # of tauri/tauri-plugin-opener/tauri-build.
 tauri = ["dep:tauri", "dep:tauri-plugin-opener", "dep:tauri-plugin-os", "dep:tauri-plugin-native-map", "dep:tauri-build"]
 
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true
+
