@@ -7,9 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		2BE4B556678510C35C977412 /* libapp.a in Resources */ = {isa = PBXBuildFile; fileRef = 10DD3A6E63B164328BFE3D49 /* libapp.a */; };
 		2D9B95381F5F6EAF651A6330 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 74EE8917B01ACDB7156F7C5D /* WebKit.framework */; };
-		4545DA6670E07CFB3F9B4DE1 /* libapp.a in Resources */ = {isa = PBXBuildFile; fileRef = B3B2A3D1C244B0F1C5B9223A /* libapp.a */; };
 		4889FF706C02B98BE951DE62 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8A276A8694B2A520C4371962 /* Security.framework */; };
 		4CA3D64C5117179E3BB9557F /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4B38CE958E8DD114C0182E5C /* MetalKit.framework */; };
 		5A4842426BEF4797A4570EB5 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7EC20BC94E7B28FE90BDE3C6 /* Metal.framework */; };
@@ -26,7 +24,6 @@
 /* Begin PBXFileReference section */
 		01707948BF354ABD4894B72F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		0E2CCC74484CA24016E1BEB2 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
-		10DD3A6E63B164328BFE3D49 /* libapp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libapp.a; sourceTree = "<group>"; };
 		1C7338ED2A0B8E6EF604E535 /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = assets; sourceTree = SOURCE_ROOT; };
 		2048CE03A0FFD8B70487C300 /* bindings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bindings.h; sourceTree = "<group>"; };
 		21BF88A32A9F2E098C9D2A3E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -46,7 +43,6 @@
 		98199E87930EB42F6F038240 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
 		9B1696DED41AB66B8EECD4B3 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		AD623EBFD740A61528A6228B /* exec.rs */ = {isa = PBXFileReference; path = exec.rs; sourceTree = "<group>"; };
-		B3B2A3D1C244B0F1C5B9223A /* libapp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libapp.a; sourceTree = "<group>"; };
 		B53F935432BCABB08370D381 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
 		B5BFDE283BA185D43F4E1C76 /* main.rs */ = {isa = PBXFileReference; path = main.rs; sourceTree = "<group>"; };
 		BD3BB47D9C9CC07F56DAD8B8 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
@@ -100,14 +96,6 @@
 				EF14838FFE2533E742D3431D /* weekly_schedule.rs */,
 			);
 			path = screens;
-			sourceTree = "<group>";
-		};
-		4CB91B7EAAC4E9923851589B /* debug */ = {
-			isa = PBXGroup;
-			children = (
-				10DD3A6E63B164328BFE3D49 /* libapp.a */,
-			);
-			path = debug;
 			sourceTree = "<group>";
 		};
 		4FA12C5DEBA7E5C7EE8F47D6 /* commands */ = {
@@ -165,8 +153,6 @@
 		6E374B71F5D59B4D2EFACFFC /* arm64 */ = {
 			isa = PBXGroup;
 			children = (
-				4CB91B7EAAC4E9923851589B /* debug */,
-				E57AAE9FCFD4BD794F400202 /* release */,
 			);
 			path = arm64;
 			sourceTree = "<group>";
@@ -232,14 +218,6 @@
 				F7705EDEA991F80F8619A83F /* rumad-2_iOS.app */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		E57AAE9FCFD4BD794F400202 /* release */ = {
-			isa = PBXGroup;
-			children = (
-				B3B2A3D1C244B0F1C5B9223A /* libapp.a */,
-			);
-			path = release;
 			sourceTree = "<group>";
 		};
 		"TEMP_82342817-B717-474A-B8E9-DF754B78328B" /* x86_64 */ = {
@@ -310,8 +288,6 @@
 				80BFC3804ED80A052FBE4957 /* Assets.xcassets in Resources */,
 				B659F88920C24ABAC868EB5B /* LaunchScreen.storyboard in Resources */,
 				C9D9E7571191AAA128ED83AC /* assets in Resources */,
-				4545DA6670E07CFB3F9B4DE1 /* libapp.a in Resources */,
-				2BE4B556678510C35C977412 /* libapp.a in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -432,11 +408,12 @@
 				);
 				"LIBRARY_SEARCH_PATHS[arch=arm64]" = "$(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
 				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = "$(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
-				PRODUCT_BUNDLE_IDENTIFIER = "me.fern.rumad-2";
+				PRODUCT_BUNDLE_IDENTIFIER = me.fern.rumad-2;
 				PRODUCT_NAME = "rumad-2";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALID_ARCHS = arm64;
+				DEVELOPMENT_TEAM = "2KHQ7ZFCSH";
 			};
 			name = release;
 		};
@@ -463,11 +440,12 @@
 				);
 				"LIBRARY_SEARCH_PATHS[arch=arm64]" = "$(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
 				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = "$(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
-				PRODUCT_BUNDLE_IDENTIFIER = "me.fern.rumad-2";
+				PRODUCT_BUNDLE_IDENTIFIER = me.fern.rumad-2;
 				PRODUCT_NAME = "rumad-2";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALID_ARCHS = arm64;
+				DEVELOPMENT_TEAM = "2KHQ7ZFCSH";
 			};
 			name = debug;
 		};
