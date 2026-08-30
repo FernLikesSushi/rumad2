@@ -3,7 +3,10 @@ import { Calendar, Code, Map, PlugZap, Unplug } from "lucide-solid";
 import { t } from "../i18n";
 import { devMode } from "./devMode";
 
-export const NAV_ICON_CLASS = "my-1.5 inline-block size-4";
+// Bigger below `sm` (`BottomNav`'s dock) than at `sm`+ (`Drawer`'s
+// `is-drawer-close:w-14` collapsed rail, where `size-4` is what fits) --
+// same shared list, two different icon sizes per surface.
+export const NAV_ICON_CLASS = "my-1.5 inline-block size-6 md:size-4";
 
 export type NavItem = { path: string; end: boolean; label: string; icon: JSX.Element };
 
