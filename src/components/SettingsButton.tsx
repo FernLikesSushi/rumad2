@@ -10,7 +10,7 @@ export function SettingsButton({ }) {
         <>
             <button
                 type="button"
-                class="btn btn-ghost btn-circle tooltip tooltip-bottom"
+                class="btn btn-ghost btn-circle tooltip tooltip-bottom tooltip-end"
                 aria-label={t().settings}
                 data-tip={t().settings}
                 onClick={() => setOpen(true)}

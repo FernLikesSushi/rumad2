@@ -48,23 +48,6 @@
   -webkit-text-size-adjust: 100%;
 }
 
-/* daisyUI's `[data-tip]` tooltip bubble is an absolutely-positioned,
-   horizontally-*centered* pseudo-element (`inset: ... 50%` +
-   `translateX(-50%)`, `width: max-content`) that's present in the box
-   tree -- just `opacity: 0` -- even while not hovered/focused. Header's
-   Settings button sits in the top-right corner, and its Spanish label
-   ("Configuración", longer than English's "Settings") is wide enough
-   that the centered bubble extends past the viewport's right edge,
-   making the whole page horizontally scrollable -- confirmed live on
-   device, invisible in any screenshot since it's opacity 0, and on a
-   touchscreen the tooltip itself can't normally even be triggered
-   visibly (no `:hover`). `overflow-x: hidden` on `html` contains any
-   such edge-anchored element instead of letting it inflate the page's
-   scrollable area. */
-html {
-  overflow-x: hidden;
-}
-
 /* Tailwind's Preflight resets heading font-size/weight/margin to inherit
    from the parent -- restoring the browser-default look here since every
    screen has a bare `<h2>{title}</h2>` (Login, MenuScreen, Matricula,
