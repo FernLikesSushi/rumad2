@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "me.fern.rumad2.googlemaps"
+    namespace = "me.fern.rumad2.nativemap"
     // Keep in sync with `gen/android/app/build.gradle.kts` (the CLI
     // doesn't do this for you across separate Gradle modules).
     compileSdk = 36

@@ -1,16 +1,19 @@
 import { createEffect, onCleanup, onMount } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 
-// Android only, via the app-internal `tauri-plugin-google-maps` crate
-// (`src-tauri/plugins/tauri-plugin-google-maps/`) -- a real
-// `com.google.android.gms.maps.MapView` layered on top of the webview as
-// a separate native `View`, not anything DOM-based. There's no way to
-// render inside an iframe/DOM for this, so instead this renders an empty
-// placeholder `<div>` and keeps a native view positioned over its
-// `getBoundingClientRect()` -- see the plugin crate's module doc.
-// `GoogleMapWeb`'s iframe embed is what desktop/iOS use instead (see
-// `Map.tsx`'s platform check).
-export function GoogleMapNative(props: { lat: number; lng: number; zoom?: number; title?: string }) {
+// Android and iOS, via the app-internal `tauri-plugin-native-map` crate
+// (`src-tauri/plugins/tauri-plugin-native-map/`) -- a real native map
+// view (Android's `com.google.android.gms.maps.MapView`, iOS's
+// `MKMapView`) layered on top of the webview, not anything DOM-based.
+// There's no way to render inside an iframe/DOM for this, so instead
+// this renders an empty placeholder `<div>` and keeps a native view
+// positioned over its `getBoundingClientRect()` -- see the plugin
+// crate's module doc. `GoogleMapWeb`'s iframe embed is what desktop uses
+// instead (see `Map.tsx`'s platform check) -- this component itself
+// doesn't need to know or care which native platform it's actually
+// talking to, since both sides of the plugin implement the exact same
+// command names.
+export function MapViewNative(props: { lat: number; lng: number; zoom?: number; title?: string }) {
   let placeholder: HTMLDivElement | undefined;
   let created = false;
 
@@ -21,11 +24,11 @@ export function GoogleMapNative(props: { lat: number; lng: number; zoom?: number
 
   async function updateFrame() {
     if (!created) return;
-    await invoke("plugin:google-maps|update_frame", { payload: frame() });
+    await invoke("plugin:native-map|update_frame", { payload: frame() });
   }
 
   onMount(() => {
-    invoke("plugin:google-maps|create_map", {
+    invoke("plugin:native-map|create_map", {
       payload: { ...frame(), lat: props.lat, lng: props.lng, zoom: props.zoom ?? 15 },
     }).then(() => {
       created = true;
@@ -41,7 +44,7 @@ export function GoogleMapNative(props: { lat: number; lng: number; zoom?: number
       window.removeEventListener("scroll", updateFrame, true);
       window.removeEventListener("resize", updateFrame);
       created = false;
-      void invoke("plugin:google-maps|dispose");
+      void invoke("plugin:native-map|dispose");
     });
   });
 
@@ -54,8 +57,8 @@ export function GoogleMapNative(props: { lat: number; lng: number; zoom?: number
     const zoom = props.zoom ?? 15;
     const title = props.title;
     if (!isFirst && created) {
-      void invoke("plugin:google-maps|set_camera", { payload: { lat, lng, zoom } });
-      void invoke("plugin:google-maps|set_marker", { payload: { lat, lng, title } });
+      void invoke("plugin:native-map|set_camera", { payload: { lat, lng, zoom } });
+      void invoke("plugin:native-map|set_marker", { payload: { lat, lng, title } });
     }
     return false;
   });

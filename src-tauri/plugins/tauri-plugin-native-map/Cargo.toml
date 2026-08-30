@@ -1,0 +1,29 @@
+[package]
+name = "tauri-plugin-native-map"
+version = "0.1.0"
+edition = "2021"
+description = "App-internal Tauri plugin embedding a native map view -- Google Maps SDK on Android, Apple MapKit on iOS. Desktop has no implementation -- see src/desktop.rs."
+license = "LGPL-3.0-or-later"
+# Required by the `tauri-plugin` build helper (see build.rs) -- must
+# match `package.name` exactly, not a build-system quirk specific to
+# this crate.
+links = "tauri-plugin-native-map"
+
+# Matches the actual split in src/mobile.rs (Android + iOS) vs
+# src/desktop.rs (everything else, all `Error::Unsupported`) -- not
+# aspirational.
+[package.metadata.platforms.support]
+windows = { level = "none", notes = "" }
+linux = { level = "none", notes = "" }
+macos = { level = "none", notes = "" }
+android = { level = "full", notes = "Google Maps SDK for Android -- needs VITE_GOOGLE_MAPS_API_KEY." }
+ios = { level = "full", notes = "Apple MapKit (MKMapView) -- no API key needed, it's a system framework." }
+
+[dependencies]
+tauri = { version = "2" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+
+[build-dependencies]
+tauri-plugin = { version = "2", features = ["build"] }
