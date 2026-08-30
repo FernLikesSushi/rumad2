@@ -4,20 +4,23 @@
 // JSON shape `serde::Deserialize` expects here has to line up with what
 // `GoogleMapNative.tsx`'s `invoke()` calls send, *and* with the
 // `@InvokeArg`-annotated Kotlin classes in `NativeMapPlugin.kt` /
-// `Decodable` Swift classes in `NativeMapPlugin.swift` (since
-// `run_mobile_plugin` in `mobile.rs` just forwards the same struct on as
-// JSON again). `#[serde(rename_all = "camelCase")]` is what would make a
-// multi-word field line up (Rust convention is snake_case, JS/Kotlin/
-// Swift is camelCase) -- none of the fields below actually need it since
-// they're all single words, but it's kept on every struct here as the
-// safe default so adding a multi-word field later doesn't silently break.
-use serde::Deserialize;
+// `Decodable` Swift classes in `NativeMapPlugin.swift`. Every struct
+// derives both `Deserialize` (parsing the incoming call in `commands.rs`)
+// *and* `Serialize` (`mobile.rs`'s `run_mobile_plugin` re-serializes the
+// same struct to forward it on to the native side as JSON again -- it's
+// not the original wire bytes, so it needs its own `Serialize` impl).
+// `#[serde(rename_all = "camelCase")]` is what would make a multi-word
+// field line up (Rust convention is snake_case, JS/Kotlin/Swift is
+// camelCase) -- none of the fields below actually need it since they're
+// all single words, but it's kept on every struct here as the safe
+// default so adding a multi-word field later doesn't silently break.
+use serde::{Deserialize, Serialize};
 
 /// The placeholder element's `getBoundingClientRect()` in CSS px, as
 /// measured by the frontend -- converted to real device px on the Kotlin
 /// side (multiplied by the display density) before positioning the
 /// native `MapView`, since Android `View.layout()` takes raw pixels.
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Frame {
     pub x: f64,
@@ -34,7 +37,7 @@ pub struct Frame {
 // `{ ...frame(), lat, lng, zoom }` spread) and what the Kotlin
 // `CreateMapArgs` class expects (which just lists all seven fields flat,
 // since Kotlin's arg parser has no equivalent "flatten" concept).
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateMapArgs {
     #[serde(flatten)]
@@ -46,14 +49,14 @@ pub struct CreateMapArgs {
 
 /// Reposition/resize the already-created `MapView` -- called on scroll or
 /// layout changes, without touching the camera or marker.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateFrameArgs {
     #[serde(flatten)]
     pub frame: Frame,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SetCameraArgs {
     pub lat: f64,
@@ -61,7 +64,7 @@ pub struct SetCameraArgs {
     pub zoom: f32,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SetMarkerArgs {
     pub lat: f64,
