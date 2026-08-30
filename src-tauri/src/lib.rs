@@ -65,6 +65,7 @@ pub fn run() {
             commands::login::login,
             commands::is_connected,
             commands::disconnect,
+            commands::haptic_light,
         ])
         .setup(|_app| {
             #[cfg(target_os = "ios")]

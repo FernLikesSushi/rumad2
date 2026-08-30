@@ -1,6 +1,7 @@
 import { createMemo, createResource, createRoot, createSignal } from "solid-js";
 import { listen } from "@tauri-apps/api/event";
 import { runAction } from "../screens/api";
+import { haptic } from "../haptics";
 
 // Wire-format types below: these mirror the Rust backend's serialized
 // shapes one-to-one (`src-tauri/src/screens/`, `src-tauri/src/commands/`).
@@ -142,6 +143,7 @@ export function ensureStarted() {
 }
 
 export function connect(username?: string, password?: string) {
+  haptic();
   setAction({ cmd: "connect", args: { username: username || undefined, password: password || undefined } });
 }
 
@@ -206,7 +208,10 @@ listen<ClassifiedScreen>("screen-changed", (event) => {
 });
 
 // quick helper to avoid repeating the `setAction({cmd:"send",args:{action}})` boilerplate everywhere
-export const send: Send = (sendAction) => setAction({ cmd: "send", args: { action: sendAction } });
+export const send: Send = (sendAction) => {
+  haptic();
+  setAction({ cmd: "send", args: { action: sendAction } });
+};
 
 export function exitScreen() {
   send({ kind: "Exit" });
@@ -217,11 +222,13 @@ export function continueScreen() {
 }
 
 export function login(idNumber: string, accessCode: string, ssnLast4: string, birthDate: string) {
+  haptic();
   setAction({ cmd: "login", args: { idNumber, accessCode, ssnLast4, birthDate } });
 }
 
 // Just the backend call -- navigating back to "/" afterward is the
 // caller's job (`TuiSession.tsx` has the router context this doesn't).
 export async function disconnect() {
+  haptic();
   await runAction({ cmd: "disconnect", args: {} });
 }

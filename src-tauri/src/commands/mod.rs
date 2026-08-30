@@ -95,6 +95,48 @@ pub async fn is_connected(app: AppHandle) -> Result<bool, String> {
     Ok(guard.is_some())
 }
 
+/// Fires a light haptic tap -- purely a native-feel nicety (same "no
+/// `tauri.conf.json` knob for this, reach into UIKit directly"
+/// situation `lib.rs`'s `enable_native_bounce` documents), so a no-op
+/// everywhere but iOS. Called only from `data/tui.ts`'s `send`/
+/// `connect`/`login`/`disconnect` -- the handful of frontend functions
+/// that actually do something to the remote session -- not from every
+/// `.btn` press, the way a real iOS app reserves haptics for meaningful
+/// actions rather than every tap (nav/settings/close chrome included).
+/// Deliberately not `async`/`spawn_blocking` like every other command
+/// in this file despite the rule against sync commands doing I/O
+/// (`CLAUDE.md`) -- this isn't I/O, it schedules a UIKit call onto the
+/// main thread (`UIImpactFeedbackGenerator` requires it) and returns
+/// immediately without blocking on that.
+#[tauri::command]
+pub fn haptic_light(_app: AppHandle) {
+    #[cfg(target_os = "ios")]
+    {
+        let _ = _app.run_on_main_thread(|| {
+            use objc2::rc::Retained;
+            use objc2::runtime::AnyObject;
+            use objc2::{class, msg_send};
+
+            // SAFETY: `UIImpactFeedbackGenerator` is a plain Foundation
+            // object -- `alloc]/initWithStyle:` follows the normal
+            // Cocoa "owns a +1 reference" convention, handed to
+            // `Retained::from_raw` so it's released on drop instead of
+            // leaking one generator per tap. Style `0` is
+            // `UIImpactFeedbackStyleLight`.
+            unsafe {
+                let cls = class!(UIImpactFeedbackGenerator);
+                let generator: *mut AnyObject = msg_send![cls, alloc];
+                let generator: *mut AnyObject = msg_send![generator, initWithStyle: 0isize];
+                let Some(generator) = Retained::from_raw(generator) else {
+                    return;
+                };
+                let _: () = msg_send![&*generator, prepare];
+                let _: () = msg_send![&*generator, impactOccurred];
+            }
+        });
+    }
+}
+
 /// Log out of the remote menu and drop the session. Emits
 /// `SCREEN_CHANGED_EVENT` itself (`spawn_screen_watcher` only sees the
 /// channel it's polling go away, not this) so the frontend's one

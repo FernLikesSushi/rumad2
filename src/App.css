@@ -105,3 +105,15 @@
     backface-visibility: hidden;
   }
 }
+
+/* Without these, `.btn` taps read as tapping a web page instead of an
+   app: the default gray flash on tap (`-webkit-tap-highlight-color`'s
+   own default, not something this app ever set), plus the ~300ms tap
+   delay + double-tap-to-zoom gesture browsers arm on any element by
+   default (`touch-action: manipulation` tells the engine this element
+   only ever wants tap/pan gestures, so it drops both immediately
+   instead of waiting to see if a second tap follows). */
+.btn {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
