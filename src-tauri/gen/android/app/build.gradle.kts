@@ -32,6 +32,20 @@ val mapsApiKey: String = dotenv.getProperty("VITE_GOOGLE_MAPS_API_KEY")
     ?: System.getenv("VITE_GOOGLE_MAPS_API_KEY")
     ?: ""
 
+// `../android_keystore.sh` (repo root) generates this -- absent on a
+// fresh clone, which is fine for `debug` (AGP auto-signs that with its
+// own debug keystore) but leaves `release` with no signingConfig below,
+// so `assembleRelease`/`tauri android build` still produces an
+// *unsigned* APK real devices refuse to install until that script's
+// been run once.
+val keystoreProperties = Properties().apply {
+    val propFile = rootProject.file("keystore.properties")
+    if (propFile.exists()) {
+        propFile.inputStream().use { load(it) }
+    }
+}
+val hasReleaseSigning = keystoreProperties.containsKey("storeFile")
+
 android {
     compileSdk = 36
     namespace = "me.fern.rumad2"
@@ -43,6 +57,16 @@ android {
         targetSdk = 36
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
         versionName = tauriProperties.getProperty("tauri.android.versionName", "1.0")
+    }
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
     }
     buildTypes {
         getByName("debug") {
@@ -58,6 +82,9 @@ android {
         }
         getByName("release") {
             isMinifyEnabled = true
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(
                 *fileTree(".") { include("**/*.pro") }
                     .plus(getDefaultProguardFile("proguard-android-optimize.txt"))
