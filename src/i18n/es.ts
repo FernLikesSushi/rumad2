@@ -126,6 +126,7 @@ const es: Messages = {
   classPreviewPicker: "Selecciona una clase",
   classPreviewView: { table: "Tabla", calendar: "Calendario" },
   classPreviewEmpty: "Selecciona o crea un perfil para ver sus cursos.",
+  totalCredits: "Créditos totales",
   classProfileColumns: {
     course: "Curso",
     section: "Sección",

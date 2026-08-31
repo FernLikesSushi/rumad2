@@ -61,24 +61,34 @@ export function ClassPreview() {
         <Show when={selectedProfile()}>
           {(profile) => (
             <>
-              {/* Segmented control */}
-              <div class="join">
-                <button
-                  class="btn join-item"
-                  classList={{ "btn-active": view() === "table" }}
-                  onClick={() => setView("table")}
-                >
-                  <Table class="size-4" />
-                  {t().classPreviewView.table}
-                </button>
-                <button
-                  class="btn join-item"
-                  classList={{ "btn-active": view() === "calendar" }}
-                  onClick={() => setView("calendar")}
-                >
-                  <Calendar class="size-4" />
-                  {t().classPreviewView.calendar}
-                </button>
+              {/* Segmented control + credit total -- outside the
+                  `Switch` below so it stays visible in both the table
+                  and calendar views, not just wherever `credits` has
+                  its own column (the table). Summed here rather than in
+                  `data/classEditor.ts`: it's a pure display derivation
+                  of `profile().courses`, not state anything else reads. */}
+              <div class="flex flex-wrap items-center justify-center gap-4">
+                <div class="join">
+                  <button
+                    class="btn join-item"
+                    classList={{ "btn-active": view() === "table" }}
+                    onClick={() => setView("table")}
+                  >
+                    <Table class="size-4" />
+                    {t().classPreviewView.table}
+                  </button>
+                  <button
+                    class="btn join-item"
+                    classList={{ "btn-active": view() === "calendar" }}
+                    onClick={() => setView("calendar")}
+                  >
+                    <Calendar class="size-4" />
+                    {t().classPreviewView.calendar}
+                  </button>
+                </div>
+                <div class="badge badge-lg badge-soft">
+                  {t().totalCredits}: {profile().courses.reduce((sum, c) => sum + c.credits, 0)}
+                </div>
               </div>
 
               {/* Table or calendar */}

@@ -155,6 +155,11 @@ export interface Messages {
   // courses between `ClassProfileTable` and `WeekCalendar`.
   classPreviewView: { table: string; calendar: string };
   classPreviewEmpty: string;
+  // The selected profile's credit total, shown next to the
+  // table/calendar toggle in `ClassPreview.tsx` -- summed on the
+  // frontend from `Course.credits` (no backend equivalent since this is
+  // purely a user-authored profile, not remote data).
+  totalCredits: string;
   // `ClassProfileTable`'s columns -- `data/classEditor.ts`'s own `Course`
   // (user-authored profile entries), not the live-scraped `CourseSection`
   // `courseResultsColumns` covers, so no capacity/used/available here.

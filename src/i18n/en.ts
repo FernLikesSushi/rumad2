@@ -151,6 +151,7 @@ const en: Messages = {
   classPreviewPicker: "Select a class profile",
   classPreviewView: { table: "Table", calendar: "Calendar" },
   classPreviewEmpty: "Select or create a profile to see its courses.",
+  totalCredits: "Total credits",
   classProfileColumns: {
     course: "Course",
     section: "Section",
