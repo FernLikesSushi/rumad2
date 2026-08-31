@@ -36,7 +36,7 @@ const es: Messages = {
   settings: "Configuración",
   devScreens: "Pantallas de prueba",
   navConnect: "Inicio",
-  navClassEditor: "Editor de Clases",
+  navClassEditor: "Perfiles de Clases",
   navMap: "Mapa",
   openMenu: "Abrir menú",
   closeMenu: "Cerrar menú",
@@ -72,7 +72,7 @@ const es: Messages = {
   // fallback-to-raw-label behavior covers it.
   menuLabels: {},
   loginFields: {
-    idNumber: { label: "Número de Identificación", hint: "Ej. 802999999" },
+    idNumber: { label: "Número de Identificación", hint: "Ej. 802-99-9999" },
     accessCode: { label: "Código de Acceso Permanente", hint: "Ej. 1234" },
     ssnLast4: { label: "Seguro Social (últimos 4)", hint: "Ej. 1234" },
     birthDate: { label: "Fecha de Nacimiento", hint: "Ej. MMDDAAAA" },

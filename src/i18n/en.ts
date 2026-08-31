@@ -30,7 +30,7 @@ const en: Messages = {
   settings: "Settings",
   devScreens: "Dev screens",
   navConnect: "Home",
-  navClassEditor: "Class Editor",
+  navClassEditor: "Class Profiles",
   navMap: "Map",
   openMenu: "Open menu",
   closeMenu: "Close menu",
@@ -97,7 +97,7 @@ const en: Messages = {
     salir: "exit",
   },
   loginFields: {
-    idNumber: { label: "ID Number", hint: "e.g. 802999999" },
+    idNumber: { label: "ID Number", hint: "e.g. 802-99-9999" },
     accessCode: { label: "Permanent Access Code", hint: "e.g. 1234" },
     ssnLast4: { label: "Social Security (last 4)", hint: "e.g. 1234" },
     birthDate: { label: "Date of Birth", hint: "e.g. MMDDYYYY" },
@@ -148,7 +148,7 @@ const en: Messages = {
     cancel: "Cancel",
     duplicateError: "A profile with that name already exists.",
   },
-  classPreviewPicker: "Select a class",
+  classPreviewPicker: "Select a class profile",
   classPreviewView: { table: "Table", calendar: "Calendar" },
   classPreviewEmpty: "Select or create a profile to see its courses.",
   classProfileColumns: {
