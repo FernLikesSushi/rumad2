@@ -198,4 +198,12 @@ export interface Messages {
   // the input above.
   roomCodeListButton: string;
   roomCodeListTitle: string;
+  // Short non-affiliation disclaimer -- shown wherever a notice needs to be
+  // visible without the user having to go dig for it (`Footer.tsx`,
+  // `Settings.tsx`), separate from the fuller text in `termsOfService`.
+  disclaimerNotice: string;
+  // `TermsOfService.tsx`'s own button label / modal title and body --
+  // opened from `Settings.tsx`. `body` is one string per paragraph so each
+  // renders as its own `<p>` rather than one wall of text.
+  termsOfService: { title: string; body: string[] };
 }

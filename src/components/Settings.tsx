@@ -6,6 +6,7 @@ import { loadUsername, password, saveUsername, setPassword } from "../data/usern
 import { devMode, setDevMode } from "../data/devMode";
 import { Toggle } from "./Toggle";
 import { ToggleButton } from "./ToggleButton";
+import { TermsOfService } from "./TermsOfService";
 
 export function Settings() {
     const navigate = useNavigate();
@@ -47,6 +48,13 @@ export function Settings() {
 
         <div class="flex flex-col items-center gap-4">
             <Toggle label={t().developerMode} checked={devMode()} onChange={setDevMode} />
+        </div>
+
+        <div class="divider w-full" />
+
+        <div class="flex flex-col items-center gap-2">
+            <p class="text-xs opacity-60">{t().disclaimerNotice}</p>
+            <TermsOfService />
         </div>
     </form>
 }

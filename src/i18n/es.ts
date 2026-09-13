@@ -144,6 +144,20 @@ const es: Messages = {
   roomCodePlaceholder: "Codigo de salon (ej. S200)",
   roomCodeListButton: "Ver todos los edificios",
   roomCodeListTitle: "Codigos de edificios",
+  disclaimerNotice:
+    "RUMAD2 no está afiliado a, respaldado por, ni patrocinado por la Universidad de Puerto Rico en Mayagüez (UPRM). \"RUMAD\", \"UPRM\" y demás nombres y marcas de la universidad son propiedad de la UPRM.",
+  termsOfService: {
+    title: "Términos de Servicio",
+    body: [
+      "RUMAD2 es un cliente no oficial e independiente para el sistema de matrícula de la Universidad de Puerto Rico en Mayagüez (UPRM). No está afiliado a, respaldado por, ni patrocinado por la UPRM ni por la Universidad de Puerto Rico. \"UPRM\", \"RUMAD\" (como sistema oficial) y cualquier otro nombre, logo o marca de la universidad mencionados en esta aplicación son propiedad de sus respectivos dueños y se usan aquí únicamente con fines descriptivos.",
+      "Esta aplicación funciona conectándose, mediante SSH, directamente al sistema oficial de la UPRM con las credenciales que tú provees. Esas credenciales se envían únicamente a ese sistema oficial y no se almacenan ni se transmiten a ningún otro servidor.",
+      "La aplicación se ofrece \"tal cual\", sin garantía de ningún tipo, ya sea expresa o implícita, incluyendo -- pero sin limitarse a -- garantías de funcionamiento ininterrumpido, exactitud de la información mostrada o disponibilidad del sistema remoto, el cual está completamente fuera de nuestro control.",
+      "Eres responsable de verificar cualquier información crítica (matrícula, horario, fechas límite, balances, etc.) directamente en los sistemas oficiales de la UPRM antes de tomar decisiones basadas en ella.",
+      "En la máxima medida permitida por la ley, quienes desarrollan y mantienen esta aplicación no serán responsables por daños, pérdidas o perjuicios de ningún tipo que resulten del uso o la imposibilidad de uso de esta aplicación, incluyendo errores de matrícula.",
+      "El uso de esta aplicación está también sujeto a los términos, políticas y reglamentos de la propia UPRM que apliquen al uso de sus sistemas.",
+      "Estos términos pueden actualizarse en cualquier momento; el uso continuo de la aplicación después de un cambio constituye la aceptación de los términos revisados.",
+    ],
+  },
 };
 
 export default es;

@@ -169,6 +169,20 @@ const en: Messages = {
   roomCodePlaceholder: "Room code (e.g. S200)",
   roomCodeListButton: "View all rooms",
   roomCodeListTitle: "Room codes",
+  disclaimerNotice:
+    "RUMAD2 is not affiliated with, endorsed by, or sponsored by the University of Puerto Rico at Mayagüez (UPRM). \"RUMAD\", \"UPRM\", and the university's other names and marks are the property of UPRM.",
+  termsOfService: {
+    title: "Terms of Service",
+    body: [
+      "RUMAD2 is an unofficial, independent client for the University of Puerto Rico at Mayagüez's (UPRM) student registration system. It is not affiliated with, endorsed by, or sponsored by UPRM or the University of Puerto Rico. \"UPRM\", \"RUMAD\" (as the official system's own name), and any other university name, logo, or mark referenced in this app are the property of their respective owners and are used here strictly to describe the system this app connects to.",
+      "This app works by connecting, over SSH, directly to UPRM's own official system using the credentials you provide. Those credentials are sent only to that official system and are not stored or transmitted anywhere else.",
+      "This app is provided \"as is\", without warranty of any kind, express or implied, including but not limited to warranties of uninterrupted operation, accuracy of the information displayed, or availability of the remote system, which is entirely outside our control.",
+      "You are responsible for verifying any critical information (registration, schedule, deadlines, balances, etc.) directly against UPRM's official systems before acting on it.",
+      "To the fullest extent permitted by law, this app's developers and maintainers are not liable for any damages, losses, or harm of any kind arising from the use of, or inability to use, this app, including registration errors.",
+      "Use of this app is also subject to UPRM's own applicable terms, policies, and regulations governing use of its systems.",
+      "These terms may be updated at any time; continued use of the app after a change constitutes acceptance of the revised terms.",
+    ],
+  },
 };
 
 export default en;
