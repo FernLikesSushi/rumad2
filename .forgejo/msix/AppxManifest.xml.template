@@ -5,7 +5,7 @@
   Tauri has no built-in MSIX bundler (only WiX .msi and NSIS .exe -- see
   https://tauri.app/distribute/windows-installer/), so this is assembled by
   hand and packed with the Windows SDK's makeappx.exe in
-  .github/workflows/build.yml. __VERSION__/__PUBLISHER__ are substituted by
+  .forgejo/workflows/build.yml. __VERSION__/__PUBLISHER__ are substituted by
   that workflow at build time: __VERSION__ is tauri.conf.json's own
   version with a fourth ".0" component appended (MSIX requires exactly
   four numeric parts); __PUBLISHER__ must match the signing certificate's
