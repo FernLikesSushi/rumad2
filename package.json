@@ -9,7 +9,8 @@
     "dev": "vite",
     "build": "vite build",
     "serve": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "updater:generate-key": "bash scripts/generate-updater-key.sh"
   },
   "license": "LGPL-3.0-or-later",
   "dependencies": {

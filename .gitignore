@@ -1,3 +1,7 @@
 node_modules
 dist
 .env
+
+# Updater signing private key (see scripts/generate-updater-key.sh) --
+# updater.key.pub is public and fine to commit, updater.key is not.
+/updater.key

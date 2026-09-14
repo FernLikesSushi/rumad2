@@ -71,16 +71,41 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # No updater is configured (no `plugins.updater` in tauri.conf.json),
-      # so the updater-JSON/signature upload this action defaults to is
-      # switched off rather than uploading meaningless artifacts.
+      # All secrets below are optional: unset, they resolve to empty
+      # strings and the corresponding signing step is just skipped, same
+      # as before either was wired up.
+      #
+      # Updater signing (`bundle.createUpdaterArtifacts` in tauri.conf.json
+      # makes the CLI sign every bundle when these are set): generate with
+      # `pnpm updater:generate-key` (scripts/generate-updater-key.sh), then
+      # set TAURI_SIGNING_PRIVATE_KEY to updater.key's contents and
+      # TAURI_SIGNING_PRIVATE_KEY_PASSWORD to its password.
+      #
+      # Needs a paid Apple Developer account, from which:
+      #   APPLE_CERTIFICATE          = base64-encoded .p12 export of a
+      #                                 "Developer ID Application" cert
+      #   APPLE_CERTIFICATE_PASSWORD = that .p12's export password
+      #   APPLE_SIGNING_IDENTITY     = the cert's "Developer ID
+      #                                 Application: Name (TEAMID)" string
+      #   APPLE_ID                   = your Apple ID email
+      #   APPLE_PASSWORD              = an app-specific password for it
+      #                                 (not your account password)
+      #   APPLE_TEAM_ID               = your Apple Developer team ID
       - name: Build app
         uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
           args: ${{ matrix.rust-target && format('--target {0}', matrix.rust-target) || '' }}
-          uploadUpdaterJson: false
+          uploadUpdaterJson: true
           uploadWorkflowArtifacts: ${{ github.event_name != 'release' }}
           releaseId: ${{ github.event_name == 'release' && github.event.release.id || '' }}
           retryAttempts: 3
